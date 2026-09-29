@@ -125,6 +125,119 @@ struct SectionHeader: View {
     }
 }
 
+struct ClyroPageHeader: View {
+    let title: String
+    let subtitle: String
+    let icon: String
+    let accent: Color
+
+    var body: some View {
+        HStack(spacing: 13) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(accent.opacity(0.15))
+                Image(systemName: icon)
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundStyle(accent)
+            }
+            .frame(width: 42, height: 42)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.system(size: 24, weight: .semibold))
+                Text(subtitle)
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(ClyroTheme.secondaryText)
+                    .lineLimit(1)
+            }
+        }
+    }
+}
+
+struct ClyroStatPill: View {
+    let title: String
+    let value: String
+    let icon: String
+    let color: Color
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Image(systemName: icon)
+                .foregroundStyle(color)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(title)
+                    .font(.system(size: 9, weight: .semibold))
+                    .foregroundStyle(.secondary)
+                Text(value)
+                    .font(.system(size: 12, weight: .bold))
+                    .lineLimit(1)
+            }
+        }
+        .padding(.horizontal, 11)
+        .frame(height: 38)
+        .background(Capsule().fill(.white.opacity(0.065)))
+        .overlay(Capsule().stroke(.white.opacity(0.07)))
+    }
+}
+
+struct ClyroArtifact: View {
+    let symbol: String
+    let satellite: String
+    let accent: Color
+    let secondary: Color
+
+    @State private var floating = false
+
+    var body: some View {
+        ZStack {
+            Ellipse()
+                .stroke(accent.opacity(0.22), lineWidth: 1)
+                .frame(width: 154, height: 70)
+                .rotationEffect(.degrees(-18))
+            Ellipse()
+                .stroke(secondary.opacity(0.20), lineWidth: 1)
+                .frame(width: 124, height: 154)
+                .rotationEffect(.degrees(28))
+
+            Circle()
+                .fill(
+                    RadialGradient(
+                        colors: [.white.opacity(0.92), accent, secondary.opacity(0.72)],
+                        center: .topLeading,
+                        startRadius: 2,
+                        endRadius: 78
+                    )
+                )
+                .frame(width: 106, height: 106)
+                .shadow(color: accent.opacity(0.34), radius: 26)
+
+            Image(systemName: symbol)
+                .font(.system(size: 39, weight: .medium))
+                .symbolRenderingMode(.hierarchical)
+                .foregroundStyle(.black.opacity(0.66))
+
+            Image(systemName: satellite)
+                .font(.system(size: 15, weight: .bold))
+                .foregroundStyle(.white.opacity(0.86))
+                .frame(width: 34, height: 34)
+                .background(Circle().fill(secondary))
+                .offset(x: 65, y: floating ? -42 : -34)
+
+            Circle()
+                .fill(.white.opacity(0.8))
+                .frame(width: 7, height: 7)
+                .offset(x: -69, y: floating ? 30 : 37)
+        }
+        .frame(width: 190, height: 180)
+        .offset(y: floating ? -4 : 4)
+        .onAppear {
+            withAnimation(.easeInOut(duration: 2.8).repeatForever(autoreverses: true)) {
+                floating = true
+            }
+        }
+    }
+}
+
 struct EmptyStateView: View {
     let icon: String
     let title: String

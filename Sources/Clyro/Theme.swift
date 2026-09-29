@@ -3,24 +3,81 @@ import SwiftUI
 
 enum ClyroTheme {
     static let background = Color(nsColor: .windowBackgroundColor)
-    static let appBackground = LinearGradient(
-        colors: [
-            Color(nsColor: .windowBackgroundColor),
-            Color(red: 0.045, green: 0.065, blue: 0.060)
-        ],
-        startPoint: .topLeading,
-        endPoint: .bottomTrailing
-    )
     static let sidebar = Color(nsColor: .underPageBackgroundColor)
-    static let card = Color(nsColor: .controlBackgroundColor).opacity(0.72)
-    static let cardStrong = Color(nsColor: .selectedContentBackgroundColor).opacity(0.14)
-    static let border = Color(nsColor: .separatorColor).opacity(0.55)
+    static let card = Color.black.opacity(0.18)
+    static let cardStrong = Color.white.opacity(0.085)
+    static let border = Color.white.opacity(0.085)
     static let mint = Color(red: 0.28, green: 0.76, blue: 0.62)
     static let mintSoft = Color(red: 0.22, green: 0.62, blue: 0.51)
     static let gold = Color(red: 0.88, green: 0.72, blue: 0.38)
     static let orange = Color(red: 0.91, green: 0.52, blue: 0.27)
     static let blue = Color(red: 0.35, green: 0.58, blue: 0.91)
-    static let secondaryText = Color(nsColor: .secondaryLabelColor)
+    static let secondaryText = Color.white.opacity(0.58)
+
+    static func palette(for section: AppSection) -> ClyroPalette {
+        switch section {
+        case .overview:
+            ClyroPalette(
+                top: Color(red: 0.12, green: 0.105, blue: 0.045),
+                bottom: Color(red: 0.27, green: 0.19, blue: 0.055),
+                accent: mint,
+                secondary: gold
+            )
+        case .cleanup:
+            ClyroPalette(
+                top: Color(red: 0.055, green: 0.075, blue: 0.16),
+                bottom: Color(red: 0.105, green: 0.16, blue: 0.31),
+                accent: Color(red: 0.43, green: 0.69, blue: 1.0),
+                secondary: mint
+            )
+        case .storage:
+            ClyroPalette(
+                top: Color(red: 0.15, green: 0.065, blue: 0.03),
+                bottom: Color(red: 0.34, green: 0.15, blue: 0.055),
+                accent: Color(red: 0.95, green: 0.60, blue: 0.31),
+                secondary: Color(red: 0.91, green: 0.42, blue: 0.25)
+            )
+        case .processes:
+            ClyroPalette(
+                top: Color(red: 0.065, green: 0.055, blue: 0.145),
+                bottom: Color(red: 0.20, green: 0.105, blue: 0.30),
+                accent: Color(red: 0.68, green: 0.49, blue: 0.98),
+                secondary: blue
+            )
+        case .applications:
+            ClyroPalette(
+                top: Color(red: 0.15, green: 0.035, blue: 0.045),
+                bottom: Color(red: 0.32, green: 0.075, blue: 0.095),
+                accent: Color(red: 1.0, green: 0.44, blue: 0.44),
+                secondary: orange
+            )
+        case .startup:
+            ClyroPalette(
+                top: Color(red: 0.085, green: 0.08, blue: 0.055),
+                bottom: Color(red: 0.25, green: 0.19, blue: 0.065),
+                accent: gold,
+                secondary: orange
+            )
+        case .history:
+            ClyroPalette(
+                top: Color(red: 0.035, green: 0.105, blue: 0.09),
+                bottom: Color(red: 0.045, green: 0.24, blue: 0.18),
+                accent: mint,
+                secondary: blue
+            )
+        }
+    }
+}
+
+struct ClyroPalette {
+    let top: Color
+    let bottom: Color
+    let accent: Color
+    let secondary: Color
+
+    var background: LinearGradient {
+        LinearGradient(colors: [top, bottom], startPoint: .topLeading, endPoint: .bottomTrailing)
+    }
 }
 
 extension View {
@@ -33,6 +90,19 @@ extension View {
                     .overlay(
                         RoundedRectangle(cornerRadius: 12, style: .continuous)
                             .stroke(ClyroTheme.border, lineWidth: 0.75)
+                    )
+            )
+    }
+
+    func clyroPanel(padding: CGFloat = 16, cornerRadius: CGFloat = 16) -> some View {
+        self
+            .padding(padding)
+            .background(
+                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                    .fill(ClyroTheme.card)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                            .stroke(ClyroTheme.border, lineWidth: 0.8)
                     )
             )
     }

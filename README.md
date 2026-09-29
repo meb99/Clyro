@@ -12,7 +12,7 @@ Clyro ist ein nativer, lokaler macOS-Systemmonitor und vorsichtiger Cleaner. Das
 ![Swift](https://img.shields.io/badge/Swift-5-F05138?logo=swift&logoColor=white)
 ![License](https://img.shields.io/badge/License-MIT-55D5B4)
 
-## Was Version 0.7 bereits kann
+## Was Version 1.0 bereits kann
 
 - Live-Dashboard für CPU, RAM, Speicher, Netzwerk, Akku und Laufzeit
 - animierte Verlaufsdiagramme
@@ -25,6 +25,13 @@ Clyro ist ein nativer, lokaler macOS-Systemmonitor und vorsichtiger Cleaner. Das
 - kompakte, schwebende Navigation am oberen Fensterrand statt einer breiten Sidebar
 - vollständig sichtbare Statusübersicht ohne Scrollen mit kompaktem Bento-Raster
 - platzsparende Prozessliste mit App-Icons, Rollen, RAM und CPU
+- eigene Farbstimmung und animierter Hintergrund für jeden Bereich
+- schwebende Clyro-Artefakte statt übernommener Planetenmotive
+- neue visuelle Speicherlandschaft für die größten gefundenen Dateien
+- App-Bibliothek mit Suche, Sortierung, Gesamtgröße und Finder-Verknüpfung
+- Autostart-Auswertung nach Benutzer-, gemeinsamem und Systembereich
+- lokaler Bereinigungsverlauf als visuelle Zeitleiste
+- neu aufgebaute Bereinigungsansicht mit sicherer Auswahl und Ergebnisübersicht
 - ruhigeres, systemnahes Kartendesign mit gezielt eingesetzten Rollen-Emojis
 - Scan nach alten App-Caches, Protokollen, Installationsdateien und Xcode-Daten
 - Auswahl und Bestätigung vor jeder Bereinigung

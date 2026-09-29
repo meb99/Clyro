@@ -5,70 +5,68 @@ struct CleanupView: View {
     @EnvironmentObject private var cleaner: CleanupScanner
     @State private var showConfirmation = false
 
-    var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-                HStack(alignment: .top) {
-                    SectionHeader("Bereinigen", subtitle: "Nur transparente, ausgewählte Bereiche – nichts wird heimlich entfernt.")
-                    Spacer()
-                    Button {
-                        cleaner.scan()
-                    } label: {
-                        Label(cleaner.state == .scanning ? "Scanne …" : "Mac prüfen", systemImage: "sparkle.magnifyingglass")
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .tint(ClyroTheme.mintSoft)
-                    .disabled(cleaner.state == .scanning || cleaner.state == .cleaning)
-                }
+    private let accent = ClyroTheme.palette(for: .cleanup).accent
 
-                if cleaner.categories.isEmpty && cleaner.state != .scanning {
-                    EmptyStateView(
-                        icon: "sparkle.magnifyingglass",
-                        title: "Bereit für den ersten Scan",
-                        message: "Clyro sucht nach alten Caches, Protokollen und Installationsdateien. Vor dem Löschen siehst du immer eine Zusammenfassung."
-                    )
-                } else if cleaner.state == .scanning {
-                    VStack(spacing: 14) {
-                        ProgressView()
-                            .controlSize(.large)
-                            .tint(ClyroTheme.mint)
-                        Text("Dateien werden sicher analysiert …")
-                            .foregroundStyle(ClyroTheme.secondaryText)
-                    }
-                    .frame(maxWidth: .infinity, minHeight: 250)
-                    .clyroCard()
-                } else {
-                    VStack(spacing: 11) {
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack {
+                ClyroPageHeader(
+                    title: "Bereinigen",
+                    subtitle: "Sicher prüfen, bewusst auswählen, erst dann in den Papierkorb verschieben.",
+                    icon: "sparkles",
+                    accent: accent
+                )
+                Spacer()
+                ClyroStatPill(title: "Ausgewählt", value: ClyroFormat.byteCount(cleaner.selectedBytes), icon: "externaldrive", color: accent)
+                Button {
+                    cleaner.scan()
+                } label: {
+                    Label(cleaner.state == .scanning ? "Scanne …" : "Neu prüfen", systemImage: "arrow.clockwise")
+                }
+                .buttonStyle(.bordered)
+                .tint(accent)
+                .disabled(cleaner.state == .scanning || cleaner.state == .cleaning)
+            }
+
+            if cleaner.categories.isEmpty || cleaner.state == .scanning {
+                scanStage
+            } else {
+                HStack(spacing: 16) {
+                    cleanupHero
+                        .frame(width: 300)
+
+                    VStack(spacing: 9) {
                         ForEach($cleaner.categories) { $category in
-                            CleanupCategoryRow(category: $category) {
+                            CleanupCategoryRow(category: $category, accent: accent) {
                                 cleaner.reveal(category)
                             }
                         }
-                    }
 
-                    HStack {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("\(ClyroFormat.byteCount(cleaner.selectedBytes)) können freigegeben werden")
-                                .font(.system(size: 17, weight: .bold, design: .rounded))
-                            Text("\(cleaner.selectedItems) Elemente werden zunächst in den Papierkorb verschoben.")
-                                .font(.system(size: 12, design: .rounded))
-                                .foregroundStyle(ClyroTheme.secondaryText)
+                        HStack(spacing: 14) {
+                            VStack(alignment: .leading, spacing: 3) {
+                                Text("\(ClyroFormat.byteCount(cleaner.selectedBytes)) bereit")
+                                    .font(.system(size: 17, weight: .bold))
+                                Text("\(cleaner.selectedItems) Elemente · zunächst nur Papierkorb")
+                                    .font(.system(size: 11, weight: .medium))
+                                    .foregroundStyle(.secondary)
+                            }
+                            Spacer()
+                            Button {
+                                showConfirmation = true
+                            } label: {
+                                Label("Auswahl bereinigen", systemImage: "trash")
+                                    .frame(minWidth: 150)
+                            }
+                            .buttonStyle(.borderedProminent)
+                            .tint(accent)
+                            .disabled(cleaner.selectedItems == 0 || cleaner.state == .cleaning)
                         }
-                        Spacer()
-                        Button {
-                            showConfirmation = true
-                        } label: {
-                            Label("Auswahl bereinigen", systemImage: "trash")
-                        }
-                        .buttonStyle(.borderedProminent)
-                        .tint(ClyroTheme.mintSoft)
-                        .disabled(cleaner.selectedItems == 0 || cleaner.state == .cleaning)
+                        .clyroPanel(padding: 13)
                     }
-                    .clyroCard()
                 }
             }
-            .padding(28)
         }
+        .padding(22)
         .onAppear {
             if cleaner.categories.isEmpty { cleaner.scan() }
         }
@@ -79,10 +77,51 @@ struct CleanupView: View {
             Text("\(cleaner.selectedItems) Elemente mit ungefähr \(ClyroFormat.byteCount(cleaner.selectedBytes)) werden in den Papierkorb verschoben. Geöffnete Apps solltest du vorher schließen.")
         }
     }
+
+    private var scanStage: some View {
+        VStack(spacing: 8) {
+            ClyroArtifact(symbol: "wind", satellite: "sparkles", accent: accent, secondary: ClyroTheme.mint)
+            Text(cleaner.state == .scanning ? "Clyro prüft deinen Mac" : "Bereit für den ersten Scan")
+                .font(.system(size: 24, weight: .semibold))
+            Text(cleaner.state == .scanning
+                 ? "Caches, Protokolle, Installer und Entwicklerdaten werden lokal analysiert."
+                 : "Du siehst jedes Ergebnis, bevor Clyro etwas bewegt.")
+                .font(.system(size: 12, weight: .medium))
+                .foregroundStyle(.secondary)
+            if cleaner.state == .scanning {
+                ProgressView().tint(accent).frame(width: 240)
+            } else {
+                Button("Mac prüfen") { cleaner.scan() }
+                    .buttonStyle(.borderedProminent)
+                    .tint(accent)
+                    .controlSize(.large)
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .clyroPanel(padding: 20, cornerRadius: 20)
+    }
+
+    private var cleanupHero: some View {
+        VStack(spacing: 7) {
+            ClyroArtifact(symbol: "wind", satellite: "checkmark", accent: accent, secondary: ClyroTheme.mint)
+            Text(ClyroFormat.byteCount(cleaner.categories.reduce(0) { $0 + $1.bytes }))
+                .font(.system(size: 29, weight: .bold, design: .rounded))
+            Text("in \(cleaner.categories.reduce(0) { $0 + $1.itemCount }) gefundenen Elementen")
+                .font(.system(size: 11, weight: .medium))
+                .foregroundStyle(.secondary)
+            Text("Alles bleibt auf deinem Mac")
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundStyle(accent)
+                .padding(.top, 4)
+        }
+        .frame(maxHeight: .infinity)
+        .clyroPanel(padding: 18, cornerRadius: 20)
+    }
 }
 
 private struct CleanupCategoryRow: View {
     @Binding var category: CleanupCategory
+    let accent: Color
     let reveal: () -> Void
 
     var body: some View {
@@ -93,24 +132,24 @@ private struct CleanupCategoryRow: View {
                 .disabled(category.itemCount == 0)
 
             ZStack {
-                RoundedRectangle(cornerRadius: 11).fill(ClyroTheme.mint.opacity(0.12))
-                Image(systemName: category.kind.icon).foregroundStyle(ClyroTheme.mint)
+                RoundedRectangle(cornerRadius: 10).fill(accent.opacity(0.13))
+                Image(systemName: category.kind.icon).foregroundStyle(accent)
             }
             .frame(width: 42, height: 42)
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(category.kind.title)
-                    .font(.system(size: 15, weight: .semibold, design: .rounded))
+                    .font(.system(size: 13, weight: .semibold))
                 Text(category.kind.detail)
-                    .font(.system(size: 12, design: .rounded))
+                    .font(.system(size: 10))
                     .foregroundStyle(ClyroTheme.secondaryText)
             }
             Spacer()
             VStack(alignment: .trailing, spacing: 4) {
                 Text(ClyroFormat.byteCount(category.bytes))
-                    .font(.system(size: 15, weight: .bold, design: .rounded))
+                    .font(.system(size: 13, weight: .bold))
                 Text("\(category.itemCount) Elemente")
-                    .font(.system(size: 11, design: .rounded))
+                    .font(.system(size: 10))
                     .foregroundStyle(ClyroTheme.secondaryText)
             }
             Button(action: reveal) {
@@ -120,11 +159,12 @@ private struct CleanupCategoryRow: View {
             .foregroundStyle(.white.opacity(0.52))
             .disabled(category.paths.isEmpty)
         }
-        .padding(16)
+        .padding(.horizontal, 13)
+        .frame(minHeight: 64)
         .background(
-            RoundedRectangle(cornerRadius: 15)
+            RoundedRectangle(cornerRadius: 13)
                 .fill(ClyroTheme.card)
-                .overlay(RoundedRectangle(cornerRadius: 15).stroke(ClyroTheme.border))
+                .overlay(RoundedRectangle(cornerRadius: 13).stroke(ClyroTheme.border))
         )
     }
 }
@@ -134,6 +174,9 @@ struct StorageView: View {
     @State private var isScanning = false
     @State private var threshold: LargeFileThreshold = .hundredMB
     @State private var query = ""
+
+    private let accent = ClyroTheme.palette(for: .storage).accent
+    private let secondary = ClyroTheme.palette(for: .storage).secondary
 
     private var filteredFiles: [LargeFileItem] {
         guard !query.isEmpty else { return files }
@@ -149,12 +192,21 @@ struct StorageView: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 18) {
+        VStack(alignment: .leading, spacing: 14) {
             header
-            summary
-            fileList
+
+            HStack(spacing: 14) {
+                storageSidebar
+                    .frame(width: 238)
+
+                VStack(spacing: 12) {
+                    StorageMosaicView(files: Array(filteredFiles.prefix(3)), accent: accent, secondary: secondary)
+                        .frame(height: 172)
+                    fileList
+                }
+            }
         }
-        .padding(28)
+        .padding(22)
         .task {
             if files.isEmpty { scan() }
         }
@@ -164,10 +216,12 @@ struct StorageView: View {
     }
 
     private var header: some View {
-        HStack(alignment: .top, spacing: 16) {
-            SectionHeader(
-                "Speicherfinder",
-                subtitle: "Findet große Dateien in deinen persönlichen Ordnern, ohne etwas zu löschen."
+        HStack(spacing: 14) {
+            ClyroPageHeader(
+                title: "Speicher",
+                subtitle: "Große Dateien als klare Speicherlandschaft – ohne automatisches Löschen.",
+                icon: "square.3.layers.3d",
+                accent: accent
             )
             Spacer()
             TextField("Dateien suchen", text: $query)
@@ -185,9 +239,40 @@ struct StorageView: View {
                 Label(isScanning ? "Scanne …" : "Neu scannen", systemImage: "arrow.clockwise")
             }
             .buttonStyle(.borderedProminent)
-            .tint(ClyroTheme.mintSoft)
+            .tint(accent)
             .disabled(isScanning)
         }
+    }
+
+    private var storageSidebar: some View {
+        VStack(alignment: .leading, spacing: 13) {
+            ClyroArtifact(symbol: "archivebox.fill", satellite: "magnifyingglass", accent: accent, secondary: secondary)
+                .scaleEffect(0.74)
+                .frame(height: 126)
+                .frame(maxWidth: .infinity)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(ClyroFormat.byteCount(totalBytes))
+                    .font(.system(size: 27, weight: .bold, design: .rounded))
+                Text("\(files.count) Dateien ab \(threshold.title)")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(.secondary)
+            }
+
+            Divider().overlay(ClyroTheme.border)
+
+            StorageSideStat(title: "Größte Datei", value: files.first?.displayName ?? "–", icon: "arrow.up.left.and.arrow.down.right", color: accent)
+            StorageSideStat(title: "Geprüfte Ordner", value: "Downloads · Desktop · Dokumente · Filme", icon: "folder", color: secondary)
+
+            Spacer(minLength: 0)
+
+            Text("Clyro zeigt nur an. Öffne eine Datei gezielt im Finder, bevor du sie entfernst.")
+                .font(.system(size: 10, weight: .medium))
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .frame(maxHeight: .infinity, alignment: .topLeading)
+        .clyroPanel(padding: 16, cornerRadius: 18)
     }
 
     private var summary: some View {
@@ -235,7 +320,7 @@ struct StorageView: View {
                 VStack(spacing: 12) {
                     ProgressView()
                         .controlSize(.large)
-                        .tint(ClyroTheme.mint)
+                        .tint(accent)
                     Text("Downloads, Schreibtisch, Dokumente und Filme werden geprüft …")
                         .font(.system(size: 13, design: .rounded))
                         .foregroundStyle(ClyroTheme.secondaryText)
@@ -245,7 +330,7 @@ struct StorageView: View {
                 VStack(spacing: 11) {
                     Image(systemName: query.isEmpty ? "checkmark.circle" : "magnifyingglass")
                         .font(.system(size: 32, weight: .light))
-                        .foregroundStyle(ClyroTheme.mint)
+                        .foregroundStyle(accent)
                     Text(query.isEmpty ? "Keine großen Dateien gefunden" : "Keine passende Datei")
                         .font(.system(size: 17, weight: .bold, design: .rounded))
                     Text(query.isEmpty
@@ -273,7 +358,7 @@ struct StorageView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .clyroCard()
+        .clyroPanel(padding: 14, cornerRadius: 16)
     }
 
     private func scan() {
@@ -286,6 +371,89 @@ struct StorageView: View {
             }.value
             isScanning = false
         }
+    }
+}
+
+private struct StorageSideStat: View {
+    let title: String
+    let value: String
+    let icon: String
+    let color: Color
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 9) {
+            Image(systemName: icon)
+                .foregroundStyle(color)
+                .frame(width: 17)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.system(size: 9, weight: .semibold))
+                    .foregroundStyle(.secondary)
+                Text(value)
+                    .font(.system(size: 11, weight: .semibold))
+                    .lineLimit(2)
+            }
+        }
+    }
+}
+
+private struct StorageMosaicView: View {
+    let files: [LargeFileItem]
+    let accent: Color
+    let secondary: Color
+
+    var body: some View {
+        GeometryReader { geometry in
+            if files.isEmpty {
+                VStack(spacing: 9) {
+                    Image(systemName: "square.3.layers.3d")
+                        .font(.system(size: 28, weight: .light))
+                        .foregroundStyle(accent)
+                    Text("Nach dem Scan entsteht hier deine Speicherlandschaft.")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundStyle(.secondary)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(RoundedRectangle(cornerRadius: 16).fill(ClyroTheme.card))
+            } else {
+                HStack(spacing: 7) {
+                    StorageMosaicTile(file: files[0], color: accent.opacity(0.64))
+                        .frame(width: geometry.size.width * 0.61)
+
+                    VStack(spacing: 7) {
+                        if files.indices.contains(1) {
+                            StorageMosaicTile(file: files[1], color: secondary.opacity(0.66))
+                        }
+                        if files.indices.contains(2) {
+                            StorageMosaicTile(file: files[2], color: ClyroTheme.gold.opacity(0.62))
+                        } else {
+                            RoundedRectangle(cornerRadius: 13).fill(.white.opacity(0.045))
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+private struct StorageMosaicTile: View {
+    let file: LargeFileItem
+    let color: Color
+
+    var body: some View {
+        VStack(spacing: 5) {
+            Image(systemName: file.kind.systemImage)
+                .font(.system(size: 19, weight: .semibold))
+            Text(file.displayName)
+                .font(.system(size: 11, weight: .bold))
+                .lineLimit(1)
+            Text(ClyroFormat.byteCount(file.sizeBytes))
+                .font(.system(size: 10, weight: .semibold))
+        }
+        .padding(10)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(RoundedRectangle(cornerRadius: 13).fill(color))
+        .overlay(RoundedRectangle(cornerRadius: 13).stroke(.white.opacity(0.10)))
     }
 }
 
@@ -448,6 +616,9 @@ struct ProcessesView: View {
     @State private var selectedRole: ProcessCrewRole?
     @State private var sort: ProcessSort = .cpu
 
+    private let accent = ClyroTheme.palette(for: .processes).accent
+    private let secondary = ClyroTheme.palette(for: .processes).secondary
+
     private var filteredProcesses: [SystemProcess] {
         var values = monitor.snapshot.processes.filter { process in
             let matchesSearch = query.isEmpty
@@ -483,14 +654,16 @@ struct ProcessesView: View {
             roleFilters
             processList
         }
-        .padding(28)
+        .padding(22)
     }
 
     private var header: some View {
-        HStack(alignment: .top, spacing: 16) {
-            SectionHeader(
-                "Prozesse",
-                subtitle: "Die Clyro Crew zeigt, was auf deinem Mac arbeitet – ohne Technik-Kauderwelsch."
+        HStack(spacing: 14) {
+            ClyroPageHeader(
+                title: "Prozesse",
+                subtitle: "Die Clyro Crew erklärt laufende Prozesse ohne Technik-Kauderwelsch.",
+                icon: "waveform.path.ecg",
+                accent: accent
             )
             Spacer()
             TextField("Prozess oder Rolle suchen", text: $query)
@@ -517,12 +690,16 @@ struct ProcessesView: View {
 
     private var summary: some View {
         HStack(spacing: 14) {
+            ClyroArtifact(symbol: "gearshape.2.fill", satellite: "bolt.fill", accent: accent, secondary: secondary)
+                .scaleEffect(0.50)
+                .frame(width: 95, height: 78)
+                .clyroPanel(padding: 0, cornerRadius: 15)
             ProcessSummaryTile(
                 icon: "person.3",
                 title: "Crew an Bord",
                 value: "\(monitor.snapshot.processes.count)",
                 detail: "sichtbare Prozesse",
-                color: ClyroTheme.mint
+                color: accent
             )
             ProcessSummaryTile(
                 icon: "flame.fill",
@@ -536,7 +713,7 @@ struct ProcessesView: View {
                 title: "Meister RAM",
                 value: memoryLeader?.name ?? "–",
                 detail: memoryLeader.map { ClyroFormat.byteCount($0.memoryBytes) } ?? "Noch keine Werte",
-                color: ClyroTheme.blue
+                color: secondary
             )
         }
     }
@@ -547,7 +724,7 @@ struct ProcessesView: View {
                 CrewRoleFilter(
                     title: "Alle",
                     icon: "square.grid.2x2",
-                    color: ClyroTheme.mint,
+                    color: accent,
                     isSelected: selectedRole == nil
                 ) {
                     selectedRole = nil
@@ -616,7 +793,7 @@ struct ProcessesView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .clyroCard()
+        .clyroPanel(padding: 14, cornerRadius: 16)
     }
 }
 
@@ -702,54 +879,99 @@ struct ApplicationsView: View {
     @State private var applications: [InstalledApplication] = []
     @State private var isLoading = false
     @State private var query = ""
+    @State private var sort: ApplicationSort = .size
+
+    private let accent = ClyroTheme.palette(for: .applications).accent
+    private let secondary = ClyroTheme.palette(for: .applications).secondary
 
     private var filtered: [InstalledApplication] {
-        query.isEmpty ? applications : applications.filter { $0.name.localizedCaseInsensitiveContains(query) }
+        var values = query.isEmpty ? applications : applications.filter {
+            $0.name.localizedCaseInsensitiveContains(query)
+                || $0.bundleIdentifier.localizedCaseInsensitiveContains(query)
+        }
+        switch sort {
+        case .size: values.sort { $0.sizeBytes > $1.sizeBytes }
+        case .name: values.sort { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+        }
+        return values
+    }
+
+    private var totalBytes: Int64 {
+        applications.reduce(0) { $0 + $1.sizeBytes }
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            HStack {
-                SectionHeader("Apps", subtitle: "Installierte Apps und ihr tatsächlicher Platzbedarf.")
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(spacing: 12) {
+                ClyroPageHeader(
+                    title: "Apps",
+                    subtitle: "Installierte Programme, echte Bundle-Größen und direkte Finder-Wege.",
+                    icon: "square.grid.2x2.fill",
+                    accent: accent
+                )
                 Spacer()
+                ClyroStatPill(title: "Installiert", value: "\(applications.count) Apps", icon: "app.fill", color: accent)
+                Picker("Sortierung", selection: $sort) {
+                    ForEach(ApplicationSort.allCases) { value in
+                        Text(value.title).tag(value)
+                    }
+                }
+                .labelsHidden()
+                .pickerStyle(.segmented)
+                .frame(width: 130)
                 TextField("Apps suchen", text: $query)
                     .textFieldStyle(.roundedBorder)
-                    .frame(width: 230)
+                    .frame(width: 210)
             }
 
             if isLoading {
-                ProgressView("Apps werden analysiert …")
+                VStack(spacing: 12) {
+                    ClyroArtifact(symbol: "app.gift.fill", satellite: "magnifyingglass", accent: accent, secondary: secondary)
+                    ProgressView("Apps werden analysiert …").tint(accent)
+                }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
-                List(filtered) { app in
-                    HStack(spacing: 13) {
-                        Image(nsImage: NSWorkspace.shared.icon(forFile: app.url.path))
-                            .resizable()
-                            .frame(width: 38, height: 38)
-                        VStack(alignment: .leading, spacing: 3) {
-                            Text(app.name).font(.system(size: 14, weight: .semibold, design: .rounded))
-                            Text(app.bundleIdentifier.isEmpty ? app.url.path : app.bundleIdentifier)
-                                .font(.system(size: 11, design: .rounded))
-                                .foregroundStyle(ClyroTheme.secondaryText)
-                                .lineLimit(1)
+                HStack(spacing: 14) {
+                    VStack(spacing: 10) {
+                        ClyroArtifact(symbol: "square.grid.2x2.fill", satellite: "app.badge.checkmark", accent: accent, secondary: secondary)
+                            .scaleEffect(0.76)
+                            .frame(height: 142)
+                        Text(ClyroFormat.byteCount(totalBytes))
+                            .font(.system(size: 27, weight: .bold, design: .rounded))
+                        Text("belegen deine installierten Apps")
+                            .font(.system(size: 10, weight: .medium))
+                            .foregroundStyle(.secondary)
+                        Divider().overlay(ClyroTheme.border)
+                        if let largest = applications.first {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("GRÖSSTE APP")
+                                    .font(.system(size: 9, weight: .bold))
+                                    .foregroundStyle(accent)
+                                Text(largest.name)
+                                    .font(.system(size: 13, weight: .semibold))
+                                    .lineLimit(1)
+                                Text(ClyroFormat.byteCount(largest.sizeBytes))
+                                    .font(.system(size: 11, weight: .medium))
+                                    .foregroundStyle(.secondary)
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
                         }
                         Spacer()
-                        Text(app.version)
-                            .foregroundStyle(ClyroTheme.secondaryText)
-                            .frame(width: 90, alignment: .trailing)
-                        Text(ClyroFormat.byteCount(app.sizeBytes))
-                            .fontWeight(.semibold)
-                            .frame(width: 90, alignment: .trailing)
                     }
-                    .padding(.vertical, 5)
-                    .listRowBackground(Color.clear)
+                    .frame(width: 220)
+                    .clyroPanel(padding: 16, cornerRadius: 18)
+
+                    List(filtered) { app in
+                        ApplicationRow(app: app, accent: accent)
+                            .listRowBackground(Color.clear)
+                            .listRowSeparatorTint(.white.opacity(0.055))
+                    }
+                    .scrollContentBackground(.hidden)
+                    .clyroPanel(padding: 6, cornerRadius: 18)
                 }
-                .scrollContentBackground(.hidden)
-                .background(ClyroTheme.card)
-                .clipShape(RoundedRectangle(cornerRadius: 18))
             }
         }
-        .padding(28)
+        .padding(22)
         .task { await loadApps() }
     }
 
@@ -760,6 +982,54 @@ struct ApplicationsView: View {
             ApplicationProbe.scan()
         }.value
         isLoading = false
+    }
+}
+
+private enum ApplicationSort: String, CaseIterable, Identifiable {
+    case size
+    case name
+
+    var id: String { rawValue }
+    var title: String { self == .size ? "Größe" : "A–Z" }
+}
+
+private struct ApplicationRow: View {
+    let app: InstalledApplication
+    let accent: Color
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(nsImage: NSWorkspace.shared.icon(forFile: app.url.path))
+                .resizable()
+                .interpolation(.high)
+                .frame(width: 36, height: 36)
+            VStack(alignment: .leading, spacing: 3) {
+                Text(app.name)
+                    .font(.system(size: 13, weight: .semibold))
+                Text(app.bundleIdentifier.isEmpty ? app.url.path : app.bundleIdentifier)
+                    .font(.system(size: 9, weight: .medium, design: .monospaced))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            }
+            Spacer()
+            Text("v\(app.version)")
+                .font(.system(size: 10, weight: .medium))
+                .foregroundStyle(.secondary)
+                .frame(width: 72, alignment: .trailing)
+            Text(ClyroFormat.byteCount(app.sizeBytes))
+                .font(.system(size: 11, weight: .bold))
+                .frame(width: 76, alignment: .trailing)
+            Button {
+                NSWorkspace.shared.activateFileViewerSelecting([app.url])
+            } label: {
+                Image(systemName: "folder")
+                    .frame(width: 26, height: 26)
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(accent)
+            .help("Im Finder zeigen")
+        }
+        .padding(.vertical, 3)
     }
 }
 
@@ -798,42 +1068,135 @@ private enum ApplicationProbe {
 
 struct StartupItemsView: View {
     @State private var items: [StartupItem] = []
+    @State private var query = ""
+
+    private let accent = ClyroTheme.palette(for: .startup).accent
+    private let secondary = ClyroTheme.palette(for: .startup).secondary
+
+    private var filtered: [StartupItem] {
+        guard !query.isEmpty else { return items }
+        return items.filter {
+            $0.label.localizedCaseInsensitiveContains(query)
+                || $0.program.localizedCaseInsensitiveContains(query)
+                || $0.scope.localizedCaseInsensitiveContains(query)
+        }
+    }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            SectionHeader("Autostart", subtitle: "Hintergrunddienste sichtbar machen, bevor wir sie später sicher verwalten.")
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(spacing: 12) {
+                ClyroPageHeader(
+                    title: "Autostart",
+                    subtitle: "Hintergrunddienste nach Benutzer- und Systembereich verständlich aufgeschlüsselt.",
+                    icon: "bolt.fill",
+                    accent: accent
+                )
+                Spacer()
+                ClyroStatPill(title: "Gefunden", value: "\(items.count) Dienste", icon: "bolt.horizontal.fill", color: accent)
+                TextField("Dienst suchen", text: $query)
+                    .textFieldStyle(.roundedBorder)
+                    .frame(width: 210)
+            }
 
             if items.isEmpty {
-                EmptyStateView(icon: "bolt.slash.fill", title: "Keine Einträge gefunden", message: "In den bekannten Launch-Agent-Ordnern wurden keine Einträge erkannt.")
-            } else {
-                List(items) { item in
-                    HStack(spacing: 13) {
-                        Image(systemName: "bolt.circle.fill")
-                            .font(.system(size: 25))
-                            .foregroundStyle(ClyroTheme.gold)
-                        VStack(alignment: .leading, spacing: 3) {
-                            Text(item.label)
-                                .font(.system(size: 14, weight: .semibold, design: .rounded))
-                            Text(item.program)
-                                .font(.system(size: 11, design: .rounded))
-                                .foregroundStyle(ClyroTheme.secondaryText)
-                                .lineLimit(1)
-                        }
-                        Spacer()
-                        TagView(text: item.scope)
-                    }
-                    .padding(.vertical, 5)
-                    .listRowBackground(Color.clear)
+                VStack(spacing: 10) {
+                    ClyroArtifact(symbol: "bolt.slash.fill", satellite: "checkmark", accent: accent, secondary: secondary)
+                    Text("Keine Autostart-Dienste gefunden")
+                        .font(.system(size: 21, weight: .semibold))
+                    Text("Die bekannten Launch-Agent- und Launch-Daemon-Ordner sind leer.")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundStyle(.secondary)
                 }
-                .scrollContentBackground(.hidden)
-                .background(ClyroTheme.card)
-                .clipShape(RoundedRectangle(cornerRadius: 18))
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .clyroPanel(padding: 20, cornerRadius: 20)
+            } else {
+                HStack(spacing: 14) {
+                    VStack(spacing: 12) {
+                        ClyroArtifact(symbol: "bolt.fill", satellite: "gearshape.fill", accent: accent, secondary: secondary)
+                            .scaleEffect(0.76)
+                            .frame(height: 142)
+                        StartupScopeStat(title: "Benutzer", count: items.filter { $0.scope == "Benutzer" }.count, color: accent)
+                        StartupScopeStat(title: "Alle Benutzer", count: items.filter { $0.scope == "Alle Benutzer" }.count, color: secondary)
+                        StartupScopeStat(title: "System", count: items.filter { $0.scope == "System" }.count, color: ClyroTheme.blue)
+                        Spacer()
+                        Text("Clyro zeigt die Einträge aktuell nur an und verändert keine Systemdienste.")
+                            .font(.system(size: 10, weight: .medium))
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    .frame(width: 220)
+                    .clyroPanel(padding: 16, cornerRadius: 18)
+
+                    ScrollView {
+                        LazyVStack(spacing: 0) {
+                            ForEach(filtered) { item in
+                                StartupRow(item: item, accent: accent)
+                                if item.id != filtered.last?.id {
+                                    Divider().overlay(.white.opacity(0.05)).padding(.leading, 48)
+                                }
+                            }
+                        }
+                    }
+                    .scrollIndicators(.hidden)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                    .clyroPanel(padding: 14, cornerRadius: 18)
+                }
             }
         }
-        .padding(28)
+        .padding(22)
         .task {
             items = await Task.detached(priority: .utility) { StartupProbe.scan() }.value
         }
+    }
+}
+
+private struct StartupScopeStat: View {
+    let title: String
+    let count: Int
+    let color: Color
+
+    var body: some View {
+        HStack {
+            Circle().fill(color).frame(width: 8, height: 8)
+            Text(title).font(.system(size: 11, weight: .medium))
+            Spacer()
+            Text("\(count)").font(.system(size: 12, weight: .bold))
+        }
+        .padding(.horizontal, 11)
+        .frame(height: 34)
+        .background(RoundedRectangle(cornerRadius: 9).fill(.white.opacity(0.045)))
+    }
+}
+
+private struct StartupRow: View {
+    let item: StartupItem
+    let accent: Color
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: "bolt.fill")
+                .font(.system(size: 15, weight: .bold))
+                .foregroundStyle(.black.opacity(0.72))
+                .frame(width: 34, height: 34)
+                .background(Circle().fill(accent))
+            VStack(alignment: .leading, spacing: 3) {
+                Text(item.label)
+                    .font(.system(size: 12, weight: .semibold))
+                    .lineLimit(1)
+                Text(item.program)
+                    .font(.system(size: 9, weight: .medium, design: .monospaced))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            }
+            Spacer()
+            Text(item.scope)
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundStyle(.secondary)
+                .padding(.horizontal, 10)
+                .frame(height: 28)
+                .background(Capsule().fill(.white.opacity(0.065)))
+        }
+        .frame(height: 54)
     }
 }
 
@@ -869,43 +1232,110 @@ private enum StartupProbe {
 struct HistoryView: View {
     @EnvironmentObject private var cleaner: CleanupScanner
 
+    private let accent = ClyroTheme.palette(for: .history).accent
+    private let secondary = ClyroTheme.palette(for: .history).secondary
+
+    private var totalBytes: Int64 {
+        cleaner.history.reduce(0) { $0 + $1.bytes }
+    }
+
+    private var totalItems: Int {
+        cleaner.history.reduce(0) { $0 + $1.itemCount }
+    }
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            SectionHeader("Verlauf", subtitle: "Eine transparente Übersicht aller Bereinigungen.")
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(spacing: 12) {
+                ClyroPageHeader(
+                    title: "Verlauf",
+                    subtitle: "Jede Bereinigung bleibt nachvollziehbar – lokal gespeichert und klar datiert.",
+                    icon: "clock.arrow.circlepath",
+                    accent: accent
+                )
+                Spacer()
+                ClyroStatPill(title: "Freigegeben", value: ClyroFormat.byteCount(totalBytes), icon: "externaldrive.fill", color: accent)
+                ClyroStatPill(title: "Elemente", value: "\(totalItems)", icon: "doc.on.doc.fill", color: secondary)
+            }
+
             if cleaner.history.isEmpty {
-                EmptyStateView(icon: "clock.arrow.circlepath", title: "Noch kein Verlauf", message: "Nach deiner ersten Bereinigung erscheint hier, was wann in den Papierkorb verschoben wurde.")
-            } else {
-                List(cleaner.history) { record in
-                    HStack(spacing: 14) {
-                        ZStack {
-                            Circle().fill(ClyroTheme.mint.opacity(0.12))
-                            Image(systemName: "checkmark").foregroundStyle(ClyroTheme.mint)
-                        }
-                        .frame(width: 36, height: 36)
-                        VStack(alignment: .leading, spacing: 3) {
-                            Text(record.categories.map(\.title).joined(separator: ", "))
-                                .font(.system(size: 14, weight: .semibold, design: .rounded))
-                            Text(record.date.formatted(date: .abbreviated, time: .shortened))
-                                .font(.system(size: 11, design: .rounded))
-                                .foregroundStyle(ClyroTheme.secondaryText)
-                        }
-                        Spacer()
-                        Text("\(record.itemCount) Elemente")
-                            .foregroundStyle(ClyroTheme.secondaryText)
-                        Text(ClyroFormat.byteCount(record.bytes))
-                            .fontWeight(.bold)
-                            .frame(width: 90, alignment: .trailing)
-                    }
-                    .padding(.vertical, 5)
-                    .listRowBackground(Color.clear)
+                VStack(spacing: 10) {
+                    ClyroArtifact(symbol: "clock.arrow.circlepath", satellite: "checkmark", accent: accent, secondary: secondary)
+                    Text("Noch kein Verlauf")
+                        .font(.system(size: 22, weight: .semibold))
+                    Text("Nach der ersten Bereinigung erscheint hier eine lokale, transparente Chronik.")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundStyle(.secondary)
                 }
-                .scrollContentBackground(.hidden)
-                .background(ClyroTheme.card)
-                .clipShape(RoundedRectangle(cornerRadius: 18))
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .clyroPanel(padding: 20, cornerRadius: 20)
+            } else {
+                HStack(spacing: 14) {
+                    VStack(spacing: 10) {
+                        ClyroArtifact(symbol: "clock.fill", satellite: "checkmark", accent: accent, secondary: secondary)
+                            .scaleEffect(0.76)
+                            .frame(height: 145)
+                        Text("\(cleaner.history.count)")
+                            .font(.system(size: 29, weight: .bold, design: .rounded))
+                        Text("Bereinigungen dokumentiert")
+                            .font(.system(size: 10, weight: .medium))
+                            .foregroundStyle(.secondary)
+                        Spacer()
+                    }
+                    .frame(width: 220)
+                    .clyroPanel(padding: 16, cornerRadius: 18)
+
+                    ScrollView {
+                        LazyVStack(spacing: 0) {
+                            ForEach(Array(cleaner.history.enumerated()), id: \.element.id) { index, record in
+                                HistoryTimelineRow(record: record, isLast: index == cleaner.history.count - 1, accent: accent)
+                            }
+                        }
+                    }
+                    .scrollIndicators(.hidden)
+                    .clyroPanel(padding: 14, cornerRadius: 18)
+                }
+            }
+        }
+        .padding(22)
+    }
+}
+
+private struct HistoryTimelineRow: View {
+    let record: CleanupRecord
+    let isLast: Bool
+    let accent: Color
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 13) {
+            VStack(spacing: 0) {
+                ZStack {
+                    Circle().fill(accent)
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundStyle(.black.opacity(0.72))
+                }
+                .frame(width: 28, height: 28)
+                if !isLast {
+                    Rectangle().fill(accent.opacity(0.24)).frame(width: 2, height: 34)
+                }
+            }
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(record.categories.map(\.title).joined(separator: ", "))
+                    .font(.system(size: 12, weight: .semibold))
+                Text(record.date.formatted(date: .abbreviated, time: .shortened))
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundStyle(.secondary)
             }
             Spacer()
+            Text("\(record.itemCount) Elemente")
+                .font(.system(size: 10, weight: .medium))
+                .foregroundStyle(.secondary)
+            Text(ClyroFormat.byteCount(record.bytes))
+                .font(.system(size: 12, weight: .bold))
+                .frame(width: 86, alignment: .trailing)
         }
-        .padding(28)
+        .frame(minHeight: 62, alignment: .top)
     }
 }
 
@@ -925,7 +1355,7 @@ struct SettingsView: View {
                     .foregroundStyle(.secondary)
             }
             Section("Über Clyro") {
-                LabeledContent("Version", value: "0.7.0")
+                LabeledContent("Version", value: "1.0.0")
                 LabeledContent("Datenschutz", value: "100 % lokal")
             }
         }

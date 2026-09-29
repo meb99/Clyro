@@ -3,10 +3,22 @@ import SwiftUI
 struct RootView: View {
     @State private var selection: AppSection = .overview
 
+    private var palette: ClyroPalette {
+        ClyroTheme.palette(for: selection)
+    }
+
     var body: some View {
         ZStack {
-            ClyroTheme.appBackground
+            palette.background
                 .ignoresSafeArea()
+
+            RadialGradient(
+                colors: [palette.accent.opacity(0.14), .clear],
+                center: .top,
+                startRadius: 20,
+                endRadius: 520
+            )
+            .ignoresSafeArea()
 
             VStack(spacing: 0) {
                 topNavigation
@@ -27,9 +39,12 @@ struct RootView: View {
                     case .history: HistoryView()
                     }
                 }
+                .id(selection)
+                .transition(.opacity.combined(with: .scale(scale: 0.992)))
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
+        .animation(.easeInOut(duration: 0.32), value: selection)
     }
 
     private var topNavigation: some View {
@@ -39,10 +54,10 @@ struct RootView: View {
             } label: {
                 ZStack {
                     Circle()
-                        .fill(ClyroTheme.mint)
+                        .fill(.white)
                     Image(systemName: "circle.hexagonpath.fill")
                         .font(.system(size: 16, weight: .semibold))
-                        .foregroundStyle(.black.opacity(0.78))
+                        .foregroundStyle(palette.bottom)
                 }
                 .frame(width: 34, height: 34)
             }
@@ -57,13 +72,13 @@ struct RootView: View {
                 } label: {
                     Text(section.title)
                         .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(selection == section ? .black.opacity(0.82) : .secondary)
+                        .foregroundStyle(selection == section ? .black.opacity(0.84) : .white.opacity(0.56))
                         .padding(.horizontal, 14)
                         .frame(height: 34)
                         .background {
                             if selection == section {
                                 Capsule()
-                                    .fill(ClyroTheme.mint)
+                                    .fill(.white)
                             }
                         }
                         .contentShape(Capsule())
@@ -74,8 +89,8 @@ struct RootView: View {
             }
         }
         .padding(5)
-        .background(.regularMaterial, in: Capsule())
-        .overlay(Capsule().stroke(ClyroTheme.border, lineWidth: 0.75))
+        .background(palette.top.opacity(0.74), in: Capsule())
+        .overlay(Capsule().stroke(.white.opacity(0.10), lineWidth: 0.8))
         .shadow(color: .black.opacity(0.16), radius: 14, y: 6)
     }
 }
