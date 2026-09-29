@@ -1359,6 +1359,7 @@ private struct HistoryTimelineRow: View {
 struct SettingsView: View {
     @AppStorage("showTechnicalDetails") private var showTechnicalDetails = false
     @AppStorage("includeDeveloperData") private var includeDeveloperData = true
+    @AppStorage(CleanupWhitelist.defaultsKey) private var whitelist = ""
 
     var body: some View {
         Form {
@@ -1368,6 +1369,14 @@ struct SettingsView: View {
             Section("Scan") {
                 Toggle("Xcode-Daten berücksichtigen", isOn: $includeDeveloperData)
                 Text("Clyro verschiebt ausgewählte Dateien in den Papierkorb. Systemdateien werden nicht automatisch verändert.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            Section("Whitelist") {
+                TextEditor(text: $whitelist)
+                    .font(.system(size: 11, design: .monospaced))
+                    .frame(height: 70)
+                Text("Ein Name pro Zeile, z. B. com.spotify.client. Diese Einträge schlägt Clyro beim Bereinigen nie vor.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }

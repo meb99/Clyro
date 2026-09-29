@@ -34,10 +34,11 @@ final class CleanupScanner: ObservableObject {
         guard state != .scanning && state != .cleaning else { return }
         state = .scanning
         let includeDeveloperData = UserDefaults.standard.object(forKey: "includeDeveloperData") as? Bool ?? true
+        let whitelist = CleanupWhitelist.current()
 
         Task {
             let results = await Task.detached(priority: .utility) {
-                CleanupProbe.scan(includeDeveloperData: includeDeveloperData)
+                CleanupProbe.scan(includeDeveloperData: includeDeveloperData, whitelist: whitelist)
             }.value
             categories = results
             state = .ready
@@ -114,32 +115,66 @@ final class CleanupScanner: ObservableObject {
     }
 }
 
+enum CleanupWhitelist {
+    static let defaultsKey = "cleanupWhitelist"
+
+    /// Ein Eintrag pro Zeile: Ordner- oder Dateinamen, die Clyro nie zum Bereinigen vorschlägt.
+    static func current() -> Set<String> {
+        let raw = UserDefaults.standard.string(forKey: defaultsKey) ?? ""
+        return Set(raw.split(whereSeparator: \.isNewline)
+            .map { $0.trimmingCharacters(in: .whitespaces).lowercased() }
+            .filter { !$0.isEmpty })
+    }
+}
+
 private enum CleanupProbe {
-    static func scan(includeDeveloperData: Bool) -> [CleanupCategory] {
+    static func scan(includeDeveloperData: Bool, whitelist: Set<String>) -> [CleanupCategory] {
         let home = FileManager.default.homeDirectoryForCurrentUser
         var categories = [
-            category(.caches, root: home.appendingPathComponent("Library/Caches"), olderThanDays: 14),
-            category(.logs, root: home.appendingPathComponent("Library/Logs"), olderThanDays: 14),
+            category(.caches, root: home.appendingPathComponent("Library/Caches"), olderThanDays: 14, whitelist: whitelist),
+            category(.logs, root: home.appendingPathComponent("Library/Logs"), olderThanDays: 14, whitelist: whitelist),
             filteredCategory(
                 .installers,
                 root: home.appendingPathComponent("Downloads"),
                 olderThanDays: 30,
-                extensions: ["dmg", "pkg", "zip"]
-            )
+                extensions: ["dmg", "pkg", "zip"],
+                whitelist: whitelist
+            ),
+            packageCaches(home: home, whitelist: whitelist)
         ]
         if includeDeveloperData {
             categories.append(category(
                 .developerData,
                 root: home.appendingPathComponent("Library/Developer/Xcode/DerivedData"),
-                olderThanDays: 14
+                olderThanDays: 14,
+                whitelist: whitelist
             ))
         }
         return categories
     }
 
-    private static func category(_ kind: CleanupKind, root: URL, olderThanDays days: Int) -> CleanupCategory {
+    private static func packageCaches(home: URL, whitelist: Set<String>) -> CleanupCategory {
+        let threshold = Calendar.current.date(byAdding: .day, value: -14, to: Date()) ?? Date()
+        let roots = [".npm/_cacache", ".cache/pip", ".gradle/caches"].map { home.appendingPathComponent($0) }
+        let urls = roots.filter { url in
+            guard !whitelist.contains(url.lastPathComponent.lowercased()),
+                  FileManager.default.fileExists(atPath: url.path) else { return false }
+            let values = try? url.resourceValues(forKeys: [.contentModificationDateKey])
+            return (values?.contentModificationDate ?? .distantFuture) < threshold
+        }
+        let bytes = urls.reduce(Int64(0)) { $0 + FileProbe.sizeOfItem(at: $1) }
+        return CleanupCategory(kind: .packageCaches, bytes: bytes, itemCount: urls.count, paths: urls, isSelected: bytes > 0)
+    }
+
+    private static func category(
+        _ kind: CleanupKind,
+        root: URL,
+        olderThanDays days: Int,
+        whitelist: Set<String>
+    ) -> CleanupCategory {
         let threshold = Calendar.current.date(byAdding: .day, value: -days, to: Date()) ?? Date()
         let urls = topLevelItems(at: root).filter { url in
+            guard !whitelist.contains(url.lastPathComponent.lowercased()) else { return false }
             let values = try? url.resourceValues(forKeys: [.contentModificationDateKey, .isSymbolicLinkKey])
             return values?.isSymbolicLink != true && (values?.contentModificationDate ?? .distantFuture) < threshold
         }
@@ -151,10 +186,12 @@ private enum CleanupProbe {
         _ kind: CleanupKind,
         root: URL,
         olderThanDays days: Int,
-        extensions: Set<String>
+        extensions: Set<String>,
+        whitelist: Set<String>
     ) -> CleanupCategory {
         let threshold = Calendar.current.date(byAdding: .day, value: -days, to: Date()) ?? Date()
         let urls = topLevelItems(at: root).filter { url in
+            guard !whitelist.contains(url.lastPathComponent.lowercased()) else { return false }
             guard extensions.contains(url.pathExtension.lowercased()) else { return false }
             let values = try? url.resourceValues(forKeys: [.contentModificationDateKey, .isRegularFileKey])
             return values?.isRegularFile == true && (values?.contentModificationDate ?? .distantFuture) < threshold

@@ -40,7 +40,8 @@ Clyro deckt jetzt den kompletten Funktionsumfang klassischer Mac-Pflegewerkzeuge
 - lokaler Bereinigungsverlauf als visuelle Zeitleiste
 - neu aufgebaute Bereinigungsansicht mit sicherer Auswahl und Ergebnisübersicht
 - ruhigeres, systemnahes Kartendesign mit gezielt eingesetzten Rollen-Emojis
-- Scan nach alten App-Caches, Protokollen, Installationsdateien und Xcode-Daten
+- Scan nach alten App-Caches, Protokollen, Installationsdateien, Xcode-Daten und Paket-Caches (npm, pip, Gradle)
+- Whitelist in den Einstellungen: geschützte Einträge werden nie zum Bereinigen vorgeschlagen
 - Auswahl und Bestätigung vor jeder Bereinigung
 - Dateien werden in den Papierkorb verschoben statt endgültig gelöscht
 - Übersicht installierter Apps und ihrer Bundle-Größe
