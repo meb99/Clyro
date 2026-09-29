@@ -319,6 +319,8 @@ struct SystemSnapshot: Hashable {
 
 enum CleanupKind: String, CaseIterable, Codable, Identifiable {
     case caches
+    case systemCaches
+    case trash
     case logs
     case installers
     case developerData
@@ -329,9 +331,14 @@ enum CleanupKind: String, CaseIterable, Codable, Identifiable {
 
     var id: String { rawValue }
 
+    /// Nur der Papierkorb wird endgültig geleert; alles andere geht in den Papierkorb.
+    var isPermanent: Bool { self == .trash }
+
     var title: String {
         switch self {
         case .caches: "App-Caches"
+        case .systemCaches: "System-Caches"
+        case .trash: "Papierkorb"
         case .logs: "Protokolle"
         case .installers: "Alte Downloads"
         case .developerData: "Xcode-Daten"
@@ -344,7 +351,9 @@ enum CleanupKind: String, CaseIterable, Codable, Identifiable {
 
     var detail: String {
         switch self {
-        case .caches: "Zwischengespeicherte App-Daten, älter als 14 Tage"
+        case .caches: "Temporäre App-Dateien, älter als 14 Tage. Werden beim nächsten Start neu erstellt."
+        case .systemCaches: "Von macOS verwaltete Caches. Werden automatisch neu erstellt."
+        case .trash: "Leert den Papierkorb endgültig."
         case .logs: "Protokoll- und Absturzdateien, älter als 14 Tage"
         case .installers: "DMG-, PKG-, ISO-, XIP- und ZIP-Dateien in Downloads und auf dem Schreibtisch, älter als 30 Tage"
         case .developerData: "Alte Derived-Data-Ordner von Xcode"
@@ -358,6 +367,8 @@ enum CleanupKind: String, CaseIterable, Codable, Identifiable {
     var icon: String {
         switch self {
         case .caches: "shippingbox.fill"
+        case .systemCaches: "gearshape.fill"
+        case .trash: "trash.fill"
         case .logs: "doc.text.magnifyingglass"
         case .installers: "arrow.down.doc.fill"
         case .developerData: "hammer.fill"
@@ -369,14 +380,59 @@ enum CleanupKind: String, CaseIterable, Codable, Identifiable {
     }
 }
 
-struct CleanupCategory: Identifiable {
-    let kind: CleanupKind
-    var bytes: Int64
-    var itemCount: Int
-    var paths: [URL]
+struct CleanupItem: Identifiable, Hashable {
+    let url: URL
+    let bytes: Int64
     var isSelected: Bool
+    /// Gesperrt, solange die zugehörige App läuft (z. B. ein geöffneter Browser).
+    var isLocked = false
+    var isRecommended = true
+    var ownerName: String?
+
+    var id: URL { url }
+    var displayName: String { ownerName ?? url.lastPathComponent }
+
+    var locationName: String {
+        let home = FileManager.default.homeDirectoryForCurrentUser.path
+        return url.path.replacingOccurrences(of: home, with: "~")
+    }
+}
+
+struct CleanupCategory: Identifiable {
+    enum SelectionState {
+        case none
+        case partial
+        case all
+    }
+
+    let kind: CleanupKind
+    var items: [CleanupItem]
+    var isExpanded = false
 
     var id: CleanupKind { kind }
+    var totalBytes: Int64 { items.reduce(0) { $0 + $1.bytes } }
+    var selectedBytes: Int64 { items.filter(\.isSelected).reduce(0) { $0 + $1.bytes } }
+    var itemCount: Int { items.count }
+    var selectedCount: Int { items.filter(\.isSelected).count }
+    var selectableCount: Int { items.filter { !$0.isLocked }.count }
+    var isFullyLocked: Bool { !items.isEmpty && selectableCount == 0 }
+
+    var selectionState: SelectionState {
+        if selectedCount == 0 { return .none }
+        return selectedCount == selectableCount ? .all : .partial
+    }
+
+    mutating func setSelected(_ value: Bool) {
+        for index in items.indices where !items[index].isLocked {
+            items[index].isSelected = value
+        }
+    }
+
+    mutating func selectRecommended() {
+        for index in items.indices {
+            items[index].isSelected = items[index].isRecommended && !items[index].isLocked
+        }
+    }
 }
 
 struct CleanupRecord: Codable, Identifiable {
