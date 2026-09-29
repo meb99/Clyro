@@ -12,50 +12,17 @@ Clyro ist ein nativer, lokaler macOS-Systemmonitor und vorsichtiger Cleaner. Das
 ![Swift](https://img.shields.io/badge/Swift-5-F05138?logo=swift&logoColor=white)
 ![License](https://img.shields.io/badge/License-MIT-55D5B4)
 
-## Neu: Werkzeugkasten
+## Funktionen
 
-Clyro deckt jetzt den kompletten Funktionsumfang klassischer Mac-Pflegewerkzeuge ab (Status, Clean, Uninstall, Optimize, Analyze, Purge, Installer) – mit eigenem Look und Clyro-Artefakten:
+Clyro folgt dem Funktionsumfang und den Abläufen von [Mole](https://github.com/tw93/mole) – mit eigenem Code, eigenen Texten und eigener Optik. Die App hat genau fünf Seiten:
 
-- **Bereinigen wie im Vorbild:** Browser-Caches (Safari, Chrome, Edge, Brave, Firefox – nur bei geschlossenem Browser), pnpm- und Homebrew-Downloads, Installer auch aus Schreibtisch, iCloud-Downloads und Mail-Downloads, verwaiste Einstellungen deinstallierter Apps (nie vorausgewählt)
-- **Aktivitätsprotokoll:** jede verschobene Datei landet lokal in `~/Library/Logs/Clyro/operations.log`
-- **Status:** Akku mit Kapazität und Zyklen, Load Average bei der CPU
-- **Projekte:** eigene Suchordner in den Einstellungen, sechs Ebenen Suchtiefe, jüngere Ordner (unter 7 Tagen) nicht vorausgewählt
-- **Ordner-Explorer** (Speicher → Ordner): durch den Speicher klicken, größte Einträge zuerst, Größen live berechnet, unvollständige Größen (fehlende macOS-Freigabe) mit Schloss markiert, Papierkorb nur mit Bestätigung; persönliche Standardordner und alles außerhalb von Home sind geschützt
-- **Optimieren:** sichere Wartungsschritte (Quick-Look-Cache, DNS-Cache, Spotlight-Status, Dock/Finder neu starten) mit **Vorschau-Modus** (Trockenlauf, standardmäßig an)
-- **Projekte:** findet `node_modules`, Rust `target`, Swift `.build`, `Pods` und `dist`/`build` in deinen Projektordnern; nur Projektordner mit passender Projektdatei, ältere Ordner vorausgewählt, alles in den Papierkorb
-- **Gründlich deinstallieren:** Apps-Liste mit Papierkorb-Button, findet Rückstände in `~/Library` (Einstellungen, Caches, Container, Launch Agents …), Auswahl je Rückstand, macOS-eigene und laufende Apps sind geschützt
-- Projekt- und Deinstallations-Aktionen erscheinen im Verlauf
+- **Bereinigen:** Scan mit Live-Anzeige, danach aufklappbare Kategorien mit Auswahl je Eintrag („Alle · Keine · Empfohlene“). Kategorien: App-Caches, System-Caches, Sonstiges (Protokolle, Diagnoseberichte, App-Zustände), Entwicklerwerkzeuge, KI-Werkzeuge, Browser, Reste deinstallierter Apps, Installationsdateien, Projekt-Artefakte und Papierkorb. Laufende Apps sperren ihren Cache („… belegen Cache · Beenden“). Wie Mole wird endgültig gelöscht; in den Einstellungen lässt sich der Papierkorb wählen.
+- **Apps:** Deinstallieren mit über 40 Rückstands-Orten (Container, Gruppencontainer, Launch Agents, ByHost-Einstellungen, Plug-ins …), Updates für App-Store- und Sparkle-Apps, Autostart-Übersicht. Apple-Apps wie Xcode, Keynote oder iMovie lassen sich entfernen, Systemapps nicht.
+- **Optimieren:** 21 Wartungsaufgaben ohne Rückfrage – DNS, Spotlight, Vorschau- und Symbol-Cache, alte App-Zustände, defekte Einstellungen, Datenbanken von Mail/Safari/Nachrichten, .DS_Store-Schutz, alte Tuning-Schalter, Seitenleisten-Listen, Startobjekte, Quarantäne-Verlauf, Mitteilungs- und Nutzungsdatenbank sowie Fehlerbehebungen (Eingabeumschaltung, Spotlight, Mitteilungszentrale, Zwischenablage, Kontrollzentrum, Menüleiste, Dock). Einzelne Aufgaben lassen sich ausschließen.
+- **Analyse:** Treemap der Festplatte mit Ordnerliste, Hineinklicken, Rechtsklick für Finder oder Papierkorb.
+- **Status:** Gesundheitswert nach Moles Schwellen (CPU, Arbeitsspeicher, Speicherdruck, Festplatte, SMART, Temperatur, I/O, Akku, Laufzeit), CPU mit Kern-Balken, GPU, Arbeitsspeicher mit Druck und Swap, Akku mit Gesundheit, Zyklen und Hauptverbraucher, Festplatte, Netzwerk, CPU- und GPU-Temperatur mit 5-Minuten-Spitze, Prozessliste mit MEM, % CPU, PWR und PID.
 
-- Live-Dashboard für CPU, RAM, Speicher (mit Lese- und Schreibtempo und SMART-Status), Netzwerk, Akku, Temperatur (SMC-Sensoren mit Fallback auf den macOS-Wärmezustand) und Laufzeit
-- animierte Verlaufsdiagramme
-- verständlicher Mac-Gesundheitswert
-- Liste der Prozesse mit höchster CPU-Auslastung
-- „Clyro Crew“ mit echten App-Icons, Rollen-Emojis und verständlichen Prozessbeschreibungen
-- eigene Prozessübersicht mit Suche, Rollenfiltern sowie CPU- und RAM-Sortierung
-- Speicherfinder für große Dateien in Downloads, Schreibtisch, Dokumente und Filme
-- sichere Schnellaktionen für Downloads, Aktivitätsanzeige, Speicher und Programme
-- schlanke Navigation mit genau fünf Seiten ohne Unterreiter: Bereinigen · Apps · Optimieren · Analyse · Status
-- vollständig sichtbare Statusübersicht ohne Scrollen mit kompaktem Bento-Raster
-- platzsparende Prozessliste mit App-Icons, Rollen, RAM und CPU
-- eigene Farbstimmung und animierter Hintergrund für jeden Bereich
-- eigenes Wachstumsmotiv: ein Keimling, der mit deiner Pflege zum blühenden Wald wird (Gesundheitswert und Verlauf lassen ihn wachsen)
-- Einheitlicher Ablauf: jede Scan-Seite startet mit einem Startbildschirm, zeigt eine Scan-Animation (mindestens 2,6 s) und liefert Ergebnisse erst danach
-- Animationen: Sonne beim Scan (Photosynthese), Gießkanne beim Bereinigen, Aufblühen mit Blütenblättern im Ergebnis – alles live in SwiftUI gezeichnet
-- neue visuelle Speicherlandschaft für die größten gefundenen Dateien
-- App-Bibliothek mit Suche, Sortierung, Gesamtgröße und Finder-Verknüpfung
-- Autostart-Auswertung nach Benutzer-, gemeinsamem und Systembereich
-- lokaler Bereinigungsverlauf als visuelle Zeitleiste
-- neu aufgebaute Bereinigungsansicht mit sicherer Auswahl und Ergebnisübersicht
-- ruhigeres, systemnahes Kartendesign mit gezielt eingesetzten Rollen-Emojis
-- Bereinigen wie im Vorbild: Scan mit Live-Anzeige von Summe und aktuellem Pfad, danach aufklappbare Kategorien mit Auswahl je Datei, „Alle · Keine · Empfohlene“ und Sammelbutton; Kategorien: App-Caches, System-Caches, Protokolle, Browser, Installer, Paket-Caches, Xcode, App-Rückstände und optional der Papierkorb (endgültig, nie vorausgewählt)
-- Whitelist in den Einstellungen: geschützte Einträge werden nie zum Bereinigen vorgeschlagen
-- Auswahl und Bestätigung vor jeder Bereinigung
-- Dateien werden in den Papierkorb verschoben statt endgültig gelöscht
-- Übersicht installierter Apps und ihrer Bundle-Größe
-- Anzeige von Launch Agents und Launch Daemons
-- lokaler Bereinigungsverlauf
-- keine Cloud, kein Konto und kein Tracking
-- automatischer macOS-Buildcheck bei Änderungen auf GitHub
+Jede Löschung steht im Aktivitätsprotokoll unter `~/Library/Logs/Clyro/operations.log`. Clyro arbeitet lokal; nur die Update-Suche fragt auf Knopfdruck den App Store und die Update-Server der Hersteller.
 
 ## Starten
 
@@ -77,14 +44,15 @@ Zum lokalen Ausprobieren ist kein kostenpflichtiger Apple-Developer-Account nöt
 
 ## Sicherheitsprinzip
 
-Clyro zeigt zuerst, was gefunden wurde. Nur ausdrücklich ausgewählte Elemente werden nach einer zweiten Bestätigung in den macOS-Papierkorb verschoben. Trotzdem handelt es sich um eine frühe Entwicklungsversion: Vor Tests mit wichtigen Daten sollte ein aktuelles Backup vorhanden sein.
+Clyro zeigt zuerst, was gefunden wurde. Gelöscht wird nur, was in der Ergebnisliste ausgewählt ist. Standardmäßig sind nur wiederherstellbare Caches, Protokolle und KI-/Browser-Caches vorausgewählt; Entwicklerwerkzeuge, Reste deinstallierter Apps, Installationsdateien und der Papierkorb nicht.
 
-Die erste Version scannt nur klar definierte Benutzerordner:
+- Passwortmanager, Eingabemethoden, VPN-Clients, Sicherheits- und Verwaltungssoftware, Lizenzdaten und virtuelle Maschinen werden nie pauschal geleert.
+- Caches laufender Apps sind gesperrt, bis die App beendet ist.
+- Reste gelten nur als verwaist, wenn keine App mit dieser Bundle-ID installiert ist und sie älter als 30 Tage sind.
+- Build-Ordner mit Git-Repositories, eingecheckten Dateien oder Deployment-Schlüsseln bleiben unangetastet.
+- Eigene Schutzregeln lassen sich in der Whitelist eintragen.
 
-- `~/Library/Caches`
-- `~/Library/Logs`
-- `~/Downloads` für ältere `.dmg`, `.pkg` und `.zip`
-- `~/Library/Developer/Xcode/DerivedData`
+Clyro ist eine frühe Entwicklungsversion. Vor Tests mit wichtigen Daten sollte ein aktuelles Backup vorhanden sein.
 
 ## Architektur
 

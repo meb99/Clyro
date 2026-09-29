@@ -147,6 +147,17 @@ enum ClyroFormat {
         "\(byteCount(Int64(max(0, value))))/s"
     }
 
+    /// Wie im Vorbild: sehr kleine Raten erscheinen als „<1 KB/s“.
+    static func compactSpeed(_ value: Double) -> String {
+        value < 1024 ? "<1 KB/s" : speed(value)
+    }
+
+    static func memory(_ value: Int64) -> String {
+        let gigabytes = Double(value) / 1_073_741_824
+        if gigabytes >= 1 { return String(format: "%.1f GB", gigabytes) }
+        return String(format: "%.0f MB", Double(value) / 1_048_576)
+    }
+
     static func uptime(_ seconds: TimeInterval) -> String {
         let days = Int(seconds) / 86_400
         let hours = (Int(seconds) % 86_400) / 3_600

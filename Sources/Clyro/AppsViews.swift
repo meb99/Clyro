@@ -7,6 +7,7 @@ import SwiftUI
 struct ApplicationsView: View {
     private enum Mode {
         case uninstall
+        case updates
         case startup
     }
 
@@ -79,6 +80,7 @@ struct ApplicationsView: View {
 
             switch mode {
             case .uninstall: uninstallContent
+            case .updates: UpdatesView(accent: accent)
             case .startup: StartupItemsView()
             }
         }
@@ -98,6 +100,7 @@ struct ApplicationsView: View {
         HStack(spacing: 14) {
             HStack(spacing: 2) {
                 modeButton("Deinstallieren", .uninstall)
+                modeButton("Updates", .updates)
                 modeButton("Start", .startup)
             }
             .padding(4)
@@ -279,7 +282,7 @@ private struct AppRow: View {
                     Image(systemName: "lock.fill")
                         .foregroundStyle(.secondary)
                         .frame(width: 30)
-                        .help("Diese App gehört zu macOS und wird nicht angerührt.")
+                        .help(AppRemnantProbe.protectionReason(app) ?? "")
                 } else {
                     Image(systemName: isSelected ? "checkmark.square.fill" : "square")
                         .font(.system(size: 24))
@@ -488,7 +491,7 @@ struct BulkUninstallSheet: View {
                                     Text(plan.app.name)
                                         .font(.system(size: 14, weight: .semibold))
                                     Text(plan.isBlocked
-                                         ? (AppRemnantProbe.isProtected(plan.app) ? "Systemapp – wird übersprungen" : "läuft noch – bitte erst beenden")
+                                         ? (AppRemnantProbe.protectionReason(plan.app) ?? "läuft noch – bitte erst beenden")
                                          : "\(plan.remnants.count) Rückstände gefunden")
                                         .font(.system(size: 11, weight: .medium))
                                         .foregroundStyle(plan.isBlocked ? ClyroTheme.orange : Color.secondary)

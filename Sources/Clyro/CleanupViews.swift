@@ -17,7 +17,6 @@ struct ClyroPillButtonStyle: ButtonStyle {
 
 struct CleanupView: View {
     @EnvironmentObject private var cleaner: CleanupScanner
-    @State private var showConfirmation = false
     @State private var showHistory = false
 
     private let accent = ClyroTheme.palette(for: .cleanup).accent
@@ -50,22 +49,6 @@ struct CleanupView: View {
             }
             .frame(width: 820, height: 560)
         }
-        .alert("Ausgewählte Dateien bereinigen?", isPresented: $showConfirmation) {
-            Button("Abbrechen", role: .cancel) {}
-            Button(cleaner.selectedPermanentBytes > 0 ? "Bereinigen" : "In den Papierkorb", role: .destructive) {
-                cleaner.cleanSelected()
-            }
-        } message: {
-            Text(confirmationText)
-        }
-    }
-
-    private var confirmationText: String {
-        var text = "\(cleaner.selectedItems) Elemente mit ungefähr \(ClyroFormat.byteCount(cleaner.selectedBytes)) werden in den Papierkorb verschoben."
-        if cleaner.selectedPermanentBytes > 0 {
-            text += " Der Inhalt des Papierkorbs (\(ClyroFormat.byteCount(cleaner.selectedPermanentBytes))) wird dagegen endgültig gelöscht und lässt sich nicht zurückholen."
-        }
-        return text
     }
 
     // MARK: - Start und Scan
@@ -188,9 +171,9 @@ struct CleanupView: View {
             .font(.system(size: 14, weight: .medium))
             Spacer()
             Button {
-                showConfirmation = true
+                cleaner.cleanSelected()
             } label: {
-                Text("\(cleaner.selectedPermanentBytes > 0 ? "Bereinigen" : "In den Papierkorb") · \(ClyroFormat.byteCount(cleaner.selectedBytes))")
+                Text("\(cleaner.usesTrash ? "In den Papierkorb" : "Endgültig löschen") · \(ClyroFormat.byteCount(cleaner.selectedBytes))")
             }
             .buttonStyle(ClyroPillButtonStyle())
             .disabled(cleaner.selectedItems == 0)
