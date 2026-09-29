@@ -33,7 +33,13 @@ Dazu kommen:
 
 Jede Löschung steht im Aktivitätsprotokoll unter `~/Library/Logs/Clyro/operations.log`. Clyro arbeitet lokal; nur die Update-Suche fragt auf Knopfdruck den App Store und die Update-Server der Hersteller.
 
-## Starten
+## Herunterladen
+
+Fertige Versionen liegen unter [Releases](https://github.com/meb99/Clyro/releases) als DMG (Apple Silicon und Intel). Clyro in den Programme-Ordner ziehen und beim ersten Start **Rechtsklick → Öffnen** wählen, weil die App nicht von Apple notarisiert ist.
+
+Eine neue Version entsteht automatisch, sobald ein Tag wie `v1.1.0` gepusht wird.
+
+## Starten aus dem Quellcode
 
 Voraussetzungen:
 
@@ -95,9 +101,7 @@ Tests/ClyroTests           Tests für Schutzlisten und Löschregeln
 
 ## Nächste Schritte
 
-- Englische Oberfläche und fertige App zum Herunterladen
-- Eigenes App-Icon im Jahreszeiten-Stil
-- Kurze Einführung beim ersten Start
+- Englische Oberfläche
 
 ## Hinweis
 
