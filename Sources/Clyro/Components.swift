@@ -7,8 +7,8 @@ struct TagView: View {
 
     var body: some View {
         Text(text)
-            .font(.system(size: 12, weight: .semibold, design: .rounded))
-            .foregroundStyle(.white.opacity(0.68))
+            .font(.system(size: 12, weight: .medium))
+            .foregroundStyle(.secondary)
             .padding(.horizontal, 10)
             .padding(.vertical, 6)
             .background(Capsule().fill(.white.opacity(0.07)))
@@ -115,10 +115,10 @@ struct SectionHeader: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 5) {
             Text(title)
-                .font(.system(size: 27, weight: .bold, design: .rounded))
+                .font(.system(size: 25, weight: .semibold))
             if let subtitle {
                 Text(subtitle)
-                    .font(.system(size: 14, design: .rounded))
+                    .font(.system(size: 14))
                     .foregroundStyle(ClyroTheme.secondaryText)
             }
         }

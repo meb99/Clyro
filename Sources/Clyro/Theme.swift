@@ -1,29 +1,30 @@
+import AppKit
 import SwiftUI
 
 enum ClyroTheme {
-    static let background = Color(red: 0.055, green: 0.052, blue: 0.049)
-    static let sidebar = Color(red: 0.075, green: 0.071, blue: 0.066)
-    static let card = Color.white.opacity(0.045)
-    static let cardStrong = Color.white.opacity(0.075)
-    static let border = Color.white.opacity(0.075)
-    static let mint = Color(red: 0.31, green: 0.82, blue: 0.67)
+    static let background = Color(nsColor: .windowBackgroundColor)
+    static let sidebar = Color(nsColor: .underPageBackgroundColor)
+    static let card = Color(nsColor: .controlBackgroundColor).opacity(0.72)
+    static let cardStrong = Color(nsColor: .selectedContentBackgroundColor).opacity(0.14)
+    static let border = Color(nsColor: .separatorColor).opacity(0.55)
+    static let mint = Color(red: 0.28, green: 0.76, blue: 0.62)
     static let mintSoft = Color(red: 0.22, green: 0.62, blue: 0.51)
-    static let gold = Color(red: 0.92, green: 0.78, blue: 0.46)
-    static let orange = Color(red: 0.95, green: 0.60, blue: 0.34)
-    static let blue = Color(red: 0.38, green: 0.63, blue: 0.94)
-    static let secondaryText = Color.white.opacity(0.57)
+    static let gold = Color(red: 0.88, green: 0.72, blue: 0.38)
+    static let orange = Color(red: 0.91, green: 0.52, blue: 0.27)
+    static let blue = Color(red: 0.35, green: 0.58, blue: 0.91)
+    static let secondaryText = Color(nsColor: .secondaryLabelColor)
 }
 
 extension View {
-    func clyroCard(padding: CGFloat = 20) -> some View {
+    func clyroCard(padding: CGFloat = 18) -> some View {
         self
             .padding(padding)
             .background(
-                RoundedRectangle(cornerRadius: 19, style: .continuous)
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
                     .fill(ClyroTheme.card)
                     .overlay(
-                        RoundedRectangle(cornerRadius: 19, style: .continuous)
-                            .stroke(ClyroTheme.border, lineWidth: 1)
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .stroke(ClyroTheme.border, lineWidth: 0.75)
                     )
             )
     }

@@ -337,15 +337,15 @@ enum LargeFileKind: String, CaseIterable, Hashable {
         }
     }
 
-    var emoji: String {
+    var systemImage: String {
         switch self {
-        case .video: "🎬"
-        case .archive: "📦"
-        case .installer: "💿"
-        case .image: "🖼️"
-        case .audio: "🎵"
-        case .document: "📄"
-        case .other: "🧩"
+        case .video: "film"
+        case .archive: "archivebox"
+        case .installer: "opticaldiscdrive"
+        case .image: "photo"
+        case .audio: "waveform"
+        case .document: "doc.text"
+        case .other: "doc"
         }
     }
 

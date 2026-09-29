@@ -193,21 +193,21 @@ struct StorageView: View {
     private var summary: some View {
         HStack(spacing: 14) {
             StorageSummaryTile(
-                emoji: "🔎",
+                icon: "doc.text.magnifyingglass",
                 title: "Gefunden",
                 value: "\(files.count)",
                 detail: "ab \(threshold.title)",
                 color: ClyroTheme.mint
             )
             StorageSummaryTile(
-                emoji: "🗄️",
+                icon: "internaldrive",
                 title: "Zusammen",
                 value: ClyroFormat.byteCount(totalBytes),
                 detail: "nur eine Übersicht",
                 color: ClyroTheme.blue
             )
             StorageSummaryTile(
-                emoji: "🐘",
+                icon: "arrow.up.left.and.arrow.down.right",
                 title: "Größte Datei",
                 value: files.first?.displayName ?? "–",
                 detail: files.first.map { ClyroFormat.byteCount($0.sizeBytes) } ?? "Noch keine Werte",
@@ -243,8 +243,9 @@ struct StorageView: View {
                 .frame(maxWidth: .infinity, minHeight: 210)
             } else if filteredFiles.isEmpty {
                 VStack(spacing: 11) {
-                    Text(query.isEmpty ? "🎉" : "🔎")
-                        .font(.system(size: 36))
+                    Image(systemName: query.isEmpty ? "checkmark.circle" : "magnifyingglass")
+                        .font(.system(size: 32, weight: .light))
+                        .foregroundStyle(ClyroTheme.mint)
                     Text(query.isEmpty ? "Keine großen Dateien gefunden" : "Keine passende Datei")
                         .font(.system(size: 17, weight: .bold, design: .rounded))
                     Text(query.isEmpty
@@ -306,7 +307,7 @@ private enum LargeFileThreshold: Int64, CaseIterable, Identifiable {
 }
 
 private struct StorageSummaryTile: View {
-    let emoji: String
+    let icon: String
     let title: String
     let value: String
     let detail: String
@@ -314,10 +315,12 @@ private struct StorageSummaryTile: View {
 
     var body: some View {
         HStack(spacing: 13) {
-            Text(emoji)
-                .font(.system(size: 25))
+            Image(systemName: icon)
+                .font(.system(size: 18, weight: .medium))
+                .foregroundStyle(color)
+                .symbolRenderingMode(.hierarchical)
                 .frame(width: 46, height: 46)
-                .background(RoundedRectangle(cornerRadius: 13).fill(color.opacity(0.12)))
+                .background(RoundedRectangle(cornerRadius: 10).fill(color.opacity(0.10)))
             VStack(alignment: .leading, spacing: 3) {
                 Text(title)
                     .font(.system(size: 11, weight: .semibold, design: .rounded))
@@ -347,8 +350,9 @@ private struct LargeFileRow: View {
                     .resizable()
                     .interpolation(.high)
                     .frame(width: 42, height: 42)
-                Text(file.kind.emoji)
-                    .font(.system(size: 11))
+                Image(systemName: file.kind.systemImage)
+                    .font(.system(size: 9, weight: .semibold))
+                    .foregroundStyle(ClyroTheme.mint)
                     .frame(width: 19, height: 19)
                     .background(Circle().fill(ClyroTheme.sidebar))
                     .offset(x: 3, y: 3)
@@ -514,21 +518,21 @@ struct ProcessesView: View {
     private var summary: some View {
         HStack(spacing: 14) {
             ProcessSummaryTile(
-                emoji: "👥",
+                icon: "person.3",
                 title: "Crew an Bord",
                 value: "\(monitor.snapshot.processes.count)",
                 detail: "sichtbare Prozesse",
                 color: ClyroTheme.mint
             )
             ProcessSummaryTile(
-                emoji: "🔥",
+                icon: "flame.fill",
                 title: "Meiste CPU",
                 value: monitor.snapshot.processes.first?.name ?? "–",
                 detail: monitor.snapshot.processes.first.map { String(format: "%.1f %% CPU", $0.cpuPercent) } ?? "Noch keine Werte",
                 color: ClyroTheme.orange
             )
             ProcessSummaryTile(
-                emoji: "🧠",
+                icon: "memorychip",
                 title: "Meister RAM",
                 value: memoryLeader?.name ?? "–",
                 detail: memoryLeader.map { ClyroFormat.byteCount($0.memoryBytes) } ?? "Noch keine Werte",
@@ -542,7 +546,7 @@ struct ProcessesView: View {
             HStack(spacing: 8) {
                 CrewRoleFilter(
                     title: "Alle",
-                    emoji: "🌈",
+                    icon: "square.grid.2x2",
                     color: ClyroTheme.mint,
                     isSelected: selectedRole == nil
                 ) {
@@ -552,7 +556,7 @@ struct ProcessesView: View {
                 ForEach(ProcessCrewRole.allCases) { role in
                     CrewRoleFilter(
                         title: role.title,
-                        emoji: role.emoji,
+                        icon: role.systemImage,
                         color: role.color,
                         isSelected: selectedRole == role
                     ) {
@@ -580,7 +584,9 @@ struct ProcessesView: View {
 
             if filteredProcesses.isEmpty {
                 VStack(spacing: 10) {
-                    Text("🔎").font(.system(size: 34))
+                    Image(systemName: "magnifyingglass")
+                        .font(.system(size: 30, weight: .light))
+                        .foregroundStyle(ClyroTheme.mint)
                     Text("Keine Crew-Mitglieder gefunden")
                         .font(.system(size: 16, weight: .bold, design: .rounded))
                     Text("Ändere den Suchbegriff oder wähle eine andere Rolle.")
@@ -631,7 +637,7 @@ private enum ProcessSort: String, CaseIterable, Identifiable {
 }
 
 private struct ProcessSummaryTile: View {
-    let emoji: String
+    let icon: String
     let title: String
     let value: String
     let detail: String
@@ -639,10 +645,12 @@ private struct ProcessSummaryTile: View {
 
     var body: some View {
         HStack(spacing: 13) {
-            Text(emoji)
-                .font(.system(size: 25))
+            Image(systemName: icon)
+                .font(.system(size: 18, weight: .medium))
+                .foregroundStyle(color)
+                .symbolRenderingMode(.hierarchical)
                 .frame(width: 46, height: 46)
-                .background(RoundedRectangle(cornerRadius: 13).fill(color.opacity(0.12)))
+                .background(RoundedRectangle(cornerRadius: 10).fill(color.opacity(0.10)))
 
             VStack(alignment: .leading, spacing: 3) {
                 Text(title)
@@ -665,7 +673,7 @@ private struct ProcessSummaryTile: View {
 
 private struct CrewRoleFilter: View {
     let title: String
-    let emoji: String
+    let icon: String
     let color: Color
     let isSelected: Bool
     let action: () -> Void
@@ -673,7 +681,7 @@ private struct CrewRoleFilter: View {
     var body: some View {
         Button(action: action) {
             HStack(spacing: 6) {
-                Text(emoji)
+                Image(systemName: icon)
                 Text(title)
             }
             .font(.system(size: 12, weight: .semibold, design: .rounded))
@@ -917,7 +925,7 @@ struct SettingsView: View {
                     .foregroundStyle(.secondary)
             }
             Section("Über Clyro") {
-                LabeledContent("Version", value: "0.4.0")
+                LabeledContent("Version", value: "0.5.0")
                 LabeledContent("Datenschutz", value: "100 % lokal")
             }
         }
