@@ -63,7 +63,8 @@ struct ClyroGardenScene: View {
                     size: size,
                     time: timeline.date.timeIntervalSinceReferenceDate,
                     since: max(0, timeline.date.timeIntervalSinceReferenceDate - phaseStart),
-                    growth: displayedGrowth(at: timeline.date.timeIntervalSinceReferenceDate)
+                    growth: displayedGrowth(at: timeline.date.timeIntervalSinceReferenceDate),
+                    tint: accent
                 )
                 painter.paint(in: context)
             }
@@ -113,7 +114,11 @@ private struct SeasonPainter {
     private var branches: [Branch] = []
     private var tips: [CGPoint] = []
 
-    init(season: ClyroSeason, phase: GardenPhase, size: CGSize, time: Double, since: Double, growth: Double) {
+    /// Farbe des Seitenhintergrunds, die über die ganze Szene gelegt wird.
+    let tint: Color
+
+    init(season: ClyroSeason, phase: GardenPhase, size: CGSize, time: Double, since: Double, growth: Double, tint: Color) {
+        self.tint = tint
         self.season = season
         self.phase = phase
         self.size = size
@@ -172,13 +177,21 @@ private struct SeasonPainter {
 
     mutating func paint(in context: GraphicsContext) {
         buildTree()
-        var ctx = context
-        drawSky(in: &ctx)
-        drawGround(in: &ctx)
-        drawBranches(in: &ctx)
-        drawCanopy(in: &ctx)
-        drawWeather(in: &ctx)
-        if phase == .bloom { drawBurst(in: &ctx) }
+        let painter = self
+        var scene = context
+        // Die Szene wird als Ganzes leicht durchsichtig und nimmt die Farbe des Hintergrunds an,
+        // damit sie nicht knallig wirkt.
+        scene.opacity = 0.72
+        scene.drawLayer { ctx in
+            painter.drawSky(in: &ctx)
+            painter.drawGround(in: &ctx)
+            painter.drawBranches(in: &ctx)
+            painter.drawCanopy(in: &ctx)
+            painter.drawWeather(in: &ctx)
+            if painter.phase == .bloom { painter.drawBurst(in: &ctx) }
+            ctx.blendMode = .sourceAtop
+            ctx.fill(Path(CGRect(origin: .zero, size: painter.size)), with: .color(painter.tint.opacity(0.42)))
+        }
     }
 
     // MARK: Baum
