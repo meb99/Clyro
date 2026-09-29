@@ -185,53 +185,37 @@ struct ClyroArtifact: View {
     let satellite: String
     let accent: Color
     let secondary: Color
+    var growth: Double = 0.55
 
     @State private var floating = false
 
     var body: some View {
         ZStack {
-            Ellipse()
-                .stroke(accent.opacity(0.22), lineWidth: 1)
-                .frame(width: 154, height: 70)
-                .rotationEffect(.degrees(-18))
-            Ellipse()
-                .stroke(secondary.opacity(0.20), lineWidth: 1)
-                .frame(width: 124, height: 154)
-                .rotationEffect(.degrees(28))
-
             Circle()
-                .fill(
-                    RadialGradient(
-                        colors: [.white.opacity(0.92), accent, secondary.opacity(0.72)],
-                        center: .topLeading,
-                        startRadius: 2,
-                        endRadius: 78
-                    )
-                )
-                .frame(width: 106, height: 106)
-                .shadow(color: accent.opacity(0.34), radius: 26)
+                .fill(RadialGradient(colors: [accent.opacity(0.26), .clear], center: .center, startRadius: 4, endRadius: 92))
+                .frame(width: 184, height: 184)
+
+            ClyroGrowth(growth: growth, accent: accent)
+                .frame(width: 170, height: 150)
+                .rotationEffect(.degrees(floating ? 1.2 : -1.2), anchor: .bottom)
 
             Image(systemName: symbol)
-                .font(.system(size: 39, weight: .medium))
-                .symbolRenderingMode(.hierarchical)
-                .foregroundStyle(.black.opacity(0.66))
+                .font(.system(size: 15, weight: .bold))
+                .foregroundStyle(.black.opacity(0.7))
+                .frame(width: 34, height: 34)
+                .background(Circle().fill(.white.opacity(0.9)))
+                .offset(x: 64, y: floating ? -54 : -47)
 
             Image(systemName: satellite)
-                .font(.system(size: 15, weight: .bold))
-                .foregroundStyle(.white.opacity(0.86))
-                .frame(width: 34, height: 34)
+                .font(.system(size: 11, weight: .bold))
+                .foregroundStyle(.white.opacity(0.9))
+                .frame(width: 24, height: 24)
                 .background(Circle().fill(secondary))
-                .offset(x: 65, y: floating ? -42 : -34)
-
-            Circle()
-                .fill(.white.opacity(0.8))
-                .frame(width: 7, height: 7)
-                .offset(x: -69, y: floating ? 30 : 37)
+                .offset(x: -66, y: floating ? -22 : -29)
         }
         .frame(width: 190, height: 180)
-        .offset(y: floating ? -4 : 4)
         .onAppear {
-            withAnimation(.easeInOut(duration: 2.8).repeatForever(autoreverses: true)) {
+            withAnimation(.easeInOut(duration: 3.2).repeatForever(autoreverses: true)) {
                 floating = true
             }
         }
