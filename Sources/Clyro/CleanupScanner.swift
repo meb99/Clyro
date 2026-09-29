@@ -205,7 +205,7 @@ final class CleanupScanner: ObservableObject {
         }
 
         Task {
-            let result = await Task.detached(priority: .utility) { () -> (moved: Int, bytes: Int64, kinds: [CleanupKind]) in
+            let result = await Task.detached(priority: .utility) { () async -> (moved: Int, bytes: Int64, kinds: [CleanupKind]) in
                 var moved = 0
                 var processed = 0
                 var bytes: Int64 = 0
@@ -238,7 +238,7 @@ final class CleanupScanner: ObservableObject {
                         done: processed,
                         freed: bytes
                     ))
-                    Thread.sleep(forTimeInterval: pause)
+                    try? await Task.sleep(nanoseconds: UInt64(pause * 1_000_000_000))
                 }
                 return (moved, bytes, kinds)
             }.value
