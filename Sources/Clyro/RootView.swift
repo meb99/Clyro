@@ -2,6 +2,7 @@ import SwiftUI
 
 struct RootView: View {
     @State private var selection: AppSection = .cleanup
+    @AppStorage(OnboardingView.doneKey) private var onboardingDone = false
 
     private var palette: ClyroPalette {
         ClyroTheme.palette(for: selection)
@@ -47,6 +48,10 @@ struct RootView: View {
             }
         }
         .animation(.easeInOut(duration: 0.32), value: selection)
+        .sheet(isPresented: Binding(get: { !onboardingDone }, set: { _ in })) {
+            OnboardingView()
+                .interactiveDismissDisabled()
+        }
     }
 
     private var group: NavGroup {
