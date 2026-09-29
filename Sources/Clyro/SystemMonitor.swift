@@ -287,7 +287,9 @@ private enum SystemProbe {
             let name = String(cString: nameBuffer)
             let cpuTime = taskInfo.pti_total_user + taskInfo.pti_total_system
             let memory = Int64(clamping: taskInfo.pti_resident_size)
-            var pathBuffer = [CChar](repeating: 0, count: Int(PROC_PIDPATHINFO_MAXSIZE))
+            // proc_pidpath expects a generously sized buffer; the C macro for its
+            // maximum size is not imported consistently into every Swift SDK.
+            var pathBuffer = [CChar](repeating: 0, count: Int(MAXPATHLEN) * 4)
             let pathLength = pathBuffer.withUnsafeMutableBytes { buffer in
                 proc_pidpath(pid, buffer.baseAddress, UInt32(buffer.count))
             }
