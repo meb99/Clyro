@@ -86,8 +86,16 @@ struct MenuBarStatusView: View {
         }
         .padding(14)
         .frame(width: 380)
-        .background(ClyroTheme.palette(for: .overview).background)
-        .preferredColorScheme(.dark)
+        .foregroundStyle(.white)
+        // Das Menüleisten-Fenster folgt sonst dem hellen Systemmodus: dunkle Schrift auf dunklem Grund.
+        .environment(\.colorScheme, .dark)
+        .background(
+            LinearGradient(
+                colors: [Color(red: 0.08, green: 0.11, blue: 0.13), Color(red: 0.05, green: 0.07, blue: 0.09)],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+        )
     }
 
     // MARK: Kopf
@@ -144,7 +152,7 @@ struct MenuBarStatusView: View {
     }
 
     private var memoryCard: some View {
-        MenuCard(icon: "memorychip", title: "Speicher", accent: ClyroTheme.gold,
+        MenuCard(icon: "memorychip", title: "RAM", accent: ClyroTheme.gold,
                  badge: snapshot.memoryPressurePercent.map { "Druck \($0) %" }) {
             MenuValue(value: String(format: "%.0f", snapshot.memoryPercent), unit: "%")
             Sparkline(values: monitor.memoryHistory, color: ClyroTheme.gold)
@@ -155,7 +163,7 @@ struct MenuBarStatusView: View {
 
     private var diskCard: some View {
         let free = max(0, snapshot.diskTotalBytes - snapshot.diskUsedBytes)
-        return MenuCard(icon: "internaldrive", title: "Festplatte", accent: ClyroTheme.blue,
+        return MenuCard(icon: "internaldrive", title: "SSD", accent: ClyroTheme.blue,
                         badge: ClyroFormat.byteCount(snapshot.diskTotalBytes)) {
             MenuValue(value: ClyroFormat.byteCount(free), unit: "frei")
             MenuFillBar(fraction: snapshot.diskPercent / 100, color: ClyroTheme.blue)
@@ -174,7 +182,7 @@ struct MenuBarStatusView: View {
     }
 
     private var thermalCard: some View {
-        MenuCard(icon: "thermometer.medium", title: "Temperatur", accent: thermalColor,
+        MenuCard(icon: "thermometer.medium", title: "Temp", accent: thermalColor,
                  badge: snapshot.thermalState == .nominal ? "Normal" : "Warm") {
             if let cpu = snapshot.temperatureCelsius {
                 MenuValue(value: String(format: "%.0f", cpu), unit: "°C")
