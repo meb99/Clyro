@@ -588,6 +588,7 @@ struct BulkUninstallSheet: View {
             }
             await ScanTiming.hold(since: started)
             cleaner.record(bytes: freed, itemCount: movedItems, kinds: [.appRemnants])
+            ClyroStats.add(uninstalled: removed.count)
             phase = .done
         }
     }
