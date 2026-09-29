@@ -385,7 +385,7 @@ enum CleanupWhitelist {
 /// Eine Gruppe von Pfaden, die als ein Eintrag in einer Kategorie erscheint.
 /// Pfade sind relativ zum Home-Ordner (oder absolut) und dürfen `*` enthalten. Endet ein Pfad auf `/*`,
 /// wird der Inhalt des Ordners gelöscht, der Ordner selbst bleibt.
-private struct CleanupRule {
+struct CleanupRule {
     let kind: CleanupKind
     let label: String
     let paths: [String]
@@ -393,7 +393,7 @@ private struct CleanupRule {
     var recommended = true
 }
 
-private enum CleanupRules {
+enum CleanupRules {
     static let browsers: [CleanupRule] = [
         CleanupRule(kind: .browserCaches, label: "Safari-Cache", paths: ["Library/Caches/com.apple.Safari/*"],
                     owners: ["com.apple.Safari"]),
@@ -635,7 +635,7 @@ private enum CleanupRules {
 
 // MARK: - Schutzlisten
 
-private enum CleanupProtection {
+enum CleanupProtection {
     /// Ordnernamen in ~/Library/Caches und ~/Library/Containers, die nie pauschal geleert werden
     /// (Eingabemethoden, Passwortmanager, Sicherheit, VPN, Lizenzen, virtuelle Maschinen …).
     static let protectedPatterns: [String] = [
