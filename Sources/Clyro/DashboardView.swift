@@ -84,6 +84,7 @@ struct DashboardView: View {
                 color: ClyroTheme.blue,
                 history: normalizedNetworkHistory
             )
+            thermalTile
             quickActionsTile
         }
     }
@@ -173,6 +174,46 @@ struct DashboardView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .clyroCard(padding: 14)
+    }
+
+    private var thermalColor: Color {
+        switch snapshot.thermalState {
+        case .nominal: ClyroTheme.mint
+        case .fair: ClyroTheme.gold
+        default: ClyroTheme.orange
+        }
+    }
+
+    @ViewBuilder
+    private var thermalTile: some View {
+        if let temperature = snapshot.temperatureCelsius {
+            CompactMetricTile(
+                title: "Temperatur",
+                icon: "thermometer.medium",
+                value: String(format: "%.0f", temperature),
+                unit: "°C",
+                badge: snapshot.thermalState == .nominal ? "Kühl" : "Warm",
+                detail: snapshot.thermalText,
+                color: thermalColor,
+                history: monitor.temperatureHistory
+            )
+        } else {
+            VStack(alignment: .leading, spacing: 8) {
+                Label("Temperatur", systemImage: "thermometer.medium")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(.secondary)
+                Text(snapshot.thermalText)
+                    .font(.system(size: 17, weight: .bold, design: .rounded))
+                    .foregroundStyle(thermalColor)
+                    .lineLimit(2)
+                Spacer(minLength: 0)
+                Text("Wärmezustand laut macOS")
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundStyle(.secondary)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            .clyroCard(padding: 14)
+        }
     }
 
     @ViewBuilder

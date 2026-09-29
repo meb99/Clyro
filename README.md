@@ -21,7 +21,7 @@ Clyro deckt jetzt den kompletten Funktionsumfang klassischer Mac-Pflegewerkzeuge
 - **Gründlich deinstallieren:** Apps-Liste mit Papierkorb-Button, findet Rückstände in `~/Library` (Einstellungen, Caches, Container, Launch Agents …), Auswahl je Rückstand, macOS-eigene und laufende Apps sind geschützt
 - Projekt- und Deinstallations-Aktionen erscheinen im Verlauf
 
-- Live-Dashboard für CPU, RAM, Speicher, Netzwerk, Akku und Laufzeit
+- Live-Dashboard für CPU, RAM, Speicher, Netzwerk, Akku, Temperatur (SMC-Sensoren mit Fallback auf den macOS-Wärmezustand) und Laufzeit
 - animierte Verlaufsdiagramme
 - verständlicher Mac-Gesundheitswert
 - Liste der Prozesse mit höchster CPU-Auslastung

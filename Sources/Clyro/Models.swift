@@ -204,6 +204,8 @@ struct SystemSnapshot: Hashable {
     var uploadBytesPerSecond = 0.0
     var networkCounters = NetworkCounters()
     var battery = BatterySnapshot()
+    var temperatureCelsius: Double?
+    var thermalState: ProcessInfo.ThermalState = .nominal
     var processes: [SystemProcess] = []
     var chipName = "Mac"
     var osVersion = ProcessInfo.processInfo.operatingSystemVersionString
@@ -219,11 +221,23 @@ struct SystemSnapshot: Hashable {
         return Double(diskUsedBytes) / Double(diskTotalBytes) * 100
     }
 
+    var thermalText: String {
+        switch thermalState {
+        case .nominal: "Kühl und ruhig"
+        case .fair: "Leicht erwärmt"
+        case .serious: "Heiß – Leistung gedrosselt"
+        case .critical: "Kritisch heiß"
+        @unknown default: "Unbekannt"
+        }
+    }
+
     var healthScore: Int {
         var score = 100.0
         score -= max(0, cpuPercent - 65) * 0.25
         score -= max(0, memoryPercent - 75) * 0.35
         score -= max(0, diskPercent - 80) * 0.55
+        if let temperature = temperatureCelsius { score -= max(0, temperature - 85) * 0.8 }
+        if thermalState == .serious || thermalState == .critical { score -= 12 }
         return Int(max(1, min(100, score)).rounded())
     }
 
