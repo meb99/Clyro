@@ -1363,6 +1363,7 @@ struct SettingsView: View {
     @AppStorage("showTechnicalDetails") private var showTechnicalDetails = false
     @AppStorage("includeDeveloperData") private var includeDeveloperData = true
     @AppStorage(CleanupWhitelist.defaultsKey) private var whitelist = ""
+    @AppStorage("purgePaths") private var purgePaths = ""
 
     var body: some View {
         Form {
@@ -1380,6 +1381,26 @@ struct SettingsView: View {
                     .font(.system(size: 11, design: .monospaced))
                     .frame(height: 70)
                 Text("Ein Name pro Zeile, z. B. com.spotify.client. Diese Einträge schlägt Clyro beim Bereinigen nie vor.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            Section("Projektordner") {
+                TextEditor(text: $purgePaths)
+                    .font(.system(size: 11, design: .monospaced))
+                    .frame(height: 60)
+                Text("Zusätzliche Ordner für die Projektsuche, ein Pfad pro Zeile, z. B. ~/Arbeit.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            Section("Aktivitätsprotokoll") {
+                Button("Protokoll im Finder zeigen") {
+                    if FileManager.default.fileExists(atPath: ClyroLog.url.path) {
+                        NSWorkspace.shared.activateFileViewerSelecting([ClyroLog.url])
+                    } else {
+                        NSWorkspace.shared.open(ClyroLog.url.deletingLastPathComponent().deletingLastPathComponent())
+                    }
+                }
+                Text("Jede verschobene Datei wird lokal in ~/Library/Logs/Clyro festgehalten.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
