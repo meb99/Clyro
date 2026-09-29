@@ -1,6 +1,30 @@
 import AppKit
 import Foundation
 
+// MARK: - Aktivitätsprotokoll
+
+/// Jede Änderung an Dateien wird lokal protokolliert: ~/Library/Logs/Clyro/operations.log
+enum ClyroLog {
+    static var url: URL {
+        FileManager.default.homeDirectoryForCurrentUser
+            .appendingPathComponent("Library/Logs/Clyro/operations.log")
+    }
+
+    static func append(_ message: String) {
+        let line = "\(ISO8601DateFormatter().string(from: Date()))\t\(message)\n"
+        guard let data = line.data(using: .utf8) else { return }
+        let fm = FileManager.default
+        try? fm.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+        if let handle = try? FileHandle(forWritingTo: url) {
+            defer { try? handle.close() }
+            _ = try? handle.seekToEnd()
+            try? handle.write(contentsOf: data)
+        } else {
+            try? data.write(to: url)
+        }
+    }
+}
+
 // MARK: - Optimieren
 
 struct OptimizeTask: Identifiable, Hashable {
@@ -82,6 +106,7 @@ enum OptimizeRunner {
             return OptimizeOutcome(succeeded: false, message: "Werkzeug nicht gefunden")
         }
 
+        ClyroLog.append("Optimieren: \(task.commandLine)")
         let process = Process()
         process.executableURL = URL(fileURLWithPath: task.executable)
         process.arguments = task.arguments
@@ -175,15 +200,21 @@ enum ProjectPurgeProbe {
         "Developer", "Projects", "Projekte", "Code", "dev", "src", "repos",
         "GitHub", "Sites", "Work", "Documents", "Desktop"
     ]
-    private static let maxDepth = 5
+    private static let maxDepth = 6
 
     static func scan() -> [ProjectArtifact] {
         let home = FileManager.default.homeDirectoryForCurrentUser
         var found: [(URL, ArtifactKind)] = []
         var visited = Set<String>()
 
-        for name in rootNames {
-            let root = home.appendingPathComponent(name, isDirectory: true)
+        let custom = (UserDefaults.standard.string(forKey: "purgePaths") ?? "")
+            .split(whereSeparator: \.isNewline)
+            .map { ($0.trimmingCharacters(in: .whitespaces) as NSString).expandingTildeInPath }
+            .filter { !$0.isEmpty }
+        let roots = rootNames.map { home.appendingPathComponent($0, isDirectory: true) }
+            + custom.map { URL(fileURLWithPath: $0, isDirectory: true) }
+
+        for root in roots {
             var isDirectory: ObjCBool = false
             guard FileManager.default.fileExists(atPath: root.path, isDirectory: &isDirectory),
                   isDirectory.boolValue,
@@ -315,6 +346,7 @@ enum AppRemnantProbe {
         for (url, size) in targets {
             do {
                 try FileManager.default.trashItem(at: url, resultingItemURL: nil)
+                ClyroLog.append("Deinstallieren: \(url.path)")
                 result.movedItems += 1
                 result.bytes += max(0, size)
             } catch {

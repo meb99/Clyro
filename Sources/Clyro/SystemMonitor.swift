@@ -1,6 +1,7 @@
 import Combine
 import Darwin
 import Foundation
+import IOKit
 import IOKit.ps
 
 @MainActor
@@ -136,6 +137,8 @@ private enum SystemProbe {
         result.battery = batteryStatus()
         result.temperatureCelsius = ThermalSensors.shared.averageCPUTemperature()
         result.thermalState = ProcessInfo.processInfo.thermalState
+        var loads = [Double](repeating: 0, count: 3)
+        if getloadavg(&loads, 3) > 0 { result.loadAverage = loads[0] }
         result.processes = runningProcesses()
         result.chipName = sysctlString("machdep.cpu.brand_string")
             .replacingOccurrences(of: "Apple ", with: "")
@@ -206,6 +209,24 @@ private enum SystemProbe {
         return (max(0, total - available), total)
     }
 
+    /// Zyklen und Kapazität aus dem Akku-Eintrag der IORegistry (rein lesend).
+    private static func smartBatteryHealth() -> (cycles: Int?, percent: Int?) {
+        let service = IOServiceGetMatchingService(kIOMainPortDefault, IOServiceMatching("AppleSmartBattery"))
+        guard service != 0 else { return (nil, nil) }
+        defer { IOObjectRelease(service) }
+
+        var unmanaged: Unmanaged<CFMutableDictionary>?
+        guard IORegistryEntryCreateCFProperties(service, &unmanaged, kCFAllocatorDefault, 0) == KERN_SUCCESS,
+              let properties = unmanaged?.takeRetainedValue() as? [String: Any] else { return (nil, nil) }
+
+        let cycles = (properties["CycleCount"] as? NSNumber)?.intValue
+        let maximum = ((properties["AppleRawMaxCapacity"] ?? properties["MaxCapacity"]) as? NSNumber)?.doubleValue ?? 0
+        let design = (properties["DesignCapacity"] as? NSNumber)?.doubleValue ?? 0
+        // Ohne Rohwerte (mAh) ist MaxCapacity bereits ein Prozentwert und sagt nichts über den Verschleiß.
+        let percent = (design > 0 && maximum > 100) ? Int((maximum / design * 100).rounded()) : nil
+        return (cycles, percent.map { min(100, $0) })
+    }
+
     private static func batteryStatus() -> BatterySnapshot {
         guard let info = IOPSCopyPowerSourcesInfo()?.takeRetainedValue(),
               let rawSources = IOPSCopyPowerSourcesList(info)?.takeRetainedValue() as? [CFTypeRef] else {
@@ -232,7 +253,10 @@ private enum SystemProbe {
                 remaining = "Berechnung …"
             }
 
+            let health = smartBatteryHealth()
             return BatterySnapshot(
+                cycleCount: health.cycles,
+                healthPercent: health.percent,
                 percentage: maximum > 0 ? Int((Double(current) / Double(maximum) * 100).rounded()) : current,
                 isCharging: charging || sourceState == kIOPSACPowerValue,
                 isPresent: true,

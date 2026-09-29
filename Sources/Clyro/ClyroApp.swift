@@ -18,7 +18,7 @@ struct ClyroApp: App {
 
         Settings {
             SettingsView()
-                .frame(width: 480, height: 420)
+                .frame(width: 480, height: 620)
                 .preferredColorScheme(.dark)
         }
     }

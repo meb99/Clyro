@@ -225,6 +225,8 @@ struct CPUCounters: Hashable {
 }
 
 struct BatterySnapshot: Hashable {
+    var cycleCount: Int?
+    var healthPercent: Int?
     var percentage: Int = 0
     var isCharging = false
     var isPresent = false
@@ -248,6 +250,7 @@ struct SystemSnapshot: Hashable {
     var networkCounters = NetworkCounters()
     var battery = BatterySnapshot()
     var temperatureCelsius: Double?
+    var loadAverage: Double?
     var thermalState: ProcessInfo.ThermalState = .nominal
     var processes: [SystemProcess] = []
     var chipName = "Mac"
@@ -299,6 +302,7 @@ enum CleanupKind: String, CaseIterable, Codable, Identifiable {
     case logs
     case installers
     case developerData
+    case browserCaches
     case packageCaches
     case projectArtifacts
     case appRemnants
@@ -311,6 +315,7 @@ enum CleanupKind: String, CaseIterable, Codable, Identifiable {
         case .logs: "Protokolle"
         case .installers: "Alte Downloads"
         case .developerData: "Xcode-Daten"
+        case .browserCaches: "Browser-Caches"
         case .packageCaches: "Paket-Caches"
         case .projectArtifacts: "Projekt-Artefakte"
         case .appRemnants: "App-Rückstände"
@@ -323,7 +328,8 @@ enum CleanupKind: String, CaseIterable, Codable, Identifiable {
         case .logs: "Protokoll- und Absturzdateien, älter als 14 Tage"
         case .installers: "DMG-, PKG-, ISO-, XIP- und ZIP-Dateien in Downloads und auf dem Schreibtisch, älter als 30 Tage"
         case .developerData: "Alte Derived-Data-Ordner von Xcode"
-        case .packageCaches: "Downloads von npm, pip und Gradle, älter als 14 Tage"
+        case .browserCaches: "Safari, Chrome, Edge, Brave, Firefox – nur wenn der Browser geschlossen ist"
+        case .packageCaches: "Downloads von npm, pnpm, pip, Gradle und Homebrew, älter als 14 Tage"
         case .projectArtifacts: "Wiederherstellbare Build-Ordner wie node_modules oder .build"
         case .appRemnants: "Einstellungen, Caches und Daten deinstallierter Apps"
         }
@@ -335,6 +341,7 @@ enum CleanupKind: String, CaseIterable, Codable, Identifiable {
         case .logs: "doc.text.magnifyingglass"
         case .installers: "arrow.down.doc.fill"
         case .developerData: "hammer.fill"
+        case .browserCaches: "globe"
         case .packageCaches: "archivebox.fill"
         case .projectArtifacts: "shippingbox.and.arrow.backward.fill"
         case .appRemnants: "trash.slash.fill"
