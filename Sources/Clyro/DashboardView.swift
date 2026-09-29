@@ -545,22 +545,7 @@ private struct ClyroOrb: View {
     let score: Int
 
     var body: some View {
-        ZStack {
-            Circle()
-                .fill(
-                    RadialGradient(
-                        colors: [Color.white.opacity(0.85), ClyroTheme.mint, ClyroTheme.blue.opacity(0.55)],
-                        center: .topLeading,
-                        startRadius: 1,
-                        endRadius: 34
-                    )
-                )
-            Circle()
-                .stroke(.white.opacity(0.28), lineWidth: 1)
-            Image(systemName: score > 80 ? "checkmark" : "exclamationmark")
-                .font(.system(size: 15, weight: .bold))
-                .foregroundStyle(.black.opacity(0.65))
-        }
-        .shadow(color: ClyroTheme.mint.opacity(0.22), radius: 10)
+        ClyroGrowth(growth: ClyroGrowth.growth(forHealth: score))
+            .help("Dein Mac als \(ClyroGrowth.stageName(for: ClyroGrowth.growth(forHealth: score)))")
     }
 }

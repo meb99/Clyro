@@ -49,50 +49,64 @@ struct RootView: View {
         .animation(.easeInOut(duration: 0.32), value: selection)
     }
 
-    private var topNavigation: some View {
-        HStack(spacing: 3) {
-            Button {
-                selection = .overview
-            } label: {
-                ZStack {
-                    Circle()
-                        .fill(.white)
-                    Image(systemName: "circle.hexagonpath.fill")
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundStyle(palette.bottom)
-                }
-                .frame(width: 34, height: 34)
-            }
-            .buttonStyle(.plain)
-            .help("Clyro Übersicht")
+    private var group: NavGroup {
+        NavGroup.group(of: selection)
+    }
 
-            ForEach(AppSection.allCases) { section in
-                Button {
-                    withAnimation(.easeOut(duration: 0.16)) {
-                        selection = section
-                    }
-                } label: {
-                    Text(section.title)
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(selection == section ? .black.opacity(0.84) : .white.opacity(0.56))
-                        .padding(.horizontal, 14)
-                        .frame(height: 34)
-                        .background {
-                            if selection == section {
-                                Capsule()
-                                    .fill(.white)
-                            }
+    private var topNavigation: some View {
+        VStack(spacing: 10) {
+            HStack(spacing: 3) {
+                ForEach(NavGroup.allCases) { entry in
+                    Button {
+                        withAnimation(.easeOut(duration: 0.16)) {
+                            if group != entry { selection = entry.sections[0] }
                         }
-                        .contentShape(Capsule())
+                    } label: {
+                        Text(entry.title)
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(group == entry ? .black.opacity(0.84) : .white.opacity(0.56))
+                            .padding(.horizontal, 16)
+                            .frame(height: 34)
+                            .background {
+                                if group == entry {
+                                    Capsule().fill(.white)
+                                }
+                            }
+                            .contentShape(Capsule())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(entry.title)
+                    .accessibilityAddTraits(group == entry ? .isSelected : [])
                 }
-                .buttonStyle(.plain)
-                .accessibilityLabel(section.title)
-                .accessibilityAddTraits(selection == section ? .isSelected : [])
+            }
+            .padding(5)
+            .background(palette.top.opacity(0.74), in: Capsule())
+            .overlay(Capsule().stroke(.white.opacity(0.10), lineWidth: 0.8))
+            .shadow(color: .black.opacity(0.16), radius: 14, y: 6)
+
+            if group.sections.count > 1 {
+                HStack(spacing: 18) {
+                    ForEach(group.sections) { section in
+                        Button {
+                            withAnimation(.easeOut(duration: 0.16)) {
+                                selection = section
+                            }
+                        } label: {
+                            Text(section.tabTitle)
+                                .font(.system(size: 12, weight: selection == section ? .bold : .medium))
+                                .foregroundStyle(selection == section ? palette.accent : .white.opacity(0.5))
+                                .padding(.vertical, 2)
+                                .overlay(alignment: .bottom) {
+                                    if selection == section {
+                                        Capsule().fill(palette.accent).frame(height: 2).offset(y: 4)
+                                    }
+                                }
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .transition(.opacity)
             }
         }
-        .padding(5)
-        .background(palette.top.opacity(0.74), in: Capsule())
-        .overlay(Capsule().stroke(.white.opacity(0.10), lineWidth: 0.8))
-        .shadow(color: .black.opacity(0.16), radius: 14, y: 6)
     }
 }
