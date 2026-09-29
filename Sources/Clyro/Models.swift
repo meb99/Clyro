@@ -233,6 +233,13 @@ struct BatterySnapshot: Hashable {
     var timeRemaining = "–"
 }
 
+enum SmartStatus: Hashable {
+    case unknown
+    case verified
+    case failing
+    case unsupported
+}
+
 struct DiskCounters: Hashable {
     var readBytes: UInt64 = 0
     var writtenBytes: UInt64 = 0
@@ -254,6 +261,7 @@ struct SystemSnapshot: Hashable {
     var uploadBytesPerSecond = 0.0
     var networkCounters = NetworkCounters()
     var diskCounters = DiskCounters()
+    var smartStatus: SmartStatus = .unknown
     var diskReadBytesPerSecond = 0.0
     var diskWriteBytesPerSecond = 0.0
     var battery = BatterySnapshot()
@@ -292,6 +300,7 @@ struct SystemSnapshot: Hashable {
         score -= max(0, diskPercent - 80) * 0.55
         if let temperature = temperatureCelsius { score -= max(0, temperature - 85) * 0.8 }
         if thermalState == .serious || thermalState == .critical { score -= 12 }
+        if smartStatus == .failing { score -= 30 }
         return Int(max(1, min(100, score)).rounded())
     }
 

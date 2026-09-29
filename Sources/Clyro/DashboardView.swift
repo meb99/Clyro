@@ -135,6 +135,15 @@ struct DashboardView: View {
         .clyroCard(padding: 14)
     }
 
+    private var diskBadge: String {
+        let size = ClyroFormat.byteCount(snapshot.diskTotalBytes)
+        switch snapshot.smartStatus {
+        case .verified: return "SMART ✓ · \(size)"
+        case .failing: return "SMART ⚠ · \(size)"
+        case .unsupported, .unknown: return size
+        }
+    }
+
     private var diskTile: some View {
         VStack(alignment: .leading, spacing: 9) {
             HStack {
@@ -142,7 +151,7 @@ struct DashboardView: View {
                     .font(.system(size: 12, weight: .semibold))
                     .foregroundStyle(.secondary)
                 Spacer()
-                CompactBadge(text: ClyroFormat.byteCount(snapshot.diskTotalBytes))
+                CompactBadge(text: diskBadge)
             }
 
             HStack(alignment: .firstTextBaseline, spacing: 4) {
