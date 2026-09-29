@@ -1,0 +1,74 @@
+name: Release
+
+# Ein Tag wie v1.1.0 baut Clyro als Universal-App (Apple Silicon und Intel),
+# verpackt sie als DMG und hängt sie an ein GitHub-Release.
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build DMG
+    runs-on: macos-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Version aus dem Tag
+        id: version
+        run: |
+          if [[ "$GITHUB_REF_TYPE" == "tag" ]]; then
+            echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+          else
+            echo "version=0.0.0-dev" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build Release
+        run: |
+          set -o pipefail
+          xcodebuild \
+            -project Clyro.xcodeproj \
+            -scheme Clyro \
+            -configuration Release \
+            -destination 'generic/platform=macOS' \
+            -derivedDataPath build \
+            ARCHS="arm64 x86_64" \
+            ONLY_ACTIVE_ARCH=NO \
+            MARKETING_VERSION="${{ steps.version.outputs.version }}" \
+            CODE_SIGN_IDENTITY="-" \
+            CODE_SIGN_STYLE=Manual \
+            DEVELOPMENT_TEAM="" \
+            build
+
+      - name: DMG erstellen
+        run: |
+          APP="build/Build/Products/Release/Clyro.app"
+          codesign --force --deep --sign - "$APP"
+          mkdir -p dmg
+          cp -R "$APP" dmg/
+          ln -s /Applications dmg/Applications
+          hdiutil create -volname "Clyro" -srcfolder dmg -ov -format UDZO "Clyro-${{ steps.version.outputs.version }}.dmg"
+
+      - name: Als Artefakt ablegen
+        uses: actions/upload-artifact@v4
+        with:
+          name: Clyro-${{ steps.version.outputs.version }}
+          path: Clyro-*.dmg
+
+      - name: GitHub-Release
+        if: github.ref_type == 'tag'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: Clyro-*.dmg
+          generate_release_notes: true
+          body: |
+            Clyro als DMG für macOS 14 oder neuer (Apple Silicon und Intel).
+
+            Die App ist nicht von Apple notarisiert. Beim ersten Start deshalb im Programme-Ordner
+            **Rechtsklick auf Clyro → Öffnen** wählen und bestätigen. Danach startet sie normal.
