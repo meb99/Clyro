@@ -150,6 +150,7 @@ private enum SystemProbe {
         result.diskTotalBytes = disk.total
         result.networkCounters = networkCounters()
         result.diskCounters = diskCounters()
+        result.smartStatus = SmartProbe.status()
         result.battery = batteryStatus()
         result.temperatureCelsius = ThermalSensors.shared.averageCPUTemperature()
         result.thermalState = ProcessInfo.processInfo.thermalState
@@ -386,5 +387,42 @@ private enum SystemProbe {
         var buffer = [CChar](repeating: 0, count: size)
         guard sysctlbyname(name, &buffer, &size, nil, 0) == 0 else { return "" }
         return String(cString: buffer)
+    }
+}
+
+/// Liest den SMART-Status des Startlaufwerks über `diskutil` (rein lesend) und merkt ihn sich zehn Minuten.
+private enum SmartProbe {
+    private static let lock = NSLock()
+    private static var cached: (status: SmartStatus, date: Date)?
+
+    static func status() -> SmartStatus {
+        lock.lock()
+        defer { lock.unlock() }
+        if let cached, Date().timeIntervalSince(cached.date) < 600 { return cached.status }
+        let value = read()
+        cached = (value, Date())
+        return value
+    }
+
+    private static func read() -> SmartStatus {
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/sbin/diskutil")
+        process.arguments = ["info", "-plist", "/"]
+        let pipe = Pipe()
+        process.standardOutput = pipe
+        process.standardError = Pipe()
+        do { try process.run() } catch { return .unknown }
+        let data = pipe.fileHandleForReading.readDataToEndOfFile()
+        process.waitUntilExit()
+        guard process.terminationStatus == 0,
+              let plist = try? PropertyListSerialization.propertyList(from: data, format: nil) as? [String: Any],
+              let raw = plist["SMARTStatus"] as? String else { return .unknown }
+
+        switch raw.lowercased() {
+        case "verified": return .verified
+        case "failing": return .failing
+        case "not supported": return .unsupported
+        default: return .unknown
+        }
     }
 }
