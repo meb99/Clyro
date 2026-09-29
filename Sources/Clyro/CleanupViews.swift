@@ -187,17 +187,48 @@ struct CleanupView: View {
     // MARK: - Bereinigen und Ergebnis
 
     private var wateringStage: some View {
-        VStack(spacing: 10) {
+        VStack(spacing: 14) {
             ClyroGardenScene(phase: .watering, growth: 0.32, accent: accent, startGrowth: 0.12)
-                .frame(width: 340, height: 290)
-            Text("Clyro gießt deinen Mac frisch")
-                .font(.system(size: 26, weight: .semibold))
-            Text("Die ausgewählten Dateien werden aufgeräumt …")
-                .font(.system(size: 14, weight: .medium))
-                .foregroundStyle(.secondary)
-            ProgressView().tint(accent).frame(width: 240).padding(.top, 4)
+                .frame(width: 320, height: 260)
+            Text(ClyroFormat.byteCount(cleaner.cleanFreed))
+                .font(.system(size: 44, weight: .bold, design: .rounded))
+                .monospacedDigit()
+            HStack(spacing: 10) {
+                Circle().fill(accent).frame(width: 9, height: 9)
+                Text("\(cleaner.cleanCurrent.isEmpty ? "Wird vorbereitet" : cleaner.cleanCurrent) · \(cleaner.cleanDone) / \(cleaner.cleanTotal)")
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundStyle(.white.opacity(0.62))
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+                    .monospacedDigit()
+            }
+            .frame(maxWidth: 560)
+            .frame(height: 22)
+
+            cleanLogBox
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    /// Kleines Protokoll: die letzten Schritte laufen von unten ein, ältere verblassen nach oben.
+    private var cleanLogBox: some View {
+        let entries = Array(cleaner.cleanLog.suffix(7))
+        return VStack(alignment: .leading, spacing: 7) {
+            ForEach(Array(entries.enumerated()), id: \.element.id) { index, entry in
+                CleanLogRow(entry: entry, accent: accent)
+                    .opacity(0.25 + 0.75 * Double(index + 1) / Double(max(1, entries.count)))
+            }
+            Spacer(minLength: 0)
+        }
+        .frame(width: 560, height: 176, alignment: .bottomLeading)
+        .frame(maxWidth: 560, alignment: .leading)
+        .padding(16)
+        .background(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(ClyroTheme.card)
+                .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(ClyroTheme.border))
+        )
+        .animation(.easeOut(duration: 0.15), value: cleaner.cleanLog.count)
     }
 
     private func bloomStage(_ celebration: CleanupCelebration) -> some View {
@@ -365,5 +396,37 @@ private struct CleanupItemRow: View {
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 6)
+    }
+}
+
+private struct CleanLogRow: View {
+    let entry: CleanLogEntry
+    let accent: Color
+
+    var body: some View {
+        HStack(spacing: 10) {
+            if entry.isHeader {
+                Circle().fill(accent).frame(width: 9, height: 9).frame(width: 14)
+                Text(entry.text)
+                    .font(.system(size: 13, weight: .semibold, design: .monospaced))
+                    .foregroundStyle(accent)
+            } else {
+                Image(systemName: "sparkle")
+                    .font(.system(size: 10, weight: .bold))
+                    .foregroundStyle(accent.opacity(0.85))
+                    .frame(width: 14)
+                Text(entry.text)
+                    .font(.system(size: 13, weight: .medium, design: .monospaced))
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+                Spacer(minLength: 8)
+                if let bytes = entry.bytes {
+                    Text(ClyroFormat.byteCount(bytes))
+                        .font(.system(size: 13, weight: .medium, design: .monospaced))
+                        .foregroundStyle(.secondary)
+                }
+            }
+            if entry.isHeader { Spacer(minLength: 0) }
+        }
     }
 }

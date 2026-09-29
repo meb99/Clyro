@@ -13,6 +13,22 @@ struct BlockedApp: Hashable {
     let bundleID: String
 }
 
+/// Ein Eintrag im Protokoll, das während der Bereinigung mitläuft.
+struct CleanLogEntry: Identifiable {
+    let id = UUID()
+    let text: String
+    let bytes: Int64?
+    let isHeader: Bool
+}
+
+struct CleanEvent: Sendable {
+    let kind: CleanupKind
+    let name: String
+    let bytes: Int64
+    let done: Int
+    let freed: Int64
+}
+
 struct CleanupScanOutput {
     var categories: [CleanupCategory]
     var blockedApps: [BlockedApp]
@@ -59,7 +75,13 @@ final class CleanupScanner: ObservableObject {
     @Published private(set) var progressBytes: Int64 = 0
     @Published private(set) var progressPath = ""
     @Published private(set) var blockedApps: [BlockedApp] = []
+    @Published private(set) var cleanLog: [CleanLogEntry] = []
+    @Published private(set) var cleanFreed: Int64 = 0
+    @Published private(set) var cleanDone = 0
+    @Published private(set) var cleanTotal = 0
+    @Published private(set) var cleanCurrent = ""
 
+    private var lastLoggedKind: CleanupKind?
     private let historyKey = "clyro.cleanup.history"
 
     init() {
@@ -153,13 +175,27 @@ final class CleanupScanner: ObservableObject {
         guard !targets.isEmpty else { return }
         state = .cleaning
         let started = Date()
+        cleanLog = []
+        cleanFreed = 0
+        cleanDone = 0
+        cleanTotal = targets.count
+        cleanCurrent = ""
+        lastLoggedKind = nil
+
+        // Kurze Pausen pro Eintrag, damit man das Protokoll mitlesen kann.
+        let pause = max(0.03, min(0.12, 3.0 / Double(targets.count)))
+        let publish: @Sendable (CleanEvent) -> Void = { [weak self] event in
+            Task { @MainActor in self?.apply(event) }
+        }
 
         Task {
             let result = await Task.detached(priority: .utility) { () -> (moved: Int, bytes: Int64, kinds: [CleanupKind]) in
                 var moved = 0
+                var processed = 0
                 var bytes: Int64 = 0
                 var kinds: [CleanupKind] = []
                 for target in targets {
+                    processed += 1
                     do {
                         if target.kind.isPermanent {
                             try FileManager.default.removeItem(at: target.item.url)
@@ -171,6 +207,14 @@ final class CleanupScanner: ObservableObject {
                         moved += 1
                         bytes += max(0, target.item.bytes)
                         if !kinds.contains(target.kind) { kinds.append(target.kind) }
+                        publish(CleanEvent(
+                            kind: target.kind,
+                            name: target.item.displayName,
+                            bytes: target.item.bytes,
+                            done: processed,
+                            freed: bytes
+                        ))
+                        Thread.sleep(forTimeInterval: pause)
                     } catch {
                         continue
                     }
@@ -190,6 +234,18 @@ final class CleanupScanner: ObservableObject {
             blockedApps = []
             state = .idle
         }
+    }
+
+    private func apply(_ event: CleanEvent) {
+        if lastLoggedKind != event.kind {
+            cleanLog.append(CleanLogEntry(text: event.kind.title, bytes: nil, isHeader: true))
+            lastLoggedKind = event.kind
+        }
+        cleanLog.append(CleanLogEntry(text: event.name, bytes: event.bytes, isHeader: false))
+        if cleanLog.count > 60 { cleanLog.removeFirst(cleanLog.count - 60) }
+        cleanFreed = event.freed
+        cleanDone = event.done
+        cleanCurrent = event.name
     }
 
     func dismissCelebration() {
