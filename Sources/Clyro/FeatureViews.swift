@@ -28,7 +28,11 @@ struct CleanupView: View {
                 .disabled(cleaner.state == .scanning || cleaner.state == .cleaning)
             }
 
-            if cleaner.categories.isEmpty || cleaner.state == .scanning {
+            if let celebration = cleaner.celebration {
+                bloomStage(celebration)
+            } else if cleaner.state == .cleaning {
+                wateringStage
+            } else if cleaner.categories.isEmpty || cleaner.state == .scanning {
                 scanStage
             } else {
                 HStack(spacing: 16) {
@@ -80,7 +84,12 @@ struct CleanupView: View {
 
     private var scanStage: some View {
         VStack(spacing: 8) {
-            ClyroArtifact(symbol: "wind", satellite: "sparkles", accent: accent, secondary: ClyroTheme.mint, growth: cleaner.state == .scanning ? 0.2 : 0.1)
+            ClyroGardenScene(
+                phase: cleaner.state == .scanning ? .scanning : .idle,
+                growth: cleaner.state == .scanning ? 0.2 : 0.12,
+                accent: accent
+            )
+            .frame(width: 260, height: 220)
             Text(cleaner.state == .scanning ? "Clyro prüft deinen Mac" : "Bereit für den ersten Scan")
                 .font(.system(size: 24, weight: .semibold))
             Text(cleaner.state == .scanning
@@ -99,6 +108,44 @@ struct CleanupView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .clyroPanel(padding: 20, cornerRadius: 20)
+    }
+
+    private var wateringStage: some View {
+        VStack(spacing: 8) {
+            ClyroGardenScene(phase: .watering, growth: 0.32, accent: accent, startGrowth: 0.12)
+                .frame(width: 260, height: 220)
+            Text("Clyro gießt deinen Mac frisch")
+                .font(.system(size: 24, weight: .semibold))
+            Text("Die ausgewählten Dateien wandern in den Papierkorb …")
+                .font(.system(size: 12, weight: .medium))
+                .foregroundStyle(.secondary)
+            ProgressView().tint(accent).frame(width: 240)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .clyroPanel(padding: 20, cornerRadius: 20)
+    }
+
+    private func bloomStage(_ celebration: CleanupCelebration) -> some View {
+        VStack(spacing: 8) {
+            ClyroGardenScene(phase: .bloom, growth: 0.66, accent: accent, startGrowth: 0.32)
+                .frame(width: 260, height: 220)
+            Text("\(ClyroFormat.byteCount(celebration.bytes)) freigegeben")
+                .font(.system(size: 26, weight: .bold, design: .rounded))
+            Text("Dein Mac ist frisch gegossen – der Keimling wächst.")
+                .font(.system(size: 12, weight: .medium))
+                .foregroundStyle(.secondary)
+            Button("Weiter") { cleaner.dismissCelebration() }
+                .buttonStyle(.borderedProminent)
+                .tint(accent)
+                .controlSize(.large)
+                .padding(.top, 6)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .clyroPanel(padding: 20, cornerRadius: 20)
+        .task(id: celebration.id) {
+            try? await Task.sleep(nanoseconds: 6_000_000_000)
+            cleaner.dismissCelebration()
+        }
     }
 
     private var cleanupHero: some View {
