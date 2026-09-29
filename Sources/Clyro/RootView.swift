@@ -32,6 +32,8 @@ struct RootView: View {
                     switch selection {
                     case .overview: DashboardView()
                     case .cleanup: CleanupView()
+                    case .optimize: OptimizeView()
+                    case .projects: ProjectsView()
                     case .storage: StorageView()
                     case .processes: ProcessesView()
                     case .applications: ApplicationsView()

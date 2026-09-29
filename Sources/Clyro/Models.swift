@@ -3,6 +3,8 @@ import Foundation
 enum AppSection: String, CaseIterable, Identifiable {
     case overview
     case cleanup
+    case optimize
+    case projects
     case storage
     case processes
     case applications
@@ -15,6 +17,8 @@ enum AppSection: String, CaseIterable, Identifiable {
         switch self {
         case .overview: "Übersicht"
         case .cleanup: "Bereinigen"
+        case .optimize: "Optimieren"
+        case .projects: "Projekte"
         case .storage: "Speicher"
         case .processes: "Prozesse"
         case .applications: "Apps"
@@ -27,6 +31,8 @@ enum AppSection: String, CaseIterable, Identifiable {
         switch self {
         case .overview: "square.grid.2x2.fill"
         case .cleanup: "sparkles"
+        case .optimize: "dial.medium.fill"
+        case .projects: "shippingbox.and.arrow.backward.fill"
         case .storage: "internaldrive.fill"
         case .processes: "list.bullet.rectangle.portrait.fill"
         case .applications: "app.dashed"
@@ -236,6 +242,8 @@ enum CleanupKind: String, CaseIterable, Codable, Identifiable {
     case logs
     case installers
     case developerData
+    case projectArtifacts
+    case appRemnants
 
     var id: String { rawValue }
 
@@ -245,6 +253,8 @@ enum CleanupKind: String, CaseIterable, Codable, Identifiable {
         case .logs: "Protokolle"
         case .installers: "Alte Downloads"
         case .developerData: "Xcode-Daten"
+        case .projectArtifacts: "Projekt-Artefakte"
+        case .appRemnants: "App-Rückstände"
         }
     }
 
@@ -254,6 +264,8 @@ enum CleanupKind: String, CaseIterable, Codable, Identifiable {
         case .logs: "Protokoll- und Absturzdateien, älter als 14 Tage"
         case .installers: "DMG-, PKG- und ZIP-Dateien, älter als 30 Tage"
         case .developerData: "Alte Derived-Data-Ordner von Xcode"
+        case .projectArtifacts: "Wiederherstellbare Build-Ordner wie node_modules oder .build"
+        case .appRemnants: "Einstellungen, Caches und Daten deinstallierter Apps"
         }
     }
 
@@ -263,6 +275,8 @@ enum CleanupKind: String, CaseIterable, Codable, Identifiable {
         case .logs: "doc.text.magnifyingglass"
         case .installers: "arrow.down.doc.fill"
         case .developerData: "hammer.fill"
+        case .projectArtifacts: "shippingbox.and.arrow.backward.fill"
+        case .appRemnants: "trash.slash.fill"
         }
     }
 }

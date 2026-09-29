@@ -880,6 +880,7 @@ struct ApplicationsView: View {
     @State private var isLoading = false
     @State private var query = ""
     @State private var sort: ApplicationSort = .size
+    @State private var uninstallTarget: InstalledApplication?
 
     private let accent = ClyroTheme.palette(for: .applications).accent
     private let secondary = ClyroTheme.palette(for: .applications).secondary
@@ -905,7 +906,7 @@ struct ApplicationsView: View {
             HStack(spacing: 12) {
                 ClyroPageHeader(
                     title: "Apps",
-                    subtitle: "Installierte Programme, echte Bundle-Größen und direkte Finder-Wege.",
+                    subtitle: "Installierte Programme, echte Größen – gründlich deinstallieren mit Rückständen.",
                     icon: "square.grid.2x2.fill",
                     accent: accent
                 )
@@ -962,7 +963,9 @@ struct ApplicationsView: View {
                     .clyroPanel(padding: 16, cornerRadius: 18)
 
                     List(filtered) { app in
-                        ApplicationRow(app: app, accent: accent)
+                        ApplicationRow(app: app, accent: accent) {
+                            uninstallTarget = app
+                        }
                             .listRowBackground(Color.clear)
                             .listRowSeparatorTint(.white.opacity(0.055))
                     }
@@ -973,6 +976,11 @@ struct ApplicationsView: View {
         }
         .padding(22)
         .task { await loadApps() }
+        .sheet(item: $uninstallTarget) { target in
+            UninstallSheet(app: target, accent: accent) {
+                applications.removeAll { $0.id == target.id }
+            }
+        }
     }
 
     private func loadApps() async {
@@ -996,6 +1004,7 @@ private enum ApplicationSort: String, CaseIterable, Identifiable {
 private struct ApplicationRow: View {
     let app: InstalledApplication
     let accent: Color
+    let onUninstall: () -> Void
 
     var body: some View {
         HStack(spacing: 12) {
@@ -1028,6 +1037,14 @@ private struct ApplicationRow: View {
             .buttonStyle(.plain)
             .foregroundStyle(accent)
             .help("Im Finder zeigen")
+            Button(action: onUninstall) {
+                Image(systemName: "trash")
+                    .frame(width: 26, height: 26)
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(.white.opacity(0.52))
+            .disabled(AppRemnantProbe.isProtected(app))
+            .help("Deinstallieren und Rückstände finden")
         }
         .padding(.vertical, 3)
     }

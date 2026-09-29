@@ -87,6 +87,16 @@ final class CleanupScanner: ObservableObject {
         }
     }
 
+    func record(bytes: Int64, itemCount: Int, kinds: [CleanupKind]) {
+        guard itemCount > 0 else { return }
+        history.insert(
+            CleanupRecord(id: UUID(), date: Date(), bytes: bytes, itemCount: itemCount, categories: kinds),
+            at: 0
+        )
+        history = Array(history.prefix(50))
+        saveHistory()
+    }
+
     func reveal(_ category: CleanupCategory) {
         guard let first = category.paths.first else { return }
         NSWorkspace.shared.activateFileViewerSelecting([first])
