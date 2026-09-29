@@ -79,7 +79,7 @@ final class SystemMonitor: ObservableObject {
             }
 
             let allProcessTimes = Dictionary(uniqueKeysWithValues: next.processes.map { ($0.id, $0.cpuTicks) })
-            next.processes = Array(next.processes.prefix(10))
+            next.processes = Array(next.processes.prefix(60))
             previousCPU = next.cpuCounters
             previousNetwork = next.networkCounters
             previousProcessTimes = allProcessTimes

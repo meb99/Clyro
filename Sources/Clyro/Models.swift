@@ -3,6 +3,7 @@ import Foundation
 enum AppSection: String, CaseIterable, Identifiable {
     case overview
     case cleanup
+    case processes
     case applications
     case startup
     case history
@@ -13,6 +14,7 @@ enum AppSection: String, CaseIterable, Identifiable {
         switch self {
         case .overview: "Übersicht"
         case .cleanup: "Bereinigen"
+        case .processes: "Prozesse"
         case .applications: "Apps"
         case .startup: "Autostart"
         case .history: "Verlauf"
@@ -23,6 +25,7 @@ enum AppSection: String, CaseIterable, Identifiable {
         switch self {
         case .overview: "square.grid.2x2.fill"
         case .cleanup: "sparkles"
+        case .processes: "list.bullet.rectangle.portrait.fill"
         case .applications: "app.dashed"
         case .startup: "bolt.fill"
         case .history: "clock.arrow.circlepath"
@@ -47,7 +50,7 @@ struct SystemProcess: Identifiable, Hashable {
     }
 }
 
-enum ProcessCrewRole: String, Hashable {
+enum ProcessCrewRole: String, CaseIterable, Identifiable, Hashable {
     case navigator
     case messenger
     case studio
@@ -57,6 +60,8 @@ enum ProcessCrewRole: String, Hashable {
     case guard
     case engineRoom
     case helper
+
+    var id: String { rawValue }
 
     var title: String {
         switch self {

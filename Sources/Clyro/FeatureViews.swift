@@ -129,6 +129,259 @@ private struct CleanupCategoryRow: View {
     }
 }
 
+struct ProcessesView: View {
+    @EnvironmentObject private var monitor: SystemMonitor
+    @AppStorage("showTechnicalDetails") private var showTechnicalDetails = false
+    @State private var query = ""
+    @State private var selectedRole: ProcessCrewRole?
+    @State private var sort: ProcessSort = .cpu
+
+    private var filteredProcesses: [SystemProcess] {
+        var values = monitor.snapshot.processes.filter { process in
+            let matchesSearch = query.isEmpty
+                || process.name.localizedCaseInsensitiveContains(query)
+                || process.crewRole.title.localizedCaseInsensitiveContains(query)
+                || process.explanation.localizedCaseInsensitiveContains(query)
+            let matchesRole = selectedRole == nil || process.crewRole == selectedRole
+            return matchesSearch && matchesRole
+        }
+
+        switch sort {
+        case .cpu:
+            values.sort {
+                if abs($0.cpuPercent - $1.cpuPercent) > 0.05 { return $0.cpuPercent > $1.cpuPercent }
+                return $0.memoryBytes > $1.memoryBytes
+            }
+        case .memory:
+            values.sort { $0.memoryBytes > $1.memoryBytes }
+        case .name:
+            values.sort { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+        }
+        return values
+    }
+
+    private var memoryLeader: SystemProcess? {
+        monitor.snapshot.processes.max { $0.memoryBytes < $1.memoryBytes }
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            header
+            summary
+            roleFilters
+            processList
+        }
+        .padding(28)
+    }
+
+    private var header: some View {
+        HStack(alignment: .top, spacing: 16) {
+            SectionHeader(
+                "Prozesse",
+                subtitle: "Die Clyro Crew zeigt, was auf deinem Mac arbeitet – ohne Technik-Kauderwelsch."
+            )
+            Spacer()
+            TextField("Prozess oder Rolle suchen", text: $query)
+                .textFieldStyle(.roundedBorder)
+                .frame(width: 230)
+            Picker("Sortierung", selection: $sort) {
+                ForEach(ProcessSort.allCases) { option in
+                    Text(option.title).tag(option)
+                }
+            }
+            .labelsHidden()
+            .pickerStyle(.segmented)
+            .frame(width: 210)
+            Button {
+                monitor.refresh()
+            } label: {
+                Image(systemName: "arrow.clockwise")
+                    .frame(width: 28, height: 28)
+            }
+            .buttonStyle(.bordered)
+            .disabled(monitor.isRefreshing)
+        }
+    }
+
+    private var summary: some View {
+        HStack(spacing: 14) {
+            ProcessSummaryTile(
+                emoji: "👥",
+                title: "Crew an Bord",
+                value: "\(monitor.snapshot.processes.count)",
+                detail: "sichtbare Prozesse",
+                color: ClyroTheme.mint
+            )
+            ProcessSummaryTile(
+                emoji: "🔥",
+                title: "Meiste CPU",
+                value: monitor.snapshot.processes.first?.name ?? "–",
+                detail: monitor.snapshot.processes.first.map { String(format: "%.1f %% CPU", $0.cpuPercent) } ?? "Noch keine Werte",
+                color: ClyroTheme.orange
+            )
+            ProcessSummaryTile(
+                emoji: "🧠",
+                title: "Meister RAM",
+                value: memoryLeader?.name ?? "–",
+                detail: memoryLeader.map { ClyroFormat.byteCount($0.memoryBytes) } ?? "Noch keine Werte",
+                color: ClyroTheme.blue
+            )
+        }
+    }
+
+    private var roleFilters: some View {
+        ScrollView(.horizontal) {
+            HStack(spacing: 8) {
+                CrewRoleFilter(
+                    title: "Alle",
+                    emoji: "🌈",
+                    color: ClyroTheme.mint,
+                    isSelected: selectedRole == nil
+                ) {
+                    selectedRole = nil
+                }
+
+                ForEach(ProcessCrewRole.allCases) { role in
+                    CrewRoleFilter(
+                        title: role.title,
+                        emoji: role.emoji,
+                        color: role.color,
+                        isSelected: selectedRole == role
+                    ) {
+                        selectedRole = role
+                    }
+                }
+            }
+        }
+        .scrollIndicators(.hidden)
+    }
+
+    private var processList: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack {
+                Text("Name und Aufgabe")
+                Spacer()
+                Text("RAM").frame(width: 86, alignment: .trailing)
+                Text("CPU").frame(width: 72, alignment: .trailing)
+            }
+            .font(.system(size: 11, weight: .semibold, design: .rounded))
+            .foregroundStyle(ClyroTheme.secondaryText)
+            .padding(.bottom, 12)
+
+            Divider().overlay(.white.opacity(0.055))
+
+            if filteredProcesses.isEmpty {
+                VStack(spacing: 10) {
+                    Text("🔎").font(.system(size: 34))
+                    Text("Keine Crew-Mitglieder gefunden")
+                        .font(.system(size: 16, weight: .bold, design: .rounded))
+                    Text("Ändere den Suchbegriff oder wähle eine andere Rolle.")
+                        .font(.system(size: 12, design: .rounded))
+                        .foregroundStyle(ClyroTheme.secondaryText)
+                }
+                .frame(maxWidth: .infinity, minHeight: 180)
+            } else {
+                ScrollView {
+                    LazyVStack(spacing: 0) {
+                        ForEach(filteredProcesses) { process in
+                            ProcessCrewRow(
+                                process: process,
+                                showsTechnicalDetails: showTechnicalDetails
+                            )
+                            .padding(.vertical, 7)
+
+                            if process.id != filteredProcesses.last?.id {
+                                Divider()
+                                    .overlay(.white.opacity(0.045))
+                                    .padding(.leading, 64)
+                            }
+                        }
+                    }
+                }
+                .scrollIndicators(.hidden)
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .clyroCard()
+    }
+}
+
+private enum ProcessSort: String, CaseIterable, Identifiable {
+    case cpu
+    case memory
+    case name
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .cpu: "CPU"
+        case .memory: "RAM"
+        case .name: "A–Z"
+        }
+    }
+}
+
+private struct ProcessSummaryTile: View {
+    let emoji: String
+    let title: String
+    let value: String
+    let detail: String
+    let color: Color
+
+    var body: some View {
+        HStack(spacing: 13) {
+            Text(emoji)
+                .font(.system(size: 25))
+                .frame(width: 46, height: 46)
+                .background(RoundedRectangle(cornerRadius: 13).fill(color.opacity(0.12)))
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text(title)
+                    .font(.system(size: 11, weight: .semibold, design: .rounded))
+                    .foregroundStyle(ClyroTheme.secondaryText)
+                Text(value)
+                    .font(.system(size: 15, weight: .bold, design: .rounded))
+                    .lineLimit(1)
+                Text(detail)
+                    .font(.system(size: 10, weight: .medium, design: .rounded))
+                    .foregroundStyle(color)
+                    .lineLimit(1)
+            }
+            Spacer(minLength: 0)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .clyroCard(padding: 15)
+    }
+}
+
+private struct CrewRoleFilter: View {
+    let title: String
+    let emoji: String
+    let color: Color
+    let isSelected: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 6) {
+                Text(emoji)
+                Text(title)
+            }
+            .font(.system(size: 12, weight: .semibold, design: .rounded))
+            .foregroundStyle(isSelected ? .white : .white.opacity(0.62))
+            .padding(.horizontal, 11)
+            .frame(height: 32)
+            .background(
+                Capsule()
+                    .fill(isSelected ? color.opacity(0.20) : .white.opacity(0.045))
+                    .overlay(Capsule().stroke(isSelected ? color.opacity(0.45) : ClyroTheme.border))
+            )
+        }
+        .buttonStyle(.plain)
+    }
+}
+
 struct ApplicationsView: View {
     @State private var applications: [InstalledApplication] = []
     @State private var isLoading = false
@@ -356,7 +609,7 @@ struct SettingsView: View {
                     .foregroundStyle(.secondary)
             }
             Section("Über Clyro") {
-                LabeledContent("Version", value: "0.2.0")
+                LabeledContent("Version", value: "0.3.0")
                 LabeledContent("Datenschutz", value: "100 % lokal")
             }
         }
