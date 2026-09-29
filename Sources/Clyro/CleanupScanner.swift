@@ -2,6 +2,11 @@ import AppKit
 import Combine
 import Foundation
 
+struct CleanupCelebration: Identifiable {
+    let id = UUID()
+    let bytes: Int64
+}
+
 @MainActor
 final class CleanupScanner: ObservableObject {
     enum State: Equatable {
@@ -15,6 +20,7 @@ final class CleanupScanner: ObservableObject {
     @Published var categories: [CleanupCategory] = []
     @Published private(set) var state: State = .idle
     @Published private(set) var history: [CleanupRecord] = []
+    @Published private(set) var celebration: CleanupCelebration?
 
     private let historyKey = "clyro.cleanup.history"
 
@@ -50,6 +56,7 @@ final class CleanupScanner: ObservableObject {
         let paths = selected.flatMap(\.paths)
         guard !paths.isEmpty else { return }
         state = .cleaning
+        let started = Date()
 
         Task {
             let result = await Task.detached(priority: .utility) {
@@ -71,6 +78,12 @@ final class CleanupScanner: ObservableObject {
                 return (moved, bytes)
             }.value
 
+            // Die Gießanimation soll auch bei schnellen Bereinigungen sichtbar bleiben.
+            let elapsed = Date().timeIntervalSince(started)
+            if elapsed < 2.6 {
+                try? await Task.sleep(nanoseconds: UInt64((2.6 - elapsed) * 1_000_000_000))
+            }
+
             if result.0 > 0 {
                 let estimatedBytes = result.1 > 0 ? result.1 : selected.reduce(0) { $0 + $1.bytes }
                 let record = CleanupRecord(
@@ -83,10 +96,15 @@ final class CleanupScanner: ObservableObject {
                 history.insert(record, at: 0)
                 history = Array(history.prefix(50))
                 saveHistory()
+                celebration = CleanupCelebration(bytes: estimatedBytes)
             }
             state = .idle
             scan()
         }
+    }
+
+    func dismissCelebration() {
+        celebration = nil
     }
 
     func record(bytes: Int64, itemCount: Int, kinds: [CleanupKind]) {

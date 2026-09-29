@@ -38,9 +38,12 @@ struct OptimizeView: View {
 
             HStack(spacing: 16) {
                 VStack(spacing: 10) {
-                    ClyroArtifact(symbol: "dial.medium.fill", satellite: "bolt.fill", accent: accent, secondary: palette.secondary)
-                        .scaleEffect(0.84)
-                        .frame(height: 158)
+                    ClyroGardenScene(
+                        phase: isRunning ? .watering : .idle,
+                        growth: isRunning ? 0.34 : 0.2,
+                        accent: accent
+                    )
+                    .frame(width: 220, height: 190)
                     Text(dryRun ? "Vorschau aktiv" : "Live-Modus")
                         .font(.system(size: 22, weight: .bold, design: .rounded))
                     Text(dryRun
@@ -101,12 +104,18 @@ struct OptimizeView: View {
         isRunning = true
         outcomes = [:]
 
+        let started = Date()
+
         Task {
             for task in tasks {
                 let outcome = await Task.detached(priority: .utility) {
                     OptimizeRunner.run(task, dryRun: preview)
                 }.value
                 outcomes[task.id] = outcome
+            }
+            let elapsed = Date().timeIntervalSince(started)
+            if elapsed < 2.2 {
+                try? await Task.sleep(nanoseconds: UInt64((2.2 - elapsed) * 1_000_000_000))
             }
             isRunning = false
         }
@@ -179,6 +188,7 @@ struct ProjectsView: View {
     @State private var artifacts: [ProjectArtifact] = []
     @State private var selected: Set<URL> = []
     @State private var isScanning = false
+    @State private var isPurging = false
     @State private var hasScanned = false
     @State private var showConfirmation = false
     @State private var lastFreed: Int64?
@@ -225,9 +235,12 @@ struct ProjectsView: View {
             } else {
                 HStack(spacing: 16) {
                     VStack(spacing: 8) {
-                        ClyroArtifact(symbol: "shippingbox.fill", satellite: "arrow.uturn.backward", accent: accent, secondary: palette.secondary)
-                            .scaleEffect(0.84)
-                            .frame(height: 158)
+                        ClyroGardenScene(
+                            phase: isPurging ? .watering : .idle,
+                            growth: isPurging ? 0.4 : 0.28,
+                            accent: accent
+                        )
+                        .frame(width: 220, height: 190)
                         Text(ClyroFormat.byteCount(totalBytes))
                             .font(.system(size: 29, weight: .bold, design: .rounded))
                         Text("in \(artifacts.count) Build-Ordnern")
@@ -286,7 +299,8 @@ struct ProjectsView: View {
 
     private var stage: some View {
         VStack(spacing: 8) {
-            ClyroArtifact(symbol: "shippingbox.fill", satellite: "magnifyingglass", accent: accent, secondary: palette.secondary)
+            ClyroGardenScene(phase: isScanning ? .scanning : .idle, growth: 0.2, accent: accent)
+                .frame(width: 260, height: 220)
             if isScanning {
                 Text("Clyro durchsucht deine Projektordner")
                     .font(.system(size: 24, weight: .semibold))
@@ -334,6 +348,8 @@ struct ProjectsView: View {
 
     private func purge() {
         let targets = selectedArtifacts
+        isPurging = true
+        let started = Date()
         Task {
             let result = await Task.detached(priority: .utility) { () -> (Int, Int64) in
                 var moved = 0
@@ -350,6 +366,12 @@ struct ProjectsView: View {
                 }
                 return (moved, bytes)
             }.value
+
+            let elapsed = Date().timeIntervalSince(started)
+            if elapsed < 2.2 {
+                try? await Task.sleep(nanoseconds: UInt64((2.2 - elapsed) * 1_000_000_000))
+            }
+            isPurging = false
 
             cleaner.record(bytes: result.1, itemCount: result.0, kinds: [.projectArtifacts])
             lastFreed = result.1
