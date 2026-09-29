@@ -233,6 +233,11 @@ struct BatterySnapshot: Hashable {
     var timeRemaining = "–"
 }
 
+struct DiskCounters: Hashable {
+    var readBytes: UInt64 = 0
+    var writtenBytes: UInt64 = 0
+}
+
 struct NetworkCounters: Hashable {
     var receivedBytes: UInt64 = 0
     var sentBytes: UInt64 = 0
@@ -248,6 +253,9 @@ struct SystemSnapshot: Hashable {
     var downloadBytesPerSecond = 0.0
     var uploadBytesPerSecond = 0.0
     var networkCounters = NetworkCounters()
+    var diskCounters = DiskCounters()
+    var diskReadBytesPerSecond = 0.0
+    var diskWriteBytesPerSecond = 0.0
     var battery = BatterySnapshot()
     var temperatureCelsius: Double?
     var loadAverage: Double?

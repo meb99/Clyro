@@ -167,10 +167,17 @@ struct DashboardView: View {
             }
             .frame(height: 8)
 
-            Text("\(ClyroFormat.byteCount(snapshot.diskTotalBytes - snapshot.diskUsedBytes)) frei · \(Int(snapshot.diskPercent)) % belegt")
-                .font(.system(size: 11, weight: .medium))
-                .foregroundStyle(.secondary)
-                .lineLimit(1)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("\(ClyroFormat.byteCount(snapshot.diskTotalBytes - snapshot.diskUsedBytes)) frei · \(Int(snapshot.diskPercent)) % belegt")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                Text("Lesen \(ClyroFormat.speed(snapshot.diskReadBytesPerSecond)) · Schreiben \(ClyroFormat.speed(snapshot.diskWriteBytesPerSecond))")
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundStyle(ClyroTheme.blue)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+            }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .clyroCard(padding: 14)

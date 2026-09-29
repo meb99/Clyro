@@ -10,6 +10,7 @@ final class SystemMonitor: ObservableObject {
     @Published private(set) var cpuHistory: [Double] = Array(repeating: 0, count: 24)
     @Published private(set) var memoryHistory: [Double] = Array(repeating: 0, count: 24)
     @Published private(set) var downloadHistory: [Double] = Array(repeating: 0, count: 24)
+    @Published private(set) var diskActivityHistory: [Double] = Array(repeating: 0, count: 24)
     @Published private(set) var temperatureHistory: [Double] = Array(repeating: 0, count: 24)
     @Published private(set) var isRefreshing = false
     @Published private(set) var hasLoaded = false
@@ -17,6 +18,7 @@ final class SystemMonitor: ObservableObject {
     private var timer: Timer?
     private var previousCPU: CPUCounters?
     private var previousNetwork: NetworkCounters?
+    private var previousDisk: DiskCounters?
     private var previousProcessTimes: [Int32: UInt64] = [:]
     private var previousSampleDate: Date?
 
@@ -37,6 +39,7 @@ final class SystemMonitor: ObservableObject {
 
         let oldCPU = previousCPU
         let oldNetwork = previousNetwork
+        let oldDisk = previousDisk
         let oldProcessTimes = previousProcessTimes
         let oldDate = previousSampleDate
 
@@ -57,6 +60,16 @@ final class SystemMonitor: ObservableObject {
                 next.uploadBytesPerSecond = Self.bytesPerSecond(
                     current: next.networkCounters.sentBytes,
                     previous: oldNetwork?.sentBytes,
+                    elapsed: elapsed
+                )
+                next.diskReadBytesPerSecond = Self.bytesPerSecond(
+                    current: next.diskCounters.readBytes,
+                    previous: oldDisk?.readBytes,
+                    elapsed: elapsed
+                )
+                next.diskWriteBytesPerSecond = Self.bytesPerSecond(
+                    current: next.diskCounters.writtenBytes,
+                    previous: oldDisk?.writtenBytes,
                     elapsed: elapsed
                 )
                 next.processes = next.processes.map { process in
@@ -84,12 +97,14 @@ final class SystemMonitor: ObservableObject {
             next.processes = Array(next.processes.prefix(60))
             previousCPU = next.cpuCounters
             previousNetwork = next.networkCounters
+            previousDisk = next.diskCounters
             previousProcessTimes = allProcessTimes
             previousSampleDate = now
             snapshot = next
             append(next.cpuPercent, to: &cpuHistory)
             append(next.memoryPercent, to: &memoryHistory)
             append(next.downloadBytesPerSecond, to: &downloadHistory)
+            append(next.diskReadBytesPerSecond + next.diskWriteBytesPerSecond, to: &diskActivityHistory)
             if let temperature = next.temperatureCelsius { append(temperature, to: &temperatureHistory) }
             hasLoaded = true
             isRefreshing = false
@@ -134,6 +149,7 @@ private enum SystemProbe {
         result.diskUsedBytes = disk.used
         result.diskTotalBytes = disk.total
         result.networkCounters = networkCounters()
+        result.diskCounters = diskCounters()
         result.battery = batteryStatus()
         result.temperatureCelsius = ThermalSensors.shared.averageCPUTemperature()
         result.thermalState = ProcessInfo.processInfo.thermalState
@@ -264,6 +280,36 @@ private enum SystemProbe {
             )
         }
         return BatterySnapshot()
+    }
+
+    /// Summiert die Lese- und Schreibzähler aller Laufwerke aus der IORegistry (rein lesend).
+    private static func diskCounters() -> DiskCounters {
+        var iterator: io_iterator_t = 0
+        guard IOServiceGetMatchingServices(kIOMainPortDefault, IOServiceMatching("IOBlockStorageDriver"), &iterator) == KERN_SUCCESS else {
+            return DiskCounters()
+        }
+        defer { IOObjectRelease(iterator) }
+
+        var counters = DiskCounters()
+        var entry = IOIteratorNext(iterator)
+        while entry != 0 {
+            let values = driveStatistics(of: entry)
+            counters.readBytes += values.read
+            counters.writtenBytes += values.written
+            IOObjectRelease(entry)
+            entry = IOIteratorNext(iterator)
+        }
+        return counters
+    }
+
+    private static func driveStatistics(of entry: io_registry_entry_t) -> (read: UInt64, written: UInt64) {
+        var unmanaged: Unmanaged<CFMutableDictionary>?
+        guard IORegistryEntryCreateCFProperties(entry, &unmanaged, kCFAllocatorDefault, 0) == KERN_SUCCESS,
+              let properties = unmanaged?.takeRetainedValue() as? [String: Any],
+              let statistics = properties["Statistics"] as? [String: Any] else { return (0, 0) }
+        let read = (statistics["Bytes (Read)"] as? NSNumber)?.uint64Value ?? 0
+        let written = (statistics["Bytes (Write)"] as? NSNumber)?.uint64Value ?? 0
+        return (read, written)
     }
 
     private static func networkCounters() -> NetworkCounters {
