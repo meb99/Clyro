@@ -5,6 +5,9 @@ name: Release
 on:
   push:
     tags: ['v*']
+  # Änderungen am Workflow selbst werden im Pull Request probegebaut (ohne Release).
+  pull_request:
+    paths: ['.github/workflows/release.yml']
   workflow_dispatch:
 
 permissions:
