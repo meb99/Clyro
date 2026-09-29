@@ -269,6 +269,10 @@ struct SystemSnapshot: Hashable {
     var diskWriteBytesPerSecond = 0.0
     var battery = BatterySnapshot()
     var temperatureCelsius: Double?
+    var gpuTemperatureCelsius: Double?
+    var gpuPercent: Double?
+    var gpuCores: Int?
+    var processCount = 0
     var loadAverage: Double?
     var thermalState: ProcessInfo.ThermalState = .nominal
     var processes: [SystemProcess] = []

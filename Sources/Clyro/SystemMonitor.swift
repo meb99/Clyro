@@ -12,6 +12,7 @@ final class SystemMonitor: ObservableObject {
     @Published private(set) var downloadHistory: [Double] = Array(repeating: 0, count: 24)
     @Published private(set) var diskActivityHistory: [Double] = Array(repeating: 0, count: 24)
     @Published private(set) var temperatureHistory: [Double] = Array(repeating: 0, count: 24)
+    @Published private(set) var gpuHistory: [Double] = Array(repeating: 0, count: 24)
     @Published private(set) var isRefreshing = false
     @Published private(set) var hasLoaded = false
 
@@ -94,6 +95,7 @@ final class SystemMonitor: ObservableObject {
             }
 
             let allProcessTimes = Dictionary(uniqueKeysWithValues: next.processes.map { ($0.id, $0.cpuTicks) })
+            next.processCount = next.processes.count
             next.processes = Array(next.processes.prefix(60))
             previousCPU = next.cpuCounters
             previousNetwork = next.networkCounters
@@ -106,6 +108,7 @@ final class SystemMonitor: ObservableObject {
             append(next.downloadBytesPerSecond, to: &downloadHistory)
             append(next.diskReadBytesPerSecond + next.diskWriteBytesPerSecond, to: &diskActivityHistory)
             if let temperature = next.temperatureCelsius { append(temperature, to: &temperatureHistory) }
+            append(next.gpuPercent ?? 0, to: &gpuHistory)
             hasLoaded = true
             isRefreshing = false
         }
@@ -153,6 +156,10 @@ private enum SystemProbe {
         result.smartStatus = SmartProbe.status()
         result.battery = batteryStatus()
         result.temperatureCelsius = ThermalSensors.shared.averageCPUTemperature()
+        result.gpuTemperatureCelsius = ThermalSensors.shared.averageGPUTemperature()
+        let gpu = gpuStatistics()
+        result.gpuPercent = gpu.percent
+        result.gpuCores = gpu.cores
         result.thermalState = ProcessInfo.processInfo.thermalState
         var loads = [Double](repeating: 0, count: 3)
         if getloadavg(&loads, 3) > 0 { result.loadAverage = loads[0] }
@@ -224,6 +231,34 @@ private enum SystemProbe {
         let available = values.volumeAvailableCapacityForImportantUsage
             ?? Int64(values.volumeAvailableCapacity ?? 0)
         return (max(0, total - available), total)
+    }
+
+    /// Auslastung und Kernanzahl der GPU aus der IORegistry (rein lesend).
+    private static func gpuStatistics() -> (percent: Double?, cores: Int?) {
+        var iterator: io_iterator_t = 0
+        guard IOServiceGetMatchingServices(kIOMainPortDefault, IOServiceMatching("IOAccelerator"), &iterator) == KERN_SUCCESS else {
+            return (nil, nil)
+        }
+        defer { IOObjectRelease(iterator) }
+
+        var entry = IOIteratorNext(iterator)
+        while entry != 0 {
+            let info = acceleratorInfo(of: entry)
+            IOObjectRelease(entry)
+            if let info { return (info.percent, info.cores) }
+            entry = IOIteratorNext(iterator)
+        }
+        return (nil, nil)
+    }
+
+    private static func acceleratorInfo(of entry: io_registry_entry_t) -> (percent: Double, cores: Int?)? {
+        var unmanaged: Unmanaged<CFMutableDictionary>?
+        guard IORegistryEntryCreateCFProperties(entry, &unmanaged, kCFAllocatorDefault, 0) == KERN_SUCCESS,
+              let properties = unmanaged?.takeRetainedValue() as? [String: Any],
+              let statistics = properties["PerformanceStatistics"] as? [String: Any],
+              let utilization = (statistics["Device Utilization %"] as? NSNumber)?.doubleValue else { return nil }
+        let cores = (properties["gpu-core-count"] as? NSNumber)?.intValue
+        return (min(100, max(0, utilization)), cores)
     }
 
     /// Zyklen und Kapazität aus dem Akku-Eintrag der IORegistry (rein lesend).

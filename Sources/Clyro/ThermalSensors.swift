@@ -55,6 +55,7 @@ final class ThermalSensors: @unchecked Sendable {
     private struct SensorKey {
         let key: UInt32
         let info: KeyInfo
+        let isGPU: Bool
     }
 
     private let lock = NSLock()
@@ -64,6 +65,14 @@ final class ThermalSensors: @unchecked Sendable {
     private init() {}
 
     func averageCPUTemperature() -> Double? {
+        average(gpu: false)
+    }
+
+    func averageGPUTemperature() -> Double? {
+        average(gpu: true)
+    }
+
+    private func average(gpu: Bool) -> Double? {
         lock.lock()
         defer { lock.unlock() }
 
@@ -74,6 +83,7 @@ final class ThermalSensors: @unchecked Sendable {
             sensorKeys = discoverSensorKeys()
         }
         let values = (sensorKeys ?? []).compactMap { sensor -> Double? in
+            guard sensor.isGPU == gpu else { return nil }
             guard let value = readValue(of: sensor), value > 10, value < 120 else { return nil }
             return value
         }
@@ -139,11 +149,11 @@ final class ThermalSensors: @unchecked Sendable {
             input.data32 = index
             guard let output = call(&input) else { continue }
             let name = Self.string(from: output.key)
-            // CPU-Kerne: Apple Silicon (Tp…/Te…) und Intel (TC…).
-            guard name.hasPrefix("Tp") || name.hasPrefix("Te") || name.hasPrefix("TC"),
+            // CPU-Kerne: Apple Silicon (Tp…/Te…) und Intel (TC…); GPU: Tg….
+            guard name.hasPrefix("Tp") || name.hasPrefix("Te") || name.hasPrefix("TC") || name.hasPrefix("Tg"),
                   let info = keyInfo(for: output.key),
                   ["flt ", "sp78"].contains(Self.string(from: info.dataType)) else { continue }
-            found.append(SensorKey(key: output.key, info: info))
+            found.append(SensorKey(key: output.key, info: info, isGPU: name.hasPrefix("Tg")))
         }
         return found
     }
