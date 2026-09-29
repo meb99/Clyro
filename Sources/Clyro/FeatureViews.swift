@@ -1022,28 +1022,27 @@ private struct HistoryTimelineRow: View {
 }
 
 struct SettingsView: View {
-    @AppStorage("showTechnicalDetails") private var showTechnicalDetails = false
     @AppStorage("includeDeveloperData") private var includeDeveloperData = true
+    @AppStorage(CleanupScanner.useTrashKey) private var useTrash = false
     @AppStorage(CleanupWhitelist.defaultsKey) private var whitelist = ""
     @AppStorage("purgePaths") private var purgePaths = ""
     @AppStorage("optimizeDryRun") private var optimizeDryRun = false
+    @AppStorage(OptimizeCatalog.excludedKey) private var excludedTasks = ""
 
     var body: some View {
         Form {
-            Section("Darstellung") {
-                Toggle("Technische Details anzeigen", isOn: $showTechnicalDetails)
-            }
-            Section("Scan") {
-                Toggle("Xcode-Daten berücksichtigen", isOn: $includeDeveloperData)
-                Text("Clyro verschiebt ausgewählte Dateien in den Papierkorb. Systemdateien werden nicht automatisch verändert.")
+            Section("Bereinigen") {
+                Toggle("Entwicklerwerkzeuge prüfen", isOn: $includeDeveloperData)
+                Toggle("In den Papierkorb statt endgültig löschen", isOn: $useTrash)
+                Text("Wie Mole löscht Clyro Caches und Protokolle standardmäßig endgültig, denn nur so wird wirklich Platz frei. Apps deinstallieren und Analyse verschieben immer in den Papierkorb.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
             Section("Whitelist") {
                 TextEditor(text: $whitelist)
                     .font(.system(size: 11, design: .monospaced))
-                    .frame(height: 70)
-                Text("Ein Name pro Zeile, z. B. com.spotify.client. Diese Einträge schlägt Clyro beim Bereinigen nie vor.")
+                    .frame(height: 80)
+                Text("Ein Eintrag pro Zeile: ein Name wie com.spotify.client oder ein Pfad wie ~/Library/Caches/Foo*. Geschützte Einträge schlägt Clyro nie vor.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -1051,7 +1050,23 @@ struct SettingsView: View {
                 TextEditor(text: $purgePaths)
                     .font(.system(size: 11, design: .monospaced))
                     .frame(height: 60)
-                Text("Zusätzliche Ordner für die Projektsuche, ein Pfad pro Zeile, z. B. ~/Arbeit.")
+                Text("Ein Pfad pro Zeile, z. B. ~/Arbeit. Sind Ordner eingetragen, sucht Clyro nur dort nach Build-Ordnern.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            Section("Optimieren") {
+                Toggle("Nur als Vorschau ausführen", isOn: $optimizeDryRun)
+                ForEach(OptimizeCatalog.tasks) { task in
+                    Toggle(task.title, isOn: Binding(
+                        get: { !excludedTasks.split(separator: ",").map(String.init).contains(task.id) },
+                        set: { isOn in
+                            var values = Set(excludedTasks.split(separator: ",").map(String.init))
+                            if isOn { values.remove(task.id) } else { values.insert(task.id) }
+                            excludedTasks = values.sorted().joined(separator: ",")
+                        }
+                    ))
+                }
+                Text("Abgewählte Aufgaben werden beim Optimieren übersprungen.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -1063,21 +1078,16 @@ struct SettingsView: View {
                         NSWorkspace.shared.open(ClyroLog.url.deletingLastPathComponent().deletingLastPathComponent())
                     }
                 }
-                Text("Jede verschobene Datei wird lokal in ~/Library/Logs/Clyro festgehalten.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-            Section("Optimieren") {
-                Toggle("Nur als Vorschau ausführen", isOn: $optimizeDryRun)
-                Text("Zeigt beim Optimieren nur, was passieren würde, ohne etwas zu verändern.")
+                Text("Jede gelöschte oder verschobene Datei wird lokal in ~/Library/Logs/Clyro festgehalten.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
             Section("Über Clyro") {
                 LabeledContent("Version", value: "1.0.0")
-                LabeledContent("Datenschutz", value: "100 % lokal")
+                LabeledContent("Datenschutz", value: "Lokal · Updates nur auf Anfrage")
             }
         }
-        .padding(20)
+        .formStyle(.grouped)
+        .padding(12)
     }
 }

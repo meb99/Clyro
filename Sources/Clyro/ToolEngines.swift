@@ -25,197 +25,19 @@ enum ClyroLog {
     }
 }
 
-// MARK: - Optimieren
-
-struct OptimizeTask: Identifiable, Hashable {
-    let id: String
-    let group: String
-    let title: String
-    let detail: String
-    let icon: String
-    let executable: String
-    let arguments: [String]
-    /// Startet sichtbare Systemteile neu (Dock, Finder, Menüleiste …).
-    let isDisruptive: Bool
-    /// Beendet sich mit Fehlercode, wenn der Dienst gerade nicht läuft (z. B. `killall`); das ist dann kein Fehler.
-    var tolerant = false
-
-    var commandLine: String {
-        ([URL(fileURLWithPath: executable).lastPathComponent] + arguments).joined(separator: " ")
-    }
-}
-
-enum OptimizeCatalog {
-    private static func restart(_ id: String, _ title: String, _ detail: String, icon: String, process: String) -> OptimizeTask {
-        OptimizeTask(
-            id: id,
-            group: "Systemdienste",
-            title: title,
-            detail: detail,
-            icon: icon,
-            executable: "/usr/bin/killall",
-            arguments: [process],
-            isDisruptive: true,
-            tolerant: true
-        )
-    }
-
-    static let tasks: [OptimizeTask] = [
-        OptimizeTask(
-            id: "quicklook-cache",
-            group: "Caches",
-            title: "Quick-Look-Vorschauen erneuern",
-            detail: "Leert den Vorschau-Cache, damit veraltete Miniaturen neu entstehen.",
-            icon: "eye.fill",
-            executable: "/usr/bin/qlmanage",
-            arguments: ["-r", "cache"],
-            isDisruptive: false
-        ),
-        OptimizeTask(
-            id: "quicklook-server",
-            group: "Caches",
-            title: "Quick-Look-Dienst zurücksetzen",
-            detail: "Startet den Vorschau-Dienst neu.",
-            icon: "eye.circle.fill",
-            executable: "/usr/bin/qlmanage",
-            arguments: ["-r"],
-            isDisruptive: false
-        ),
-        OptimizeTask(
-            id: "dns",
-            group: "Caches",
-            title: "DNS-Cache leeren",
-            detail: "Hilft, wenn Server nach einem Umzug noch alte Adressen nutzen.",
-            icon: "network",
-            executable: "/usr/bin/dscacheutil",
-            arguments: ["-flushcache"],
-            isDisruptive: false
-        ),
-        OptimizeTask(
-            id: "prefs",
-            group: "Caches",
-            title: "Einstellungs-Cache neu laden",
-            detail: "Lädt den Cache der App-Einstellungen neu.",
-            icon: "slider.horizontal.3",
-            executable: "/usr/bin/killall",
-            arguments: ["cfprefsd"],
-            isDisruptive: false,
-            tolerant: true
-        ),
-        OptimizeTask(
-            id: "spotlight-status",
-            group: "Prüfungen",
-            title: "Spotlight-Index prüfen",
-            detail: "Liest nur den Status der Suche aus.",
-            icon: "magnifyingglass",
-            executable: "/usr/bin/mdutil",
-            arguments: ["-s", "/"],
-            isDisruptive: false
-        ),
-        OptimizeTask(
-            id: "memory",
-            group: "Prüfungen",
-            title: "Speicherdruck prüfen",
-            detail: "Liest nur den aktuellen Arbeitsspeicher-Druck aus.",
-            icon: "memorychip",
-            executable: "/usr/bin/memory_pressure",
-            arguments: [],
-            isDisruptive: false,
-            tolerant: true
-        ),
-        restart("dock", "Dock neu starten", "Behebt hängende Symbole, Mission Control und Animationsfehler.", icon: "dock.rectangle", process: "Dock"),
-        restart("finder", "Finder neu starten", "Lädt Fenster und Schreibtisch neu.", icon: "folder.fill", process: "Finder"),
-        restart("menubar", "Menüleiste neu starten", "Lädt die Symbole der Menüleiste neu.", icon: "menubar.rectangle", process: "SystemUIServer"),
-        restart("notifications", "Mitteilungszentrale neu starten", "Behebt hängende Benachrichtigungen.", icon: "bell.fill", process: "NotificationCenter"),
-        restart("controlcenter", "Kontrollzentrum neu starten", "Lädt WLAN, Bluetooth und Lautstärke neu.", icon: "switch.2", process: "ControlCenter"),
-        restart("pasteboard", "Zwischenablage neu starten", "Behebt eine hängende Zwischenablage.", icon: "doc.on.clipboard.fill", process: "pboard"),
-        restart("input", "Eingabemenü neu starten", "Lädt die Tastaturumschaltung neu.", icon: "keyboard.fill", process: "TextInputMenuAgent")
-    ]
-}
-
-struct OptimizeOutcome: Hashable {
-    let succeeded: Bool
-    let message: String
-}
-
-enum OptimizeRunner {
-    static func run(_ task: OptimizeTask, dryRun: Bool) -> OptimizeOutcome {
-        if dryRun {
-            return OptimizeOutcome(succeeded: true, message: "Vorschau: \(task.commandLine)")
-        }
-        guard FileManager.default.isExecutableFile(atPath: task.executable) else {
-            return OptimizeOutcome(succeeded: false, message: "Werkzeug nicht gefunden")
-        }
-
-        ClyroLog.append("Optimieren: \(task.commandLine)")
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: task.executable)
-        process.arguments = task.arguments
-        let pipe = Pipe()
-        process.standardOutput = pipe
-        process.standardError = pipe
-
-        do {
-            try process.run()
-        } catch {
-            return OptimizeOutcome(succeeded: false, message: error.localizedDescription)
-        }
-        let data = pipe.fileHandleForReading.readDataToEndOfFile()
-        process.waitUntilExit()
-
-        let text = String(data: data, encoding: .utf8)?
-            .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        let firstLine = text.split(separator: "\n").first.map(String.init) ?? ""
-        if process.terminationStatus == 0 {
-            return OptimizeOutcome(succeeded: true, message: firstLine.isEmpty ? "Erledigt" : firstLine)
-        }
-        if task.tolerant {
-            return OptimizeOutcome(succeeded: true, message: "war nicht aktiv")
-        }
-        return OptimizeOutcome(succeeded: false, message: firstLine.isEmpty ? "Fehlgeschlagen" : firstLine)
-    }
-}
-
 // MARK: - Projekte (Purge)
 
-enum ArtifactKind: String, CaseIterable, Identifiable, Hashable {
-    case nodeModules
-    case rustTarget
-    case swiftBuild
-    case pods
-    case buildOutput
+struct ArtifactKind: Hashable {
+    let folder: String
 
-    var id: String { rawValue }
-
-    var title: String {
-        switch self {
-        case .nodeModules: "node_modules"
-        case .rustTarget: "Rust target"
-        case .swiftBuild: "Swift .build"
-        case .pods: "CocoaPods"
-        case .buildOutput: "dist / build"
-        }
-    }
+    var title: String { folder }
 
     var icon: String {
-        switch self {
-        case .nodeModules: "shippingbox.fill"
-        case .rustTarget: "gearshape.fill"
-        case .swiftBuild: "swift"
-        case .pods: "cube.fill"
-        case .buildOutput: "hammer.fill"
-        }
-    }
-
-    /// Ordnername und Projektdatei, die daneben liegen muss, damit der Ordner sicher als Artefakt gilt.
-    static func match(folder: String, siblings: Set<String>) -> ArtifactKind? {
         switch folder {
-        case "node_modules": siblings.contains("package.json") ? .nodeModules : nil
-        case "target": siblings.contains("Cargo.toml") ? .rustTarget : nil
-        case ".build": siblings.contains("Package.swift") ? .swiftBuild : nil
-        case "Pods": siblings.contains("Podfile") ? .pods : nil
-        case "dist", "build": siblings.contains("package.json") ? .buildOutput : nil
-        default: nil
+        case "node_modules", "vendor", "Pods": "shippingbox.fill"
+        case "target", "build", "dist", "bin", "obj", ".build", "DerivedData", "zig-out": "hammer.fill"
+        case "venv", ".venv", "__pycache__", ".tox", ".nox": "cube.fill"
+        default: "archivebox.fill"
         }
     }
 }
@@ -239,72 +61,114 @@ struct ProjectArtifact: Identifiable, Hashable {
     }
 }
 
+/// Findet wiederherstellbare Build-Ordner in Projektordnern (wie `mo purge`).
 enum ProjectPurgeProbe {
-    private static let rootNames = [
-        "Developer", "Projects", "Projekte", "Code", "dev", "src", "repos",
-        "GitHub", "Sites", "Work", "Documents", "Desktop"
+    static let targets: Set<String> = [
+        "node_modules", "target", "build", "dist", "venv", ".venv", ".pytest_cache", ".mypy_cache", ".tox", ".nox",
+        ".ruff_cache", ".gradle", ".terragrunt-cache", "__pycache__", ".next", ".nuxt", ".output", "vendor", "bin", "obj",
+        ".turbo", ".parcel-cache", ".dart_tool", ".zig-cache", "zig-out", ".angular", ".svelte-kit", ".astro", "coverage",
+        "DerivedData", "Pods", ".cxx", ".expo", ".build"
     ]
+
+    private static let projectIndicators = [
+        "package.json", "Cargo.toml", "go.mod", "pyproject.toml", "requirements.txt", "pom.xml", "build.gradle",
+        "build.gradle.kts", "terragrunt.hcl", "Gemfile", "composer.json", "pubspec.yaml", "Package.swift", "Makefile",
+        "build.zig", "build.zig.zon", "Podfile", "lerna.json", "pnpm-workspace.yaml", "nx.json", "rush.json", ".git"
+    ]
+
+    private static let defaultRoots = [
+        "www", "dev", "Projects", "GitHub", "Code", "Workspace", "Repos", "Development", "Developer", "Projekte",
+        ".codex/worktrees", ".claude/worktrees"
+    ]
+
     private static let maxDepth = 6
 
     static func scan() -> [ProjectArtifact] {
         let home = FileManager.default.homeDirectoryForCurrentUser
-        var found: [(URL, ArtifactKind)] = []
-        var visited = Set<String>()
-
         let custom = (UserDefaults.standard.string(forKey: "purgePaths") ?? "")
             .split(whereSeparator: \.isNewline)
             .map { ($0.trimmingCharacters(in: .whitespaces) as NSString).expandingTildeInPath }
             .filter { !$0.isEmpty }
-        let roots = rootNames.map { home.appendingPathComponent($0, isDirectory: true) }
-            + custom.map { URL(fileURLWithPath: $0, isDirectory: true) }
+        // Wie bei Mole: Sind eigene Ordner eingetragen, werden nur diese durchsucht.
+        let roots = custom.isEmpty
+            ? defaultRoots.map { home.appendingPathComponent($0, isDirectory: true) }
+            : custom.map { URL(fileURLWithPath: $0, isDirectory: true) }
 
-        for root in roots {
-            var isDirectory: ObjCBool = false
-            guard FileManager.default.fileExists(atPath: root.path, isDirectory: &isDirectory),
-                  isDirectory.boolValue,
-                  visited.insert(root.path).inserted else { continue }
+        var found: [(URL, ArtifactKind)] = []
+        var visited = Set<String>()
+        for root in roots where Glob.isDirectory(root) && visited.insert(root.standardizedFileURL.path).inserted {
             walk(root, depth: 0, into: &found)
         }
 
-        let artifacts = found.map { url, kind -> ProjectArtifact in
-            let values = try? url.resourceValues(forKeys: [.contentModificationDateKey])
+        return found.compactMap { url, kind -> ProjectArtifact? in
+            let size = FileProbe.sizeOfItem(at: url)
+            guard size > 0 else { return nil }
             return ProjectArtifact(
                 url: url,
                 kind: kind,
                 projectName: url.deletingLastPathComponent().lastPathComponent,
-                sizeBytes: FileProbe.sizeOfItem(at: url),
-                modifiedAt: values?.contentModificationDate ?? Date()
+                sizeBytes: size,
+                modifiedAt: lastActivity(of: url)
             )
         }
-        return artifacts
-            .filter { $0.sizeBytes > 0 }
-            .sorted { $0.sizeBytes > $1.sizeBytes }
+        .sorted { $0.sizeBytes > $1.sizeBytes }
     }
 
     private static func walk(_ directory: URL, depth: Int, into found: inout [(URL, ArtifactKind)]) {
-        guard depth <= maxDepth,
-              let contents = try? FileManager.default.contentsOfDirectory(
-                at: directory,
-                includingPropertiesForKeys: [.isDirectoryKey, .isSymbolicLinkKey],
-                options: []
-              ) else { return }
-
+        guard depth <= maxDepth else { return }
+        let contents = Glob.children(of: directory)
         let siblings = Set(contents.map(\.lastPathComponent))
+        let isProject = projectIndicators.contains { siblings.contains($0) }
 
-        for url in contents {
-            let values = try? url.resourceValues(forKeys: [.isDirectoryKey, .isSymbolicLinkKey])
-            guard values?.isDirectory == true, values?.isSymbolicLink != true else { continue }
+        for url in contents where Glob.isDirectory(url) && !Glob.isSymlink(url) {
             let name = url.lastPathComponent
-
-            if let kind = ArtifactKind.match(folder: name, siblings: siblings) {
-                found.append((url, kind))
+            if targets.contains(name) {
+                if isProject, isSafeArtifact(url, name: name, siblings: siblings) {
+                    found.append((url, ArtifactKind(folder: name)))
+                }
                 continue
             }
-            if name.hasPrefix(".") || name == "Library" || ["app", "xcodeproj", "xcworkspace"].contains(url.pathExtension) {
+            if name.hasPrefix(".") || name == "Library" || ["app", "xcodeproj", "xcworkspace", "photoslibrary"].contains(url.pathExtension) {
                 continue
             }
             walk(url, depth: depth + 1, into: &found)
         }
+    }
+
+    private static func isSafeArtifact(_ url: URL, name: String, siblings: Set<String>) -> Bool {
+        switch name {
+        case "bin", "obj":
+            // Nur .NET-Build-Ausgaben, nie beliebige bin-Ordner.
+            guard siblings.contains(where: { $0.hasSuffix(".csproj") || $0.hasSuffix(".fsproj") || $0.hasSuffix(".vbproj") || $0.hasSuffix(".sln") }) else { return false }
+        case "vendor":
+            // PHP Composer. Go-vendor-Ordner enthalten Quelltext und bleiben.
+            guard siblings.contains("composer.json"), !siblings.contains("go.mod") else { return false }
+        default:
+            break
+        }
+        let inner = Set(Glob.children(of: url).map(\.lastPathComponent))
+        // Verschachtelte Git-Repositories und Deployment-Schlüssel sind tabu.
+        if inner.contains(".git") { return false }
+        if inner.contains(where: { $0.hasSuffix(".pem") || $0.hasSuffix(".p12") || $0.hasSuffix(".key") || $0.hasPrefix("id_rsa") || $0.hasPrefix("id_ed25519") }) {
+            return false
+        }
+        return !isGitTracked(url)
+    }
+
+    /// Ordner mit eingecheckten Dateien werden nicht angefasst. Läuft nur, wenn git ohne Installationsdialog verfügbar ist.
+    private static func isGitTracked(_ url: URL) -> Bool {
+        let candidates = ["/opt/homebrew/bin/git", "/usr/local/bin/git", "/Library/Developer/CommandLineTools/usr/bin/git",
+                          "/Applications/Xcode.app/Contents/Developer/usr/bin/git"]
+        guard let git = candidates.first(where: { FileManager.default.isExecutableFile(atPath: $0) }) else { return false }
+        let parent = url.deletingLastPathComponent().path
+        let result = Shell.run(git, ["-C", parent, "ls-files", "--", url.lastPathComponent], timeout: 5)
+        return result.ok && !result.output.isEmpty
+    }
+
+    /// Letzte Änderung im Ordner selbst oder in seinen direkten Einträgen.
+    private static func lastActivity(of url: URL) -> Date {
+        let dates = ([url] + Glob.children(of: url).prefix(200)).compactMap { FileScan.modified($0) }
+        return dates.max() ?? Date()
     }
 }
 
@@ -329,8 +193,41 @@ struct UninstallResult {
 }
 
 enum AppRemnantProbe {
+    /// Apple-Apps, die sich wie bei Mole deinstallieren lassen (Xcode, iWork, iMovie, GarageBand, Final Cut …).
+    private static let uninstallableApple = [
+        "com.apple.dt.*", "com.apple.finalcut*", "com.apple.motion*", "com.apple.compressor*", "com.apple.logic*",
+        "com.apple.garageband*", "com.apple.imovie*", "com.apple.iwork.*", "com.apple.mainstage*", "com.apple.server.*",
+        "com.apple.playgrounds*", "com.apple.configurator*", "com.apple.transporter*"
+    ]
+
+    /// Sicherheits- und Verwaltungssoftware braucht das offizielle Deinstallationsprogramm des Herstellers.
+    private static let officialUninstallerPrefixes = [
+        "com.eset.", "com.jamf.", "com.jamfsoftware.", "com.crowdstrike.", "com.sentinelone.", "com.sentinel-labs.",
+        "com.paloaltonetworks.", "com.cisco.anyconnect", "com.cisco.secureclient"
+    ]
+
+    /// Wörter, die zu allgemein sind, um daraus Rückstände abzuleiten.
+    private static let genericNames: Set<String> = [
+        "app", "apps", "google", "microsoft", "adobe", "apple", "mozilla", "jetbrains", "setapp", "utilities", "helper",
+        "update", "updater", "installer", "support", "data", "cache", "caches", "logs", "tools", "system", "library",
+        "shared", "common", "desktop", "preferences", "default", "user", "users", "service", "services", "application",
+        "applications", "plugins", "settings", "config", "local", "share"
+    ]
+
+    static func protectionReason(_ app: InstalledApplication) -> String? {
+        if app.url.path.hasPrefix("/System/") { return "Gehört zu macOS" }
+        let identifier = app.bundleIdentifier.lowercased()
+        if officialUninstallerPrefixes.contains(where: { identifier.hasPrefix($0) }) {
+            return "Bitte mit dem Deinstallationsprogramm des Herstellers entfernen"
+        }
+        if identifier.hasPrefix("com.apple."), !uninstallableApple.contains(where: { fnmatch($0, identifier, 0) == 0 }) {
+            return "Gehört zu macOS"
+        }
+        return nil
+    }
+
     static func isProtected(_ app: InstalledApplication) -> Bool {
-        app.bundleIdentifier.hasPrefix("com.apple.") || app.url.path.hasPrefix("/System/")
+        protectionReason(app) != nil
     }
 
     static func isRunning(_ app: InstalledApplication) -> Bool {
@@ -341,39 +238,76 @@ enum AppRemnantProbe {
     static func remnants(for app: InstalledApplication) -> [AppRemnant] {
         guard !isProtected(app) else { return [] }
         let fm = FileManager.default
-        let library = fm.homeDirectoryForCurrentUser.appendingPathComponent("Library", isDirectory: true)
+        let home = fm.homeDirectoryForCurrentUser
+        let library = home.appendingPathComponent("Library", isDirectory: true)
         let identifier = app.bundleIdentifier
-        let names = Set([app.name, app.url.deletingPathExtension().lastPathComponent]).filter { $0.count >= 3 }
 
-        var candidates: [String] = []
-        if !identifier.isEmpty {
-            candidates += [
-                "Application Support/\(identifier)",
-                "Caches/\(identifier)",
-                "Preferences/\(identifier).plist",
-                "Containers/\(identifier)",
-                "Saved Application State/\(identifier).savedState",
-                "HTTPStorages/\(identifier)",
-                "HTTPStorages/\(identifier).binarycookies",
-                "WebKit/\(identifier)",
-                "LaunchAgents/\(identifier).plist",
-                "Application Scripts/\(identifier)",
-                "Cookies/\(identifier).binarycookies"
-            ]
-            let groups = library.appendingPathComponent("Group Containers", isDirectory: true)
-            for entry in (try? fm.contentsOfDirectory(atPath: groups.path)) ?? [] where entry.hasSuffix(identifier) {
-                candidates.append("Group Containers/\(entry)")
+        // Gibt es eine zweite Kopie derselben App, bleiben die gemeinsamen Daten erhalten.
+        if !identifier.isEmpty, NSWorkspace.shared.urlsForApplications(withBundleIdentifier: identifier).count > 1 { return [] }
+
+        var candidates: [URL] = []
+        func add(_ relative: String) { candidates.append(library.appendingPathComponent(relative)) }
+
+        if BundleID.isReverseDNS(identifier) || identifier.contains(".") {
+            for relative in [
+                "Application Support/\(identifier)", "Caches/\(identifier)", "Logs/\(identifier)",
+                "Preferences/\(identifier).plist", "Preferences/\(identifier)", "Saved Application State/\(identifier).savedState",
+                "Containers/\(identifier)", "WebKit/\(identifier)", "WebKit/com.apple.WebKit.WebContent/\(identifier)",
+                "HTTPStorages/\(identifier)", "HTTPStorages/\(identifier).binarycookies", "Cookies/\(identifier).binarycookies",
+                "Application Scripts/\(identifier)", "Input Methods/\(identifier).app", "Autosave Information/\(identifier)",
+                "SyncedPreferences/\(identifier).plist", "Caches/com.apple.nsurlsessiond/Downloads/\(identifier)"
+            ] { add(relative) }
+
+            let lower = identifier.lowercased()
+            for entry in Glob.children(of: library.appendingPathComponent("Preferences/ByHost")) {
+                if entry.lastPathComponent.lowercased().hasPrefix(lower + ".") { candidates.append(entry) }
+            }
+            for entry in Glob.children(of: library.appendingPathComponent("LaunchAgents")) {
+                let name = entry.lastPathComponent.lowercased()
+                if name == lower + ".plist" || (name.hasPrefix(lower + ".") && name.hasSuffix(".plist")) { candidates.append(entry) }
+            }
+            for entry in Glob.children(of: library.appendingPathComponent("Group Containers")) {
+                let name = entry.lastPathComponent.lowercased()
+                if name == lower || name.hasSuffix("." + lower) || name.hasPrefix(lower + ".") { candidates.append(entry) }
+            }
+            // Erweiterungen der App (com.foo.app.ShareExtension …).
+            for folder in ["Containers", "Application Scripts"] {
+                for entry in Glob.children(of: library.appendingPathComponent(folder))
+                where entry.lastPathComponent.lowercased().hasPrefix(lower + ".") {
+                    candidates.append(entry)
+                }
+            }
+        }
+
+        let rawNames = [app.name, app.url.deletingPathExtension().lastPathComponent]
+        var names: [String] = []
+        for name in rawNames {
+            for variant in [name, name.replacingOccurrences(of: " ", with: ""),
+                            name.replacingOccurrences(of: " ", with: "_"), name.replacingOccurrences(of: " ", with: "-")]
+            where variant.count >= 3 && !genericNames.contains(variant.lowercased()) && !names.contains(variant) {
+                names.append(variant)
             }
         }
         for name in names {
-            candidates += ["Application Support/\(name)", "Caches/\(name)", "Logs/\(name)"]
+            for relative in [
+                "Application Support/\(name)", "Caches/\(name)", "Logs/\(name)", "Preferences/\(name)",
+                "Preferences/\(name).plist", "Saved Application State/\(name).savedState", "Services/\(name).workflow",
+                "QuickLook/\(name).qlgenerator", "Internet Plug-Ins/\(name).plugin", "Audio/Plug-Ins/Components/\(name).component",
+                "Audio/Plug-Ins/VST/\(name).vst", "Audio/Plug-Ins/VST3/\(name).vst3", "PreferencePanes/\(name).prefPane",
+                "Screen Savers/\(name).saver", "Frameworks/\(name).framework", "Spotlight/\(name).mdimporter",
+                "ColorPickers/\(name).colorPicker", "Workflows/\(name).workflow"
+            ] { add(relative) }
+            let lower = name.lowercased()
+            for dotFolder in [".config", ".cache", ".local/share"] {
+                candidates.append(home.appendingPathComponent("\(dotFolder)/\(lower)"))
+            }
         }
 
         var seen = Set<String>()
         var results: [AppRemnant] = []
-        for relative in candidates {
-            let url = library.appendingPathComponent(relative)
-            guard fm.fileExists(atPath: url.path), seen.insert(url.path).inserted else { continue }
+        for url in candidates {
+            let key = url.standardizedFileURL.path.lowercased()
+            guard fm.fileExists(atPath: url.path), !Glob.isSymlink(url), seen.insert(key).inserted else { continue }
             results.append(AppRemnant(url: url, sizeBytes: FileProbe.sizeOfItem(at: url)))
         }
         return results.sorted { $0.sizeBytes > $1.sizeBytes }

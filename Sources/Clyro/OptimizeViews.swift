@@ -13,9 +13,8 @@ struct OptimizeView: View {
     @State private var log: [CleanLogEntry] = []
     @State private var runDone = 0
     @State private var runCurrent = ""
-    @State private var failed = 0
+    @State private var counts: [OptimizeResult: Int] = [:]
     @State private var previewRun = false
-    @State private var showConfirmation = false
 
     private let palette = ClyroTheme.palette(for: .optimize)
     private var accent: Color { palette.accent }
@@ -30,12 +29,6 @@ struct OptimizeView: View {
             }
         }
         .padding(22)
-        .alert("Dienste neu starten?", isPresented: $showConfirmation) {
-            Button("Abbrechen", role: .cancel) {}
-            Button("Optimieren", role: .destructive) { run() }
-        } message: {
-            Text("Dock, Finder, Menüleiste und weitere Dienste starten kurz neu und erscheinen sofort wieder. Ungespeicherte Arbeit ist nicht betroffen.")
-        }
     }
 
     // MARK: - Start
@@ -48,11 +41,9 @@ struct OptimizeView: View {
                 .font(.system(size: 20, weight: .medium, design: .serif))
                 .foregroundStyle(.white.opacity(0.78))
                 .multilineTextAlignment(.center)
-            Button("Optimieren") {
-                if dryRun { run() } else { showConfirmation = true }
-            }
-            .buttonStyle(ClyroPillButtonStyle())
-            .padding(.top, 10)
+            Button("Optimieren") { run() }
+                .buttonStyle(ClyroPillButtonStyle())
+                .padding(.top, 10)
             if dryRun {
                 Text("Vorschau ist aktiv – es wird nichts verändert (Einstellungen)")
                     .font(.system(size: 11, weight: .medium))
@@ -94,7 +85,7 @@ struct OptimizeView: View {
         log = []
         runDone = 0
         runCurrent = ""
-        failed = 0
+        counts = [:]
         let started = Date()
 
         Task {
@@ -105,19 +96,19 @@ struct OptimizeView: View {
                     log.append(CleanLogEntry(text: task.group, bytes: nil, isHeader: true))
                     lastGroup = task.group
                 }
-                let outcome = await Task.detached(priority: .utility) {
-                    OptimizeRunner.run(task, dryRun: preview)
+                let report = await Task.detached(priority: .utility) {
+                    OptimizeCatalog.run(task, dryRun: preview)
                 }.value
                 runDone += 1
-                if !outcome.succeeded { failed += 1 }
+                counts[report.result, default: 0] += 1
                 log.append(CleanLogEntry(
                     text: task.title,
                     bytes: nil,
                     isHeader: false,
-                    trailing: outcome.succeeded ? nil : "✗ \(outcome.message)",
-                    checked: outcome.succeeded
+                    trailing: report.result == .applied ? nil : report.message,
+                    checked: report.result == .applied || report.result == .unchanged
                 ))
-                try? await Task.sleep(nanoseconds: 450_000_000)
+                try? await Task.sleep(nanoseconds: 260_000_000)
             }
             await ScanTiming.hold(since: started)
             stage = .done
@@ -126,16 +117,26 @@ struct OptimizeView: View {
 
     // MARK: - Ergebnis
 
+    private var summaryLine: String {
+        var parts: [String] = []
+        if let value = counts[.unchanged], value > 0 { parts.append("\(value) unverändert") }
+        if let value = counts[.skipped], value > 0 { parts.append("\(value) übersprungen") }
+        if let value = counts[.unavailable], value > 0 { parts.append("\(value) nicht verfügbar") }
+        if let value = counts[.failed], value > 0 { parts.append("\(value) fehlgeschlagen") }
+        return parts.isEmpty ? "Alles läuft wieder rund." : parts.joined(separator: " · ")
+    }
+
     private var doneStage: some View {
-        VStack(spacing: 10) {
+        let applied = counts[.applied] ?? 0
+        return VStack(spacing: 10) {
             ClyroGardenScene(phase: .bloom, growth: 0.66, accent: accent, startGrowth: 0.34)
                 .frame(width: 340, height: 290)
-            Text(previewRun ? "Vorschau abgeschlossen" : "\(tasks.count - failed) Aufgaben erledigt")
+            Text(previewRun ? "Vorschau abgeschlossen" : "\(applied) Optimierungen angewendet")
                 .font(.system(size: 30, weight: .bold, design: .rounded))
-            Text(failed > 0 ? "\(failed) Aufgabe(n) sind fehlgeschlagen." : "Alles läuft wieder rund.")
+            Text(summaryLine)
                 .font(.system(size: 14, weight: .medium))
                 .foregroundStyle(.secondary)
-            Button("Weiter") { stage = .start }
+            Button("Fertig") { stage = .start }
                 .buttonStyle(ClyroPillButtonStyle())
                 .padding(.top, 10)
         }

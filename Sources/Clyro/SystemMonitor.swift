@@ -3,6 +3,7 @@ import Darwin
 import Foundation
 import IOKit
 import IOKit.ps
+import SystemConfiguration
 
 @MainActor
 final class SystemMonitor: ObservableObject {
@@ -18,6 +19,9 @@ final class SystemMonitor: ObservableObject {
 
     private var timer: Timer?
     private var previousCPU: CPUCounters?
+    private var previousCores: [CPUCounters] = []
+    private var temperatureSamples: [(date: Date, value: Double)] = []
+    private let power = PowerSampler()
     private var previousNetwork: NetworkCounters?
     private var previousDisk: DiskCounters?
     private var previousProcessTimes: [Int32: UInt64] = [:]
@@ -39,6 +43,7 @@ final class SystemMonitor: ObservableObject {
         isRefreshing = true
 
         let oldCPU = previousCPU
+        let oldCores = previousCores
         let oldNetwork = previousNetwork
         let oldDisk = previousDisk
         let oldProcessTimes = previousProcessTimes
@@ -50,6 +55,8 @@ final class SystemMonitor: ObservableObject {
             }.value
 
             let now = Date()
+            let powerValues = power.latest()
+            power.requestSample()
             if let oldDate {
                 let elapsed = max(0.25, now.timeIntervalSince(oldDate))
                 next.cpuPercent = Self.cpuPercent(current: next.cpuCounters, previous: oldCPU)
@@ -73,6 +80,9 @@ final class SystemMonitor: ObservableObject {
                     previous: oldDisk?.writtenBytes,
                     elapsed: elapsed
                 )
+                next.corePercents = zip(next.coreCounters, oldCores).map { current, previous in
+                    Self.cpuPercent(current: current, previous: previous)
+                }
                 next.processes = next.processes.map { process in
                     let previous = oldProcessTimes[process.id] ?? process.cpuTicks
                     let delta = process.cpuTicks >= previous ? process.cpuTicks - previous : 0
@@ -85,7 +95,8 @@ final class SystemMonitor: ObservableObject {
                         cpuPercent: min(maximum, max(0, percent)),
                         memoryBytes: process.memoryBytes,
                         cpuTicks: process.cpuTicks,
-                        executablePath: process.executablePath
+                        executablePath: process.executablePath,
+                        power: powerValues[process.id]
                     )
                 }
                 .sorted {
@@ -98,6 +109,12 @@ final class SystemMonitor: ObservableObject {
             next.processCount = next.processes.count
             next.processes = Array(next.processes.prefix(60))
             previousCPU = next.cpuCounters
+            previousCores = next.coreCounters
+            if let temperature = next.temperatureCelsius {
+                temperatureSamples.append((now, temperature))
+                temperatureSamples.removeAll { now.timeIntervalSince($0.date) > 300 }
+                next.temperaturePeak = temperatureSamples.map { $0.value }.max()
+            }
             previousNetwork = next.networkCounters
             previousDisk = next.diskCounters
             previousProcessTimes = allProcessTimes
@@ -142,6 +159,7 @@ private enum SystemProbe {
     static func readSnapshot() -> SystemSnapshot {
         var result = SystemSnapshot()
         result.cpuCounters = cpuCounters()
+        result.coreCounters = coreCounters()
         if result.cpuCounters.total > 0 {
             result.cpuPercent = Double(result.cpuCounters.active) / Double(result.cpuCounters.total) * 100
         }
@@ -161,6 +179,11 @@ private enum SystemProbe {
         result.gpuPercent = gpu.percent
         result.gpuCores = gpu.cores
         result.thermalState = ProcessInfo.processInfo.thermalState
+        let pressure = memoryPressure()
+        result.memoryPressurePercent = pressure.percent
+        result.memoryPressureLevel = pressure.level
+        result.swapUsedBytes = swapUsed()
+        result.networkType = NetworkKind.current()
         var loads = [Double](repeating: 0, count: 3)
         if getloadavg(&loads, 3) > 0 { result.loadAverage = loads[0] }
         result.processes = runningProcesses()
@@ -197,6 +220,57 @@ private enum SystemProbe {
             idle: ticks[Int(CPU_STATE_IDLE)],
             nice: ticks[Int(CPU_STATE_NICE)]
         )
+    }
+
+    /// Auslastung pro Kern (für die Balken in der CPU-Kachel).
+    private static func coreCounters() -> [CPUCounters] {
+        var cpuCount: natural_t = 0
+        var info: processor_info_array_t?
+        var infoCount: mach_msg_type_number_t = 0
+        guard host_processor_info(mach_host_self(), PROCESSOR_CPU_LOAD_INFO, &cpuCount, &info, &infoCount) == KERN_SUCCESS,
+              let info else { return [] }
+        defer {
+            vm_deallocate(
+                mach_task_self_,
+                vm_address_t(UInt(bitPattern: UnsafeRawPointer(info))),
+                vm_size_t(Int(infoCount) * MemoryLayout<integer_t>.stride)
+            )
+        }
+
+        func value(_ index: Int) -> UInt64 {
+            UInt64(UInt32(bitPattern: info[index]))
+        }
+
+        let stride = Int(CPU_STATE_MAX)
+        return (0..<Int(cpuCount)).map { core in
+            let base = core * stride
+            return CPUCounters(
+                user: value(base + Int(CPU_STATE_USER)),
+                system: value(base + Int(CPU_STATE_SYSTEM)),
+                idle: value(base + Int(CPU_STATE_IDLE)),
+                nice: value(base + Int(CPU_STATE_NICE))
+            )
+        }
+    }
+
+    /// Speicherdruck wie in der Aktivitätsanzeige: Stufe (1 normal, 2 Warnung, 4 kritisch) und Prozentwert.
+    private static func memoryPressure() -> (percent: Int?, level: Int) {
+        var free: Int32 = 0
+        var size = MemoryLayout<Int32>.size
+        let percent: Int? = sysctlbyname("kern.memorystatus_level", &free, &size, nil, 0) == 0
+            ? max(0, min(100, 100 - Int(free)))
+            : nil
+        var level: Int32 = 1
+        size = MemoryLayout<Int32>.size
+        if sysctlbyname("kern.memorystatus_vm_pressure_level", &level, &size, nil, 0) != 0 { level = 1 }
+        return (percent, Int(level))
+    }
+
+    private static func swapUsed() -> Int64 {
+        var usage = xsw_usage()
+        var size = MemoryLayout<xsw_usage>.size
+        guard sysctlbyname("vm.swapusage", &usage, &size, nil, 0) == 0 else { return 0 }
+        return Int64(usage.xsu_used)
     }
 
     private static func memoryUsage() -> (used: Int64, total: Int64) {
@@ -459,5 +533,85 @@ private enum SmartProbe {
         case "not supported": return .unsupported
         default: return .unknown
         }
+    }
+}
+
+/// Art der aktiven Netzwerkverbindung (WLAN, Ethernet …), kurz zwischengespeichert.
+enum NetworkKind {
+    private static let lock = NSLock()
+    private static var cached: (value: String?, date: Date)?
+
+    static func current() -> String? {
+        lock.lock()
+        defer { lock.unlock() }
+        if let cached, Date().timeIntervalSince(cached.date) < 10 { return cached.value }
+        let value = read()
+        cached = (value, Date())
+        return value
+    }
+
+    private static func read() -> String? {
+        guard let store = SCDynamicStoreCreate(nil, "Clyro" as CFString, nil, nil),
+              let global = SCDynamicStoreCopyValue(store, "State:/Network/Global/IPv4" as CFString) as? [String: Any],
+              let primary = global["PrimaryInterface"] as? String,
+              let interfaces = SCNetworkInterfaceCopyAll() as? [SCNetworkInterface] else { return nil }
+
+        for interface in interfaces where (SCNetworkInterfaceGetBSDName(interface) as String?) == primary {
+            let type = SCNetworkInterfaceGetInterfaceType(interface) as String?
+            if type == (kSCNetworkInterfaceTypeIEEE80211 as String) { return "WLAN" }
+            if type == (kSCNetworkInterfaceTypeEthernet as String) { return "Ethernet" }
+            return (SCNetworkInterfaceGetLocalizedDisplayName(interface) as String?) ?? primary
+        }
+        return primary
+    }
+}
+
+/// Energiewerte pro Prozess (Spalte PWR) über `top`. Läuft im Hintergrund höchstens alle 6 Sekunden.
+final class PowerSampler: @unchecked Sendable {
+    private let lock = NSLock()
+    private var values: [Int32: Double] = [:]
+    private var isRunning = false
+    private var lastRun = Date.distantPast
+
+    func latest() -> [Int32: Double] {
+        lock.lock()
+        defer { lock.unlock() }
+        return values
+    }
+
+    func requestSample() {
+        lock.lock()
+        guard !isRunning, Date().timeIntervalSince(lastRun) > 6 else {
+            lock.unlock()
+            return
+        }
+        isRunning = true
+        lock.unlock()
+
+        DispatchQueue.global(qos: .utility).async { [weak self] in
+            let result = Shell.run("/usr/bin/top", ["-l", "2", "-s", "1", "-stats", "pid,power", "-o", "power", "-n", "80"], timeout: 8)
+            let parsed = result.ok ? Self.parse(result.output) : [:]
+            guard let self else { return }
+            self.lock.lock()
+            if !parsed.isEmpty { self.values = parsed }
+            self.isRunning = false
+            self.lastRun = Date()
+            self.lock.unlock()
+        }
+    }
+
+    /// Nimmt nur die zweite Messung, denn die erste enthält noch keine Werte.
+    private static func parse(_ output: String) -> [Int32: Double] {
+        let lines = output.split(separator: "\n")
+        guard let header = lines.lastIndex(where: { $0.trimmingCharacters(in: .whitespaces).hasPrefix("PID") }) else { return [:] }
+        var result: [Int32: Double] = [:]
+        for line in lines[(header + 1)...] {
+            let parts = line.split(whereSeparator: { $0 == " " || $0 == "\t" })
+            guard parts.count >= 2,
+                  let pid = Int32(parts[0].trimmingCharacters(in: CharacterSet(charactersIn: "*"))),
+                  let value = Double(parts[1]) else { continue }
+            result[pid] = value
+        }
+        return result
     }
 }

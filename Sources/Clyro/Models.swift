@@ -95,6 +95,7 @@ struct SystemProcess: Identifiable, Hashable {
     let memoryBytes: Int64
     let cpuTicks: UInt64
     let executablePath: String
+    var power: Double?
 
     var crewRole: ProcessCrewRole {
         ProcessCrewRole.classify(name)
@@ -274,6 +275,13 @@ struct SystemSnapshot: Hashable {
     var gpuCores: Int?
     var processCount = 0
     var loadAverage: Double?
+    var coreCounters: [CPUCounters] = []
+    var corePercents: [Double] = []
+    var memoryPressurePercent: Int?
+    var memoryPressureLevel = 1
+    var swapUsedBytes: Int64 = 0
+    var networkType: String?
+    var temperaturePeak: Double?
     var thermalState: ProcessInfo.ThermalState = .nominal
     var processes: [SystemProcess] = []
     var chipName = "Mac"
@@ -300,71 +308,152 @@ struct SystemSnapshot: Hashable {
         }
     }
 
-    var healthScore: Int {
+    /// Gesundheitswert nach denselben Schwellen wie Mole: CPU, Arbeitsspeicher, Festplatte, SMART, Temperatur, I/O, Akku, Laufzeit.
+    var health: (score: Int, issues: [String]) {
         var score = 100.0
-        score -= max(0, cpuPercent - 65) * 0.25
-        score -= max(0, memoryPercent - 75) * 0.35
-        score -= max(0, diskPercent - 80) * 0.55
-        if let temperature = temperatureCelsius { score -= max(0, temperature - 85) * 0.8 }
-        if thermalState == .serious || thermalState == .critical { score -= 12 }
-        if smartStatus == .failing { score -= 30 }
-        return Int(max(1, min(100, score)).rounded())
+        var issues: [String] = []
+
+        func penalty(_ value: Double, normal: Double, high: Double, weight: Double) -> Double {
+            guard value > normal else { return 0 }
+            if value > high { return weight * (value - normal) / (100 - normal) }
+            return (weight / 2) * (value - normal) / (high - normal)
+        }
+
+        score -= penalty(cpuPercent, normal: 50, high: 85, weight: 30)
+        if cpuPercent > 85 { issues.append("Hohe CPU-Last") }
+
+        score -= penalty(memoryPercent, normal: 70, high: 88, weight: 25)
+        if memoryPercent > 88 { issues.append("Wenig Arbeitsspeicher") }
+        switch memoryPressureLevel {
+        case 2:
+            score -= 5
+            issues.append("Speicherdruck")
+        case 4:
+            score -= 15
+            issues.append("Kritischer Speicherdruck")
+        default:
+            break
+        }
+
+        if diskTotalBytes > 0 {
+            score -= penalty(diskPercent, normal: 80, high: 93, weight: 20)
+            if diskPercent > 93 { issues.append("Festplatte fast voll") }
+        }
+        if smartStatus == .failing {
+            score = min(score, 44)
+            issues.append("SMART meldet Fehler")
+        }
+
+        if let temperature = temperatureCelsius, temperature > 65 {
+            if temperature > 85 {
+                score -= 15
+                issues.append("Überhitzung")
+            } else {
+                score -= 15 * (temperature - 65) / 20
+            }
+        }
+
+        let ioMegabytes = (diskReadBytesPerSecond + diskWriteBytesPerSecond) / 1_048_576
+        if ioMegabytes > 50 {
+            if ioMegabytes > 150 {
+                score -= 10
+                issues.append("Hohe Festplattenlast")
+            } else {
+                score -= 10 * (ioMegabytes - 50) / 100
+            }
+        }
+
+        if battery.isPresent {
+            let cycles = battery.cycleCount ?? 0
+            let capacity = battery.healthPercent ?? 100
+            if cycles > 900 || capacity < 60 {
+                score -= 5
+                issues.append("Akku bald tauschen")
+            } else if cycles > 800 || capacity < 80 {
+                score -= 2
+            }
+        }
+
+        if uptime > 14 * 86_400 {
+            score -= 3
+            issues.append("Neustart empfohlen")
+        } else if uptime > 7 * 86_400 {
+            score -= 1
+        }
+
+        return (Int(max(0, min(100, score))), issues)
     }
+
+    var healthScore: Int { health.score }
 
     var healthText: String {
         switch healthScore {
-        case 92...: "Ausgezeichnet"
-        case 80...: "Sehr gut"
-        case 65...: "In Ordnung"
+        case 85...: "Ausgezeichnet"
+        case 65...: "Gut"
+        case 45...: "Mittel"
         default: "Aufmerksamkeit nötig"
         }
     }
+
 }
 
 enum CleanupKind: String, CaseIterable, Codable, Identifiable {
     case caches
     case systemCaches
-    case trash
-    case logs
-    case installers
+    case other
     case developerData
+    case aiTools
     case browserCaches
-    case packageCaches
-    case projectArtifacts
     case appRemnants
+    case installers
+    case projectArtifacts
+    case trash
+    // Ältere Einträge im Verlauf.
+    case logs
+    case packageCaches
 
     var id: String { rawValue }
 
-    /// Nur der Papierkorb wird endgültig geleert; alles andere geht in den Papierkorb.
+    /// Reihenfolge der Kategorien in der Ergebnisliste.
+    static let displayOrder: [CleanupKind] = [
+        .caches, .systemCaches, .other, .developerData, .aiTools,
+        .browserCaches, .appRemnants, .installers, .projectArtifacts, .trash
+    ]
+
+    /// Der Papierkorb wird immer endgültig geleert.
     var isPermanent: Bool { self == .trash }
 
     var title: String {
         switch self {
         case .caches: "App-Caches"
         case .systemCaches: "System-Caches"
+        case .other: "Sonstiges"
+        case .developerData: "Entwicklerwerkzeuge"
+        case .aiTools: "KI-Werkzeuge"
+        case .browserCaches: "Browser"
+        case .appRemnants: "Reste deinstallierter Apps"
+        case .installers: "Installationsdateien"
+        case .projectArtifacts: "Projekt-Artefakte"
         case .trash: "Papierkorb"
         case .logs: "Protokolle"
-        case .installers: "Alte Downloads"
-        case .developerData: "Xcode-Daten"
-        case .browserCaches: "Browser-Caches"
         case .packageCaches: "Paket-Caches"
-        case .projectArtifacts: "Projekt-Artefakte"
-        case .appRemnants: "App-Rückstände"
         }
     }
 
     var detail: String {
         switch self {
-        case .caches: "Temporäre App-Dateien, älter als 14 Tage. Werden beim nächsten Start neu erstellt."
+        case .caches: "Temporäre App-Dateien. Werden beim nächsten Start neu erstellt."
         case .systemCaches: "Von macOS verwaltete Caches. Werden automatisch neu erstellt."
+        case .other: "Protokolle, Diagnoseberichte und verschiedene einmalige Caches."
+        case .developerData: "Xcode / SwiftPM / node Caches. Der erste Build dauert etwas länger."
+        case .aiTools: "Temporäre KI-App-Caches. Gespräche, Projekte und lokale Modelle bleiben erhalten."
+        case .browserCaches: "Browser-Caches. Cookies und Sitzungen bleiben erhalten."
+        case .appRemnants: "Daten von Apps, die nicht mehr auf diesem Mac installiert sind."
+        case .installers: "DMG-, PKG-, ISO-, XIP- und Installer-ZIP-Dateien."
+        case .projectArtifacts: "Wiederherstellbare Build-Ordner wie node_modules, target oder .build."
         case .trash: "Leert den Papierkorb endgültig."
-        case .logs: "Protokoll- und Absturzdateien, älter als 14 Tage"
-        case .installers: "DMG-, PKG-, ISO-, XIP- und ZIP-Dateien in Downloads und auf dem Schreibtisch, älter als 30 Tage"
-        case .developerData: "Alte Derived-Data-Ordner von Xcode"
-        case .browserCaches: "Safari, Chrome, Edge, Brave, Firefox – nur wenn der Browser geschlossen ist"
-        case .packageCaches: "Downloads von npm, pnpm, pip, Gradle und Homebrew, älter als 14 Tage"
-        case .projectArtifacts: "Wiederherstellbare Build-Ordner wie node_modules oder .build"
-        case .appRemnants: "Einstellungen, Caches und Daten deinstallierter Apps"
+        case .logs: "Protokoll- und Absturzdateien"
+        case .packageCaches: "Downloads von Paketmanagern"
         }
     }
 
@@ -372,31 +461,40 @@ enum CleanupKind: String, CaseIterable, Codable, Identifiable {
         switch self {
         case .caches: "shippingbox.fill"
         case .systemCaches: "gearshape.fill"
+        case .other: "tray.full.fill"
+        case .developerData: "hammer.fill"
+        case .aiTools: "sparkles"
+        case .browserCaches: "globe"
+        case .appRemnants: "trash.slash.fill"
+        case .installers: "arrow.down.doc.fill"
+        case .projectArtifacts: "shippingbox.and.arrow.backward.fill"
         case .trash: "trash.fill"
         case .logs: "doc.text.magnifyingglass"
-        case .installers: "arrow.down.doc.fill"
-        case .developerData: "hammer.fill"
-        case .browserCaches: "globe"
         case .packageCaches: "archivebox.fill"
-        case .projectArtifacts: "shippingbox.and.arrow.backward.fill"
-        case .appRemnants: "trash.slash.fill"
         }
     }
 }
 
 struct CleanupItem: Identifiable, Hashable {
+    /// Stellvertretender Ort (für Finder und Anzeige).
     let url: URL
+    /// Was tatsächlich gelöscht wird. Bei Cache-Ordnern ist das der Inhalt, nicht der Ordner selbst.
+    var targets: [URL]
     let bytes: Int64
     var isSelected: Bool
-    /// Gesperrt, solange die zugehörige App läuft (z. B. ein geöffneter Browser).
+    /// Gesperrt, solange die zugehörige App läuft.
     var isLocked = false
     var isRecommended = true
     var ownerName: String?
+    var detail: String?
+    /// Bundle-ID der laufenden App, die diesen Eintrag sperrt.
+    var ownerBundle: String?
 
     var id: URL { url }
     var displayName: String { ownerName ?? url.lastPathComponent }
 
     var locationName: String {
+        if let detail { return detail }
         let home = FileManager.default.homeDirectoryForCurrentUser.path
         return url.path.replacingOccurrences(of: home, with: "~")
     }
