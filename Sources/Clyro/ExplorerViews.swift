@@ -270,6 +270,7 @@ struct ExplorerView: View {
     @State private var pendingTrash: ExplorerEntry?
     @State private var started = false
     @State private var isStarting = false
+    @State private var showsLargeFiles = false
 
     private let palette = ClyroTheme.palette(for: .explorer)
     private var accent: Color { palette.accent }
@@ -278,6 +279,22 @@ struct ExplorerView: View {
         if scanner.isRoot { return "Gesamte Festplatte" }
         let home = FileManager.default.homeDirectoryForCurrentUser.path
         return scanner.location.path.replacingOccurrences(of: home, with: "~")
+    }
+
+    private func modeButton(_ title: String, showsLargeFiles value: Bool) -> some View {
+        Button {
+            withAnimation(.easeOut(duration: 0.15)) { showsLargeFiles = value }
+        } label: {
+            Text(title)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(showsLargeFiles == value ? Color.white : Color.white.opacity(0.55))
+                .padding(.horizontal, 16)
+                .frame(height: 32)
+                .background {
+                    if showsLargeFiles == value { Capsule().fill(.white.opacity(0.14)) }
+                }
+        }
+        .buttonStyle(.plain)
     }
 
     private var sortedEntries: [ExplorerEntry] {
@@ -298,16 +315,32 @@ struct ExplorerView: View {
                 )
                 .padding(22)
             } else {
-                HStack(alignment: .top, spacing: 18) {
-                    sidebar
-                        .frame(width: 270)
-                    VStack(alignment: .leading, spacing: 12) {
-                        header
-                        treemap
+                VStack(spacing: 0) {
+                    HStack(spacing: 2) {
+                        modeButton("Ordner", showsLargeFiles: false)
+                        modeButton("Große Dateien", showsLargeFiles: true)
+                    }
+                    .padding(4)
+                    .background(Capsule().fill(.white.opacity(0.07)))
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 22)
+                    .padding(.top, 14)
+
+                    if showsLargeFiles {
+                        StorageView()
+                    } else {
+                        HStack(alignment: .top, spacing: 18) {
+                            sidebar
+                                .frame(width: 270)
+                            VStack(alignment: .leading, spacing: 12) {
+                                header
+                                treemap
+                            }
+                        }
+                        .padding(.horizontal, 22)
+                        .padding(.vertical, 16)
                     }
                 }
-                .padding(.horizontal, 22)
-                .padding(.vertical, 16)
             }
         }
         .alert(

@@ -941,7 +941,7 @@ struct HistoryView: View {
                     ClyroArtifact(symbol: "clock.arrow.circlepath", satellite: "checkmark", accent: accent, secondary: secondary, growth: 0.05)
                     Text("Noch kein Verlauf")
                         .font(.system(size: 22, weight: .semibold))
-                    Text("Jede Bereinigung lässt deinen Keimling ein Stück weiter wachsen.")
+                    Text("Jede Bereinigung pflanzt einen Baum in deinem Wald.")
                         .font(.system(size: 11, weight: .medium))
                         .foregroundStyle(.secondary)
                 }
@@ -949,23 +949,34 @@ struct HistoryView: View {
                 .clyroPanel(padding: 20, cornerRadius: 20)
             } else {
                 HStack(spacing: 14) {
-                    VStack(spacing: 10) {
-                        ClyroArtifact(symbol: "clock.fill", satellite: "checkmark", accent: accent, secondary: secondary, growth: ClyroGrowth.growth(forFreedBytes: totalBytes))
-                            .scaleEffect(0.76)
-                            .frame(height: 145)
-                        Text("\(cleaner.history.count)")
-                            .font(.system(size: 29, weight: .bold, design: .rounded))
-                        Text("Bereinigungen dokumentiert")
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Dein Wald")
+                            .font(.system(size: 13, weight: .semibold))
+                        Text("Jede Bereinigung pflanzt einen Baum.")
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundStyle(.secondary)
+                        ClyroForest(records: cleaner.history)
+                            .frame(height: 130)
+                        Text("\(min(cleaner.history.count, 40)) Bäume")
+                            .font(.system(size: 22, weight: .bold, design: .rounded))
+                        Text("Große Bäume = viel Platz frei. Die Farbe zeigt die Jahreszeit der Bereinigung.")
                             .font(.system(size: 10, weight: .medium))
                             .foregroundStyle(.secondary)
-                        Text("Dein Garten: \(ClyroGrowth.stageName(for: ClyroGrowth.growth(forFreedBytes: totalBytes)))")
-                            .font(.system(size: 11, weight: .bold))
-                            .foregroundStyle(accent)
-                        Spacer()
                     }
-                    .frame(width: 220)
+                    .frame(maxWidth: .infinity, alignment: .leading)
                     .clyroPanel(padding: 16, cornerRadius: 18)
 
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Freigegeben pro Woche")
+                            .font(.system(size: 13, weight: .semibold))
+                        SavingsChart(records: cleaner.history, accent: accent)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .clyroPanel(padding: 16, cornerRadius: 18)
+                }
+                .frame(height: 250)
+
+                HStack(spacing: 14) {
                     ScrollView {
                         LazyVStack(spacing: 0) {
                             ForEach(Array(cleaner.history.enumerated()), id: \.element.id) { index, record in
@@ -1028,9 +1039,64 @@ struct SettingsView: View {
     @AppStorage("purgePaths") private var purgePaths = ""
     @AppStorage("optimizeDryRun") private var optimizeDryRun = false
     @AppStorage(OptimizeCatalog.excludedKey) private var excludedTasks = ""
+    @AppStorage(ReminderService.lowDiskKey) private var remindLowDisk = false
+    @AppStorage(ReminderService.lowDiskGBKey) private var lowDiskGB = 20
+    @AppStorage(ReminderService.staleKey) private var remindStale = false
+    @AppStorage(ReminderService.staleDaysKey) private var staleDays = 14
+    @AppStorage(ReminderService.autoCleanKey) private var autoClean = false
+    @State private var launchAtLogin = LaunchAtLogin.isEnabled
+    @State private var touchID = TouchIDSudo.isEnabled
+    @State private var touchIDBusy = false
 
     var body: some View {
         Form {
+            Section("Allgemein") {
+                Toggle("Clyro bei der Anmeldung starten", isOn: Binding(
+                    get: { launchAtLogin },
+                    set: { value in
+                        LaunchAtLogin.setEnabled(value)
+                        launchAtLogin = LaunchAtLogin.isEnabled
+                    }
+                ))
+                Text("Dann ist das Blatt in der Menüleiste nach jedem Neustart sofort da.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Toggle("Touch ID für sudo im Terminal", isOn: Binding(
+                    get: { touchID },
+                    set: { value in
+                        touchIDBusy = true
+                        Task.detached {
+                            _ = TouchIDSudo.setEnabled(value)
+                            let now = TouchIDSudo.isEnabled
+                            await MainActor.run {
+                                touchID = now
+                                touchIDBusy = false
+                            }
+                        }
+                    }
+                ))
+                .disabled(touchIDBusy)
+                Text("Wie Mole: trägt pam_tid in /etc/pam.d/sudo_local ein. macOS fragt dafür einmal nach deinem Passwort, die Einstellung bleibt nach Updates erhalten.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            Section("Erinnerungen") {
+                Toggle("Melden, wenn wenig Speicher frei ist", isOn: $remindLowDisk)
+                if remindLowDisk {
+                    Stepper("Unter \(lowDiskGB) GB frei", value: $lowDiskGB, in: 5...500, step: 5)
+                }
+                Toggle("Erinnern, wenn lange nicht bereinigt wurde", isOn: $remindStale)
+                if remindStale {
+                    Stepper("Nach \(staleDays) Tagen", value: $staleDays, in: 3...90)
+                }
+                Toggle("Jede Woche automatisch bereinigen", isOn: $autoClean)
+                Text("Automatisch werden nur empfohlene Einträge bereinigt – ohne Systembereiche (Admin) und ohne Papierkorb. Clyro meldet danach, wie viel frei wurde.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            .onChange(of: remindLowDisk) { _, on in if on { ClyroNotifier.requestAuthorization() } }
+            .onChange(of: remindStale) { _, on in if on { ClyroNotifier.requestAuthorization() } }
+            .onChange(of: autoClean) { _, on in if on { ClyroNotifier.requestAuthorization() } }
             Section("Bereinigen") {
                 Toggle("Entwicklerwerkzeuge prüfen", isOn: $includeDeveloperData)
                 Toggle("In den Papierkorb statt endgültig löschen", isOn: $useTrash)

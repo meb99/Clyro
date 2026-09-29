@@ -326,6 +326,9 @@ struct MenuBarStatusView: View {
                     MenuStat(value: "\(uninstalled)", label: "Deinstalliert")
                     MenuStat(value: "\(optimized)", label: "Optimiert")
                 }
+                ClyroForest(records: cleaner.history)
+                    .frame(height: 54)
+                    .help("Dein Wald: jede Bereinigung pflanzt einen Baum")
             }
         }
         .menuCardStyle()

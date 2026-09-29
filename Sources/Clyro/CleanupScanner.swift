@@ -87,6 +87,8 @@ final class CleanupScanner: ObservableObject {
     @Published private(set) var cleanTotal = 0
     @Published private(set) var cleanCurrent = ""
 
+    private var autoCleanPending = false
+    private var autoCleanRunning = false
     private var lastLoggedKind: CleanupKind?
     private var nextMilestone = 0
     private let historyKey = "clyro.cleanup.history"
@@ -146,7 +148,34 @@ final class CleanupScanner: ObservableObject {
             categories = output.categories
             blockedApps = output.blockedApps
             state = .ready
+            if autoCleanPending {
+                autoCleanPending = false
+                runAutoClean()
+            }
         }
+    }
+
+    /// Wöchentliches automatisches Bereinigen: Scan, dann nur empfohlene Einträge ohne Admin-Bereiche und Papierkorb.
+    /// Gibt `false` zurück, wenn gerade etwas anderes läuft.
+    @discardableResult
+    func autoClean() -> Bool {
+        guard state == .idle else { return false }
+        autoCleanPending = true
+        scan()
+        return true
+    }
+
+    private func runAutoClean() {
+        selectRecommended()
+        for index in categories.indices where categories[index].kind == .adminSystem || categories[index].kind == .trash {
+            categories[index].setSelected(false)
+        }
+        guard selectedItems > 0 else {
+            close()
+            return
+        }
+        autoCleanRunning = true
+        cleanSelected()
     }
 
     /// Verwirft die Ergebnisse und kehrt zum Startbildschirm zurück.
@@ -210,11 +239,14 @@ final class CleanupScanner: ObservableObject {
                 var processed = 0
                 var bytes: Int64 = 0
                 var kinds: [CleanupKind] = []
+                // Systembereiche brauchen Admin-Rechte: ein einziger Passwortdialog für alle zusammen.
+                let adminItems = targets.filter { $0.kind == .adminSystem }.map(\.item)
+                let adminDone = adminItems.isEmpty ? false : AdminCleanup.clean(adminItems)
                 for target in targets {
                     processed += 1
                     let permanent = target.kind.isPermanent || !toTrash
-                    var removedAny = false
-                    for url in target.item.targets where !CleanupWhitelist.matches(url) {
+                    var removedAny = target.kind == .adminSystem && adminDone
+                    for url in target.item.targets where target.kind != .adminSystem && !CleanupWhitelist.matches(url) {
                         do {
                             if permanent {
                                 try FileManager.default.removeItem(at: url)
@@ -249,6 +281,16 @@ final class CleanupScanner: ObservableObject {
             if result.moved > 0 {
                 record(bytes: result.bytes, itemCount: result.moved, kinds: result.kinds)
                 celebration = CleanupCelebration(bytes: result.bytes)
+            }
+            if autoCleanRunning {
+                autoCleanRunning = false
+                ClyroNotifier.post(
+                    id: "autoclean",
+                    title: "Clyro hat aufgeräumt",
+                    body: result.moved > 0
+                        ? "\(ClyroFormat.byteCount(result.bytes)) freigegeben – automatisch, nur empfohlene Einträge."
+                        : "Es gab nichts aufzuräumen."
+                )
             }
             // Nach dem Aufräumen beginnt wieder der Startbildschirm; Ergebnisse gibt es erst nach einem neuen Scan.
             categories = []
@@ -745,6 +787,7 @@ private struct CleanupProbe {
         for item in installerItems(whitelist: whitelist) { add(item, to: .installers) }
         for item in projectItems(whitelist: whitelist) { add(item, to: .projectArtifacts) }
         for item in trashItems() { add(item, to: .trash) }
+        for item in AdminCleanup.items(whitelist: whitelist) { add(item, to: .adminSystem) }
 
         let categories = CleanupKind.displayOrder.compactMap { kind -> CleanupCategory? in
             guard var items = buckets[kind], !items.isEmpty else { return nil }
