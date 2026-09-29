@@ -71,12 +71,12 @@ jobs:
           NOTES="docs/releases/${{ steps.version.outputs.version }}.md"
           if [[ ! -f "$NOTES" ]]; then
             NOTES="release-notes.md"
-            printf '%s\n' "Clyro ${{ steps.version.outputs.version }} für macOS 14 oder neuer (Apple Silicon und Intel)." > "$NOTES"
+            printf '%s\n' "Clyro ${{ steps.version.outputs.version }} for macOS 14 or later (Apple Silicon and Intel). · Für macOS 14 oder neuer." > "$NOTES"
           fi
           {
             cat "$NOTES"
             printf '\n---\n'
-            printf '%s\n' "Die App ist nicht von Apple notarisiert. Beim ersten Start im Programme-Ordner per Rechtsklick auf Clyro → **Öffnen** bestätigen."
+            printf '%s\n' "Not notarized by Apple: confirm the first launch via right-click → **Open**. · Nicht von Apple notarisiert: den ersten Start per Rechtsklick → **Öffnen** bestätigen."
           } > release-body.md
 
       - name: Als Artefakt ablegen
