@@ -147,8 +147,8 @@ enum ClyroFormat {
     static func uptime(_ seconds: TimeInterval) -> String {
         let days = Int(seconds) / 86_400
         let hours = (Int(seconds) % 86_400) / 3_600
-        if days > 0 { return "\(days) T \(hours) Std" }
+        if days > 0 { return String(localized: "\(days) T \(hours) Std") }
         let minutes = (Int(seconds) % 3_600) / 60
-        return "\(hours) Std \(minutes) Min"
+        return String(localized: "\(hours) Std \(minutes) Min")
     }
 }

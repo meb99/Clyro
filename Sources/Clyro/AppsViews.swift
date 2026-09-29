@@ -19,10 +19,10 @@ struct ApplicationsView: View {
 
         var title: String {
             switch self {
-            case .name: "Name"
-            case .size: "App-Größe"
-            case .lastUsed: "Zuletzt verwendet"
-            case .added: "Hinzugefügt"
+            case .name: String(localized: "Name")
+            case .size: String(localized: "App-Größe")
+            case .lastUsed: String(localized: "Zuletzt verwendet")
+            case .added: String(localized: "Hinzugefügt")
             }
         }
     }
@@ -103,9 +103,9 @@ struct ApplicationsView: View {
     private var toolbar: some View {
         HStack(spacing: 14) {
             HStack(spacing: 2) {
-                modeButton("Deinstallieren", .uninstall)
-                modeButton("Updates", .updates)
-                modeButton("Start", .startup)
+                modeButton(String(localized: "Deinstallieren"), .uninstall)
+                modeButton(String(localized: "Updates"), .updates)
+                modeButton(String(localized: "Start"), .startup)
             }
             .padding(4)
             .background(Capsule().fill(.white.opacity(0.07)))
@@ -177,10 +177,10 @@ struct ApplicationsView: View {
     private var uninstallContent: some View {
         if !hasLoaded || isLoading {
             ClyroStartStage(
-                title: "Mitten im Sommer –\nsieh nach, was bei dir alles wächst.",
-                buttonTitle: "Apps laden",
-                busyTitle: "Clyro misst deine Apps",
-                busyMessage: "Größen, Versionen und letzte Nutzung werden ermittelt …",
+                title: String(localized: "Programme vollständig entfernen,\nUpdates und Startobjekte im Blick."),
+                buttonTitle: String(localized: "Apps laden"),
+                busyTitle: String(localized: "Apps werden gemessen"),
+                busyMessage: String(localized: "Größen, Versionen und letzte Nutzung werden ermittelt …"),
                 accent: accent,
                 isBusy: isLoading,
                 action: { Task { await load() } }
@@ -331,22 +331,25 @@ private struct AppRow: View {
 
 enum ApplicationActivity {
     static func describe(_ app: InstalledApplication) -> (text: String, color: Color) {
-        if app.isRunning { return ("jetzt aktiv", ClyroTheme.mint) }
-        guard let date = app.lastUsed else { return ("nie geöffnet", .secondary) }
+        if app.isRunning { return (String(localized: "jetzt aktiv"), ClyroTheme.mint) }
+        guard let date = app.lastUsed else { return (String(localized: "nie geöffnet"), .secondary) }
 
         let days = max(0, Int(Date().timeIntervalSince(date) / 86_400))
-        func unit(_ count: Int, _ singular: String, _ plural: String) -> String {
-            "aktiv vor \(count) \(count == 1 ? singular : plural)"
-        }
         switch days {
-        case 0: return ("heute aktiv", ClyroTheme.mint)
-        case 1..<7: return (unit(days, "Tag", "Tagen"), .secondary)
-        case 7..<30: return (unit(days / 7, "Woche", "Wochen"), .secondary)
+        case 0:
+            return (String(localized: "heute aktiv"), ClyroTheme.mint)
+        case 1..<7:
+            return (days == 1 ? String(localized: "aktiv vor 1 Tag") : String(localized: "aktiv vor \(days) Tagen"), .secondary)
+        case 7..<30:
+            let weeks = days / 7
+            return (weeks == 1 ? String(localized: "aktiv vor 1 Woche") : String(localized: "aktiv vor \(weeks) Wochen"), .secondary)
         case 30..<365:
             let months = max(1, days / 30)
-            return (unit(months, "Monat", "Monaten"), months >= 3 ? ClyroTheme.gold : .secondary)
+            let text = months == 1 ? String(localized: "aktiv vor 1 Monat") : String(localized: "aktiv vor \(months) Monaten")
+            return (text, months >= 3 ? ClyroTheme.gold : .secondary)
         default:
-            return (unit(days / 365, "Jahr", "Jahren"), ClyroTheme.orange)
+            let years = days / 365
+            return (years == 1 ? String(localized: "aktiv vor 1 Jahr") : String(localized: "aktiv vor \(years) Jahren"), ClyroTheme.orange)
         }
     }
 }
@@ -494,8 +497,8 @@ struct BulkUninstallSheet: View {
                                     Text(plan.app.name)
                                         .font(.system(size: 14, weight: .semibold))
                                     Text(plan.isBlocked
-                                         ? (AppRemnantProbe.protectionReason(plan.app) ?? "läuft noch – bitte erst beenden")
-                                         : "\(plan.remnants.count) Rückstände gefunden")
+                                         ? (AppRemnantProbe.protectionReason(plan.app) ?? String(localized: "läuft noch – bitte erst beenden"))
+                                         : String(localized: "\(plan.remnants.count) Rückstände gefunden"))
                                         .font(.system(size: 11, weight: .medium))
                                         .foregroundStyle(plan.isBlocked ? ClyroTheme.orange : Color.secondary)
                                 }
@@ -537,7 +540,7 @@ struct BulkUninstallSheet: View {
                 .monospacedDigit()
             HStack(spacing: 10) {
                 Circle().fill(accent).frame(width: 9, height: 9)
-                Text("\(current.isEmpty ? "Wird vorbereitet" : current) · \(done) / \(total)")
+                Text("\(current.isEmpty ? String(localized: "Wird vorbereitet") : current) · \(done) / \(total)")
                     .font(.system(size: 14, weight: .medium))
                     .foregroundStyle(.white.opacity(0.62))
                     .lineLimit(1)
@@ -601,7 +604,7 @@ struct BulkUninstallSheet: View {
                 .frame(width: 300, height: 250)
             Text("\(ClyroFormat.byteCount(freed)) freigegeben")
                 .font(.system(size: 30, weight: .bold, design: .rounded))
-            Text("\(removed.count) App(s) im Papierkorb.")
+            Text("\(removed.count) Apps im Papierkorb")
                 .font(.system(size: 14, weight: .medium))
                 .foregroundStyle(.secondary)
             Button("Fertig") {

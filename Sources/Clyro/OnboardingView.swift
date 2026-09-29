@@ -18,35 +18,35 @@ struct OnboardingView: View {
         Page(
             season: .spring,
             accent: ClyroTheme.mint,
-            title: "Willkommen bei Clyro",
+            title: String(localized: "Willkommen bei Clyro"),
             points: [
-                ("sparkles", "Bereinigen findet Caches, Protokolle, Reste und Installationsdateien – im Winter wird aufgeräumt."),
-                ("app.dashed", "Apps entfernt Programme samt Rückständen, zeigt Updates und Autostart – mitten im Sommer."),
-                ("dial.medium.fill", "Optimieren erledigt 21 Wartungsaufgaben mit einem Klick – der Frühling für deinen Mac."),
-                ("chart.pie.fill", "Analyse zeigt, was Platz belegt, und findet große Dateien – der Herbst zeigt, was abfällt."),
-                ("square.grid.2x2.fill", "Status zeigt live, wie es deinem Mac geht.")
+                ("sparkles", String(localized: "Bereinigen findet Caches, Protokolle, Reste deinstallierter Apps und Installationsdateien.")),
+                ("app.dashed", String(localized: "Apps entfernt Programme vollständig, zeigt verfügbare Updates und alle Startobjekte.")),
+                ("dial.medium.fill", String(localized: "Optimieren führt 21 Wartungsaufgaben in einem Durchgang aus.")),
+                ("chart.pie.fill", String(localized: "Analyse zeigt, welche Ordner und Dateien den meisten Platz belegen.")),
+                ("square.grid.2x2.fill", String(localized: "Status zeigt Auslastung, Temperatur, Akku und Prozesse in Echtzeit."))
             ]
         ),
         Page(
             season: .winter,
             accent: Color(red: 0.43, green: 0.69, blue: 1.0),
-            title: "So löscht Clyro",
+            title: String(localized: "So arbeitet Clyro"),
             points: [
-                ("eye", "Erst wird gescannt, dann entscheidest du. Gelöscht wird nur, was ausgewählt ist."),
-                ("trash.slash", "Wie Mole löscht Clyro endgültig. In den Einstellungen kannst du stattdessen den Papierkorb wählen."),
-                ("lock.shield", "Passwortmanager, Schlüssel, VPNs, Sicherheitssoftware und persönliche Ordner sind immer geschützt."),
-                ("key.fill", "Für Systembereiche fragt macOS einmal nach deinem Passwort – nur wenn du sie auswählst."),
-                ("doc.text.magnifyingglass", "Jede Löschung steht im Protokoll unter ~/Library/Logs/Clyro.")
+                ("eye", String(localized: "Jeder Vorgang beginnt mit einem Scan. Gelöscht wird nur, was du auswählst.")),
+                ("trash.slash", String(localized: "Caches und Protokolle werden endgültig gelöscht. In den Einstellungen lässt sich der Papierkorb aktivieren.")),
+                ("lock.shield", String(localized: "Passwortmanager, Schlüssel, VPN-Clients, Sicherheitssoftware und persönliche Ordner sind ausgenommen.")),
+                ("key.fill", String(localized: "Systembereiche erfordern das Administratorpasswort und werden nur nach Auswahl bereinigt.")),
+                ("doc.text.magnifyingglass", String(localized: "Jeder Löschvorgang wird unter ~/Library/Logs/Clyro protokolliert."))
             ]
         ),
         Page(
             season: .summer,
             accent: Color(red: 1.0, green: 0.62, blue: 0.44),
-            title: "Immer griffbereit",
+            title: String(localized: "Im Alltag"),
             points: [
-                ("leaf.fill", "Das Blatt in der Menüleiste zeigt alle Werte auf einen Blick und hält den Mac auf Wunsch wach."),
-                ("tree.fill", "Jede Bereinigung pflanzt einen Baum in deinem Wald."),
-                ("bell.badge", "In den Einstellungen (⌘,) gibt es Erinnerungen, wöchentliches Bereinigen, Start bei Anmeldung und Touch ID für sudo.")
+                ("leaf.fill", String(localized: "Das Symbol in der Menüleiste zeigt die wichtigsten Werte und kann den Ruhezustand verhindern.")),
+                ("bell.badge", String(localized: "In den Einstellungen (⌘,) findest du Erinnerungen, wöchentliche Bereinigung, Autostart, Touch ID für sudo und die Sprache.")),
+                ("tree.fill", String(localized: "Jede Bereinigung wird im Verlauf festgehalten."))
             ]
         )
     ]
@@ -98,7 +98,7 @@ struct OnboardingView: View {
                         .foregroundStyle(.white.opacity(0.7))
                         .padding(.trailing, 12)
                 }
-                Button(page == pages.count - 1 ? "Los geht's" : "Weiter") {
+                Button(page == pages.count - 1 ? String(localized: "Los geht's") : String(localized: "Weiter")) {
                     if page == pages.count - 1 {
                         done = true
                     } else {

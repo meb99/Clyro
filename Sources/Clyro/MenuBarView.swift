@@ -49,7 +49,7 @@ final class KeepAwake: ObservableObject {
     }
 }
 
-/// Kompakte Statusübersicht im Menüleisten-Fenster, wie das Dropdown von Mole.
+/// Kompakte Statusübersicht im Menüleisten-Fenster.
 struct MenuBarStatusView: View {
     @EnvironmentObject private var monitor: SystemMonitor
     @EnvironmentObject private var cleaner: CleanupScanner
@@ -122,7 +122,7 @@ struct MenuBarStatusView: View {
             MenuBadge(text: snapshot.chipName)
             MenuBadge(text: ClyroFormat.memory(snapshot.memoryTotalBytes).replacingOccurrences(of: ".0", with: ""))
             MenuBadge(text: "macOS \(shortOSVersion)")
-            MenuBadge(text: "Laufzeit \(ClyroFormat.uptime(snapshot.uptime))")
+            MenuBadge(text: String(localized: "Laufzeit \(ClyroFormat.uptime(snapshot.uptime))"))
             Spacer(minLength: 0)
         }
         .lineLimit(1)
@@ -153,7 +153,7 @@ struct MenuBarStatusView: View {
 
     private var memoryCard: some View {
         MenuCard(icon: "memorychip", title: "RAM", accent: ClyroTheme.gold,
-                 badge: snapshot.memoryPressurePercent.map { "Druck \($0) %" }) {
+                 badge: snapshot.memoryPressurePercent.map { String(localized: "Druck \($0) %") }) {
             MenuValue(value: String(format: "%.0f", snapshot.memoryPercent), unit: "%")
             Sparkline(values: monitor.memoryHistory, color: ClyroTheme.gold)
                 .frame(height: 14)
@@ -165,7 +165,7 @@ struct MenuBarStatusView: View {
         let free = max(0, snapshot.diskTotalBytes - snapshot.diskUsedBytes)
         return MenuCard(icon: "internaldrive", title: "SSD", accent: ClyroTheme.blue,
                         badge: ClyroFormat.byteCount(snapshot.diskTotalBytes)) {
-            MenuValue(value: ClyroFormat.byteCount(free), unit: "frei")
+            MenuValue(value: ClyroFormat.byteCount(free), unit: String(localized: "frei"))
             MenuFillBar(fraction: snapshot.diskPercent / 100, color: ClyroTheme.blue)
                 .frame(height: 14)
             MenuDetail(text: "\(ClyroFormat.byteCount(snapshot.diskUsedBytes)) belegt · \(Int(snapshot.diskPercent)) %")
@@ -173,7 +173,7 @@ struct MenuBarStatusView: View {
     }
 
     private var networkCard: some View {
-        MenuCard(icon: "globe", title: "Netzwerk", accent: ClyroTheme.blue, badge: snapshot.networkType) {
+        MenuCard(icon: "globe", title: String(localized: "Netzwerk"), accent: ClyroTheme.blue, badge: snapshot.networkType) {
             MenuValue(value: ClyroFormat.compactSpeed(snapshot.downloadBytesPerSecond), unit: "")
             Sparkline(values: normalizedNetworkHistory, color: ClyroTheme.blue)
                 .frame(height: 14)
@@ -183,7 +183,7 @@ struct MenuBarStatusView: View {
 
     private var thermalCard: some View {
         MenuCard(icon: "thermometer.medium", title: "Temp", accent: thermalColor,
-                 badge: snapshot.thermalState == .nominal ? "Normal" : "Warm") {
+                 badge: snapshot.thermalState == .nominal ? String(localized: "Normal") : String(localized: "Warm")) {
             if let cpu = snapshot.temperatureCelsius {
                 MenuValue(value: String(format: "%.0f", cpu), unit: "°C")
                 MenuFillBar(fraction: cpu / 100, color: thermalColor)
@@ -192,7 +192,7 @@ struct MenuBarStatusView: View {
             } else {
                 MenuValue(value: snapshot.thermalText, unit: "")
                 Spacer(minLength: 14)
-                MenuDetail(text: "Wärmezustand laut macOS")
+                MenuDetail(text: String(localized: "Wärmezustand laut macOS"))
             }
         }
     }
@@ -208,7 +208,7 @@ struct MenuBarStatusView: View {
                         .foregroundStyle(.white.opacity(0.8))
                     Spacer()
                     if let health = snapshot.battery.healthPercent {
-                        MenuBadge(text: "\(health) % Gesundheit")
+                        MenuBadge(text: String(localized: "\(health) % Gesundheit"))
                     }
                 }
                 .font(.system(size: 12, weight: .semibold))
@@ -287,12 +287,12 @@ struct MenuBarStatusView: View {
     private var footer: some View {
         VStack(spacing: 10) {
             HStack(spacing: 8) {
-                MenuAction(title: keepAwake.isOn ? "Wach" : "Wachhalten",
+                MenuAction(title: keepAwake.isOn ? String(localized: "Wach") : String(localized: "Wachhalten"),
                            icon: keepAwake.isOn ? "cup.and.saucer.fill" : "cup.and.saucer",
                            isOn: keepAwake.isOn) {
                     keepAwake.toggle()
                 }
-                MenuAction(title: "Clyro öffnen", icon: "leaf.fill", isOn: false) {
+                MenuAction(title: String(localized: "Clyro öffnen"), icon: "leaf.fill", isOn: false) {
                     openMainWindow()
                 }
                 SettingsLink {
@@ -322,13 +322,13 @@ struct MenuBarStatusView: View {
                     .font(.system(size: 12, weight: .semibold))
                     .foregroundStyle(.white.opacity(0.8))
                 HStack {
-                    MenuStat(value: ClyroFormat.byteCount(cleaner.history.reduce(0) { $0 + $1.bytes }), label: "Bereinigt")
-                    MenuStat(value: "\(uninstalled)", label: "Deinstalliert")
-                    MenuStat(value: "\(optimized)", label: "Optimiert")
+                    MenuStat(value: ClyroFormat.byteCount(cleaner.history.reduce(0) { $0 + $1.bytes }), label: String(localized: "Bereinigt"))
+                    MenuStat(value: "\(uninstalled)", label: String(localized: "Deinstalliert"))
+                    MenuStat(value: "\(optimized)", label: String(localized: "Optimiert"))
                 }
                 ClyroForest(records: cleaner.history)
                     .frame(height: 54)
-                    .help("Dein Wald: jede Bereinigung pflanzt einen Baum")
+                    .help("Jede Bereinigung pflanzt einen Baum")
             }
         }
         .menuCardStyle()
@@ -356,19 +356,19 @@ struct MenuBarStatusView: View {
 
     private var cpuDetail: String {
         let cores = snapshot.corePercents.isEmpty ? ProcessInfo.processInfo.processorCount : snapshot.corePercents.count
-        let state = snapshot.cpuPercent < 35 ? "Leerlauf" : snapshot.cpuPercent < 70 ? "Aktiv" : "Hohe Last"
-        let load = snapshot.loadAverage.map { String(format: "%.1f", $0).replacingOccurrences(of: ".", with: ",") } ?? "–"
-        return "\(state) · Last \(load)/\(cores)"
+        let state = snapshot.cpuPercent < 35 ? String(localized: "Leerlauf") : snapshot.cpuPercent < 70 ? String(localized: "Aktiv") : String(localized: "Hohe Last")
+        let load = snapshot.loadAverage.map { $0.formatted(.number.precision(.fractionLength(1))) } ?? "–"
+        return String(localized: "\(state) · Last \(load)/\(cores)")
     }
 
     private var gpuDetail: String {
-        let state = (snapshot.gpuPercent ?? 0) < 35 ? "Leerlauf" : "Aktiv"
-        return snapshot.gpuCores.map { "\(state) · \($0) Kerne" } ?? state
+        let state = (snapshot.gpuPercent ?? 0) < 35 ? String(localized: "Leerlauf") : String(localized: "Aktiv")
+        return snapshot.gpuCores.map { String(localized: "\(state) · \($0) Kerne") } ?? state
     }
 
     private var batteryTime: String {
         let remaining = snapshot.battery.timeRemaining
-        if remaining.contains(":") { return "\(remaining) übrig" }
+        if remaining.contains(":") { return String(localized: "\(remaining) übrig") }
         return remaining
     }
 

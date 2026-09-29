@@ -30,11 +30,11 @@ struct StorageView: View {
 
             if !hasScanned || isScanning {
                 ClyroStartStage(
-                    title: "Große Dateien finden",
-                    message: "Clyro sucht in Downloads, Schreibtisch, Dokumenten und Filmen. Es wird nichts gelöscht.",
-                    buttonTitle: "Speicher scannen",
-                    busyTitle: "Clyro durchsucht deinen Speicher",
-                    busyMessage: "Downloads, Schreibtisch, Dokumente und Filme werden geprüft …",
+                    title: String(localized: "Große Dateien finden"),
+                    message: String(localized: "Clyro sucht in Downloads, Schreibtisch, Dokumenten und Filmen. Es wird nichts gelöscht."),
+                    buttonTitle: String(localized: "Speicher scannen"),
+                    busyTitle: String(localized: "Speicher wird durchsucht"),
+                    busyMessage: String(localized: "Downloads, Schreibtisch, Dokumente und Filme werden geprüft …"),
                     accent: accent,
                     isBusy: isScanning,
                     action: { scan() }
@@ -61,8 +61,8 @@ struct StorageView: View {
     private var header: some View {
         HStack(spacing: 14) {
             ClyroPageHeader(
-                title: "Speicher",
-                subtitle: "Große Dateien als klare Speicherlandschaft – ohne automatisches Löschen.",
+                title: String(localized: "Speicher"),
+                subtitle: String(localized: "Große Dateien in Downloads, Schreibtisch, Dokumenten und Filmen."),
                 icon: "square.3.layers.3d",
                 accent: accent
             )
@@ -79,7 +79,7 @@ struct StorageView: View {
             Button {
                 scan()
             } label: {
-                Label(isScanning ? "Scanne …" : "Neu scannen", systemImage: "arrow.clockwise")
+                Label(isScanning ? String(localized: "Scanne …") : String(localized: "Neu scannen"), systemImage: "arrow.clockwise")
             }
             .buttonStyle(.borderedProminent)
             .tint(accent)
@@ -104,12 +104,12 @@ struct StorageView: View {
 
             Divider().overlay(ClyroTheme.border)
 
-            StorageSideStat(title: "Größte Datei", value: files.first?.displayName ?? "–", icon: "arrow.up.left.and.arrow.down.right", color: accent)
-            StorageSideStat(title: "Geprüfte Ordner", value: "Downloads · Desktop · Dokumente · Filme", icon: "folder", color: secondary)
+            StorageSideStat(title: String(localized: "Größte Datei"), value: files.first?.displayName ?? "–", icon: "arrow.up.left.and.arrow.down.right", color: accent)
+            StorageSideStat(title: String(localized: "Geprüfte Ordner"), value: String(localized: "Downloads · Desktop · Dokumente · Filme"), icon: "folder", color: secondary)
 
             Spacer(minLength: 0)
 
-            Text("Clyro zeigt nur an. Öffne eine Datei gezielt im Finder, bevor du sie entfernst.")
+            Text("Clyro löscht hier nichts. Dateien lassen sich im Finder prüfen und entfernen.")
                 .font(.system(size: 10, weight: .medium))
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -122,23 +122,23 @@ struct StorageView: View {
         HStack(spacing: 14) {
             StorageSummaryTile(
                 icon: "doc.text.magnifyingglass",
-                title: "Gefunden",
+                title: String(localized: "Gefunden"),
                 value: "\(files.count)",
-                detail: "ab \(threshold.title)",
+                detail: String(localized: "ab \(threshold.title)"),
                 color: ClyroTheme.mint
             )
             StorageSummaryTile(
                 icon: "internaldrive",
-                title: "Zusammen",
+                title: String(localized: "Zusammen"),
                 value: ClyroFormat.byteCount(totalBytes),
-                detail: "nur eine Übersicht",
+                detail: String(localized: "nur eine Übersicht"),
                 color: ClyroTheme.blue
             )
             StorageSummaryTile(
                 icon: "arrow.up.left.and.arrow.down.right",
-                title: "Größte Datei",
+                title: String(localized: "Größte Datei"),
                 value: files.first?.displayName ?? "–",
-                detail: files.first.map { ClyroFormat.byteCount($0.sizeBytes) } ?? "Noch keine Werte",
+                detail: files.first.map { ClyroFormat.byteCount($0.sizeBytes) } ?? String(localized: "Noch keine Werte"),
                 color: ClyroTheme.orange
             )
         }
@@ -174,11 +174,11 @@ struct StorageView: View {
                     Image(systemName: query.isEmpty ? "checkmark.circle" : "magnifyingglass")
                         .font(.system(size: 32, weight: .light))
                         .foregroundStyle(accent)
-                    Text(query.isEmpty ? "Keine großen Dateien gefunden" : "Keine passende Datei")
+                    Text(query.isEmpty ? String(localized: "Keine großen Dateien gefunden") : String(localized: "Keine passende Datei"))
                         .font(.system(size: 17, weight: .bold, design: .rounded))
                     Text(query.isEmpty
-                         ? "In den geprüften Ordnern liegt nichts über \(threshold.title)."
-                         : "Ändere den Suchbegriff oder die Mindestgröße.")
+                         ? String(localized: "In den geprüften Ordnern liegt nichts über \(threshold.title).")
+                         : String(localized: "Ändere den Suchbegriff oder die Mindestgröße."))
                         .font(.system(size: 12, design: .rounded))
                         .foregroundStyle(ClyroTheme.secondaryText)
                 }
@@ -256,7 +256,7 @@ private struct StorageMosaicView: View {
                     Image(systemName: "square.3.layers.3d")
                         .font(.system(size: 28, weight: .light))
                         .foregroundStyle(accent)
-                    Text("Nach dem Scan entsteht hier deine Speicherlandschaft.")
+                    Text("Nach dem Scan erscheinen hier die größten Dateien.")
                         .font(.system(size: 11, weight: .medium))
                         .foregroundStyle(.secondary)
                 }
@@ -478,13 +478,13 @@ struct StartupItemsView: View {
         VStack(alignment: .leading, spacing: 14) {
             HStack(spacing: 12) {
                 ClyroPageHeader(
-                    title: "Autostart",
-                    subtitle: "Hintergrunddienste nach Benutzer- und Systembereich verständlich aufgeschlüsselt.",
+                    title: String(localized: "Autostart"),
+                    subtitle: String(localized: "Hintergrunddienste, getrennt nach Benutzer- und Systembereich."),
                     icon: "bolt.fill",
                     accent: accent
                 )
                 Spacer()
-                ClyroStatPill(title: "Gefunden", value: "\(items.count) Dienste", icon: "bolt.horizontal.fill", color: accent)
+                ClyroStatPill(title: String(localized: "Gefunden"), value: String(localized: "\(items.count) Dienste"), icon: "bolt.horizontal.fill", color: accent)
                 TextField("Dienst suchen", text: $query)
                     .textFieldStyle(.roundedBorder)
                     .frame(width: 210)
@@ -492,11 +492,11 @@ struct StartupItemsView: View {
 
             if !hasScanned || isScanning {
                 ClyroStartStage(
-                    title: "Autostart prüfen",
-                    message: "Clyro zeigt, welche Dienste im Hintergrund mit deinem Mac starten. Es wird nichts verändert.",
-                    buttonTitle: "Autostart scannen",
-                    busyTitle: "Clyro sucht Hintergrunddienste",
-                    busyMessage: "Launch Agents und Launch Daemons werden gelesen …",
+                    title: String(localized: "Autostart prüfen"),
+                    message: String(localized: "Clyro zeigt, welche Dienste im Hintergrund mit deinem Mac starten. Es wird nichts verändert."),
+                    buttonTitle: String(localized: "Autostart scannen"),
+                    busyTitle: String(localized: "Hintergrunddienste werden gesucht"),
+                    busyMessage: String(localized: "Launch Agents und Launch Daemons werden gelesen …"),
                     accent: accent,
                     isBusy: isScanning,
                     action: { scanStartup() }
@@ -518,9 +518,9 @@ struct StartupItemsView: View {
                         ClyroArtifact(symbol: "bolt.fill", satellite: "gearshape.fill", accent: accent, secondary: secondary)
                             .scaleEffect(0.76)
                             .frame(height: 142)
-                        StartupScopeStat(title: "Benutzer", count: items.filter { $0.scope == "Benutzer" }.count, color: accent)
-                        StartupScopeStat(title: "Alle Benutzer", count: items.filter { $0.scope == "Alle Benutzer" }.count, color: secondary)
-                        StartupScopeStat(title: "System", count: items.filter { $0.scope == "System" }.count, color: ClyroTheme.blue)
+                        StartupScopeStat(title: String(localized: "Benutzer"), count: items.filter { $0.scope == "Benutzer" }.count, color: accent)
+                        StartupScopeStat(title: String(localized: "Alle Benutzer"), count: items.filter { $0.scope == "Alle Benutzer" }.count, color: secondary)
+                        StartupScopeStat(title: String(localized: "System"), count: items.filter { $0.scope == "System" }.count, color: ClyroTheme.blue)
                         Spacer()
                         Text("Clyro zeigt die Einträge aktuell nur an und verändert keine Systemdienste.")
                             .font(.system(size: 10, weight: .medium))
@@ -602,7 +602,7 @@ private struct StartupRow: View {
                     .lineLimit(1)
             }
             Spacer()
-            Text(item.scope)
+            Text(L10n.dynamic(item.scope))
                 .font(.system(size: 10, weight: .semibold))
                 .foregroundStyle(.secondary)
                 .padding(.horizontal, 10)
@@ -634,7 +634,7 @@ private enum StartupProbe {
                 let label = plist?["Label"] as? String ?? url.deletingPathExtension().lastPathComponent
                 let program = plist?["Program"] as? String
                     ?? (plist?["ProgramArguments"] as? [String])?.first
-                    ?? "Kein Programmpfad angegeben"
+                    ?? String(localized: "Kein Programmpfad angegeben")
                 items.append(StartupItem(url: url, label: label, program: program, scope: scope))
             }
         }
@@ -660,14 +660,14 @@ struct HistoryView: View {
         VStack(alignment: .leading, spacing: 14) {
             HStack(spacing: 12) {
                 ClyroPageHeader(
-                    title: "Verlauf",
-                    subtitle: "Jede Bereinigung bleibt nachvollziehbar – lokal gespeichert und klar datiert.",
+                    title: String(localized: "Verlauf"),
+                    subtitle: String(localized: "Alle Bereinigungen mit Datum und Umfang, lokal gespeichert."),
                     icon: "clock.arrow.circlepath",
                     accent: accent
                 )
                 Spacer()
-                ClyroStatPill(title: "Freigegeben", value: ClyroFormat.byteCount(totalBytes), icon: "externaldrive.fill", color: accent)
-                ClyroStatPill(title: "Elemente", value: "\(totalItems)", icon: "doc.on.doc.fill", color: secondary)
+                ClyroStatPill(title: String(localized: "Freigegeben"), value: ClyroFormat.byteCount(totalBytes), icon: "externaldrive.fill", color: accent)
+                ClyroStatPill(title: String(localized: "Elemente"), value: "\(totalItems)", icon: "doc.on.doc.fill", color: secondary)
             }
 
             if cleaner.history.isEmpty {
@@ -675,7 +675,7 @@ struct HistoryView: View {
                     ClyroArtifact(symbol: "clock.arrow.circlepath", satellite: "checkmark", accent: accent, secondary: secondary, growth: 0.05)
                     Text("Noch kein Verlauf")
                         .font(.system(size: 22, weight: .semibold))
-                    Text("Jede Bereinigung pflanzt einen Baum in deinem Wald.")
+                    Text("Jede Bereinigung pflanzt einen Baum.")
                         .font(.system(size: 11, weight: .medium))
                         .foregroundStyle(.secondary)
                 }
@@ -693,7 +693,7 @@ struct HistoryView: View {
                             .frame(height: 130)
                         Text("\(min(cleaner.history.count, 40)) Bäume")
                             .font(.system(size: 22, weight: .bold, design: .rounded))
-                        Text("Große Bäume = viel Platz frei. Die Farbe zeigt die Jahreszeit der Bereinigung.")
+                        Text("Die Größe entspricht dem freigegebenen Speicher, die Farbe der Jahreszeit.")
                             .font(.system(size: 10, weight: .medium))
                             .foregroundStyle(.secondary)
                     }
@@ -785,6 +785,12 @@ struct SettingsView: View {
     var body: some View {
         Form {
             Section("Allgemein") {
+                LabeledContent("Sprache") {
+                    LanguageSwitch()
+                }
+                Text("Clyro startet nach dem Wechsel einmal neu.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
                 Toggle("Clyro bei der Anmeldung starten", isOn: Binding(
                     get: { launchAtLogin },
                     set: { value in
@@ -792,7 +798,7 @@ struct SettingsView: View {
                         launchAtLogin = LaunchAtLogin.isEnabled
                     }
                 ))
-                Text("Dann ist das Blatt in der Menüleiste nach jedem Neustart sofort da.")
+                Text("Das Symbol in der Menüleiste ist dann nach jedem Neustart verfügbar.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 Toggle("Touch ID für sudo im Terminal", isOn: Binding(
@@ -810,7 +816,7 @@ struct SettingsView: View {
                     }
                 ))
                 .disabled(touchIDBusy)
-                Text("Wie Mole: trägt pam_tid in /etc/pam.d/sudo_local ein. macOS fragt dafür einmal nach deinem Passwort, die Einstellung bleibt nach Updates erhalten.")
+                Text("Trägt pam_tid in /etc/pam.d/sudo_local ein. macOS fragt dafür einmal nach dem Administratorpasswort; die Einstellung bleibt bei Systemupdates erhalten.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -834,7 +840,7 @@ struct SettingsView: View {
             Section("Bereinigen") {
                 Toggle("Entwicklerwerkzeuge prüfen", isOn: $includeDeveloperData)
                 Toggle("In den Papierkorb statt endgültig löschen", isOn: $useTrash)
-                Text("Wie Mole löscht Clyro Caches und Protokolle standardmäßig endgültig, denn nur so wird wirklich Platz frei. Apps deinstallieren und Analyse verschieben immer in den Papierkorb.")
+                Text("Caches und Protokolle werden standardmäßig endgültig gelöscht, damit der Speicher sofort frei wird. Deinstallieren und Analyse verschieben immer in den Papierkorb.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -884,7 +890,7 @@ struct SettingsView: View {
             }
             Section("Über Clyro") {
                 LabeledContent("Version", value: "1.0.0")
-                LabeledContent("Datenschutz", value: "Lokal · Updates nur auf Anfrage")
+                LabeledContent(String(localized: "Datenschutz"), value: String(localized: "Lokal · Updates nur auf Anfrage"))
             }
         }
         .formStyle(.grouped)

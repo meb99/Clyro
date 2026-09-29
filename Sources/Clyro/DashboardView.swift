@@ -54,7 +54,7 @@ struct DashboardView: View {
 
     private var statusTile: some View {
         let health = snapshot.health
-        return StatusCard(title: "ZUSTAND", icon: "sun.max.fill", accent: ClyroTheme.mint, badges: [
+        return StatusCard(title: String(localized: "ZUSTAND"), icon: "sun.max.fill", accent: ClyroTheme.mint, badges: [
             snapshot.chipName,
             ClyroFormat.memory(snapshot.memoryTotalBytes).replacingOccurrences(of: ".0", with: ""),
             shortOSVersion.split(separator: ".").first.map { "macOS \($0)" } ?? "macOS"
@@ -69,7 +69,7 @@ struct DashboardView: View {
                             .lineLimit(1)
                             .minimumScaleFactor(0.75)
                     }
-                    Text(health.issues.isEmpty ? "Alle Prüfungen bestanden" : health.issues.joined(separator: " · "))
+                    Text(health.issues.isEmpty ? String(localized: "Alle Prüfungen bestanden") : health.issues.joined(separator: " · "))
                         .font(.system(size: 12, weight: .medium))
                         .foregroundStyle(health.issues.isEmpty ? Color.secondary : ClyroTheme.gold)
                         .lineLimit(2)
@@ -114,8 +114,8 @@ struct DashboardView: View {
     }
 
     private var memoryTile: some View {
-        StatusCard(title: "ARBEITSSPEICHER", icon: "memorychip", accent: ClyroTheme.gold,
-                   badges: snapshot.memoryPressurePercent.map { ["Druck \($0) %"] } ?? []) {
+        StatusCard(title: String(localized: "ARBEITSSPEICHER"), icon: "memorychip", accent: ClyroTheme.gold,
+                   badges: snapshot.memoryPressurePercent.map { [String(localized: "Druck \($0) %")] } ?? []) {
             BigValue(value: String(format: "%.0f", snapshot.memoryPercent), unit: "%")
             Sparkline(values: monitor.memoryHistory, color: ClyroTheme.gold)
                 .frame(height: 22)
@@ -131,8 +131,8 @@ struct DashboardView: View {
     @ViewBuilder
     private var batteryTile: some View {
         if snapshot.battery.isPresent {
-            StatusCard(title: "BATTERIE", icon: "battery.75percent", accent: ClyroTheme.mint,
-                       badges: snapshot.battery.healthPercent.map { ["\($0) % Gesundheit"] } ?? []) {
+            StatusCard(title: String(localized: "BATTERIE"), icon: "battery.75percent", accent: ClyroTheme.mint,
+                       badges: snapshot.battery.healthPercent.map { [String(localized: "\($0) % Gesundheit")] } ?? []) {
                 HStack(alignment: .center) {
                     VStack(alignment: .leading, spacing: 10) {
                         HStack(alignment: .firstTextBaseline, spacing: 6) {
@@ -141,7 +141,7 @@ struct DashboardView: View {
                                 .font(.system(size: 14, weight: .semibold))
                                 .foregroundStyle(.secondary)
                         }
-                        Text(snapshot.battery.cycleCount.map { "\($0) Zyklen" } ?? (snapshot.battery.isCharging ? "Mit Strom verbunden" : "Akkubetrieb"))
+                        Text(snapshot.battery.cycleCount.map { String(localized: "\($0) Zyklen") } ?? (snapshot.battery.isCharging ? String(localized: "Mit Strom verbunden") : String(localized: "Akkubetrieb")))
                             .font(.system(size: 11, weight: .medium))
                             .foregroundStyle(.secondary)
                     }
@@ -167,8 +167,8 @@ struct DashboardView: View {
                 }
             }
         } else {
-            StatusCard(title: "STROM", icon: "powerplug.fill", accent: ClyroTheme.mint, badges: ["Netzbetrieb"]) {
-                BigValue(value: "Desktop", unit: "")
+            StatusCard(title: String(localized: "STROM"), icon: "powerplug.fill", accent: ClyroTheme.mint, badges: [String(localized: "Netzbetrieb")]) {
+                BigValue(value: String(localized: "Desktop"), unit: "")
                 Spacer(minLength: 0)
                 if let top = topConsumer {
                     Label("Hauptverbraucher \(top.name) · \(String(format: "%.1f", top.power ?? 0))", systemImage: "flame.fill")
@@ -187,8 +187,8 @@ struct DashboardView: View {
     private var diskTile: some View {
         var badges = [ClyroFormat.byteCount(snapshot.diskTotalBytes)]
         if snapshot.smartStatus == .failing { badges.insert("SMART ⚠", at: 0) }
-        return StatusCard(title: "FESTPLATTE", icon: "internaldrive", accent: ClyroTheme.blue, badges: badges) {
-            BigValue(value: ClyroFormat.byteCount(max(0, snapshot.diskTotalBytes - snapshot.diskUsedBytes)), unit: "frei")
+        return StatusCard(title: String(localized: "FESTPLATTE"), icon: "internaldrive", accent: ClyroTheme.blue, badges: badges) {
+            BigValue(value: ClyroFormat.byteCount(max(0, snapshot.diskTotalBytes - snapshot.diskUsedBytes)), unit: String(localized: "frei"))
             GeometryReader { geometry in
                 ZStack(alignment: .leading) {
                     Capsule().fill(.white.opacity(0.08))
@@ -207,7 +207,7 @@ struct DashboardView: View {
     }
 
     private var networkTile: some View {
-        StatusCard(title: "NETZWERK", icon: "globe", accent: ClyroTheme.blue,
+        StatusCard(title: String(localized: "NETZWERK"), icon: "globe", accent: ClyroTheme.blue,
                    badges: snapshot.networkType.map { [$0] } ?? []) {
             BigValue(value: ClyroFormat.compactSpeed(snapshot.downloadBytesPerSecond), unit: "")
             Sparkline(values: normalizedNetworkHistory, color: ClyroTheme.blue)
@@ -220,8 +220,8 @@ struct DashboardView: View {
     }
 
     private var thermalTile: some View {
-        StatusCard(title: "TEMPERATUR", icon: "thermometer.medium", accent: thermalColor,
-                   badges: [snapshot.thermalState == .nominal ? "Normal" : "Warm"]) {
+        StatusCard(title: String(localized: "TEMPERATUR"), icon: "thermometer.medium", accent: thermalColor,
+                   badges: [snapshot.thermalState == .nominal ? String(localized: "Normal") : String(localized: "Warm")]) {
             if let cpu = snapshot.temperatureCelsius {
                 HStack(alignment: .firstTextBaseline, spacing: 16) {
                     temperatureValue("CPU", cpu, color: ClyroTheme.mint)
@@ -315,24 +315,24 @@ struct DashboardView: View {
     }
 
     private var uptimeText: String {
-        "Laufzeit \(ClyroFormat.uptime(snapshot.uptime))"
+        String(localized: "Laufzeit \(ClyroFormat.uptime(snapshot.uptime))")
     }
 
     private var cpuDetail: String {
         let cores = snapshot.corePercents.isEmpty ? ProcessInfo.processInfo.processorCount : snapshot.corePercents.count
-        let state = snapshot.cpuPercent < 35 ? "Leerlauf" : snapshot.cpuPercent < 70 ? "Aktiv" : "Hohe Last"
-        let load = snapshot.loadAverage.map { String(format: "%.1f", $0).replacingOccurrences(of: ".", with: ",") } ?? "–"
-        return "\(state) · Last \(load) / \(cores) Kerne"
+        let state = snapshot.cpuPercent < 35 ? String(localized: "Leerlauf") : snapshot.cpuPercent < 70 ? String(localized: "Aktiv") : String(localized: "Hohe Last")
+        let load = snapshot.loadAverage.map { $0.formatted(.number.precision(.fractionLength(1))) } ?? "–"
+        return String(localized: "\(state) · Last \(load) / \(cores) Kerne")
     }
 
     private var gpuDetail: String {
-        let state = (snapshot.gpuPercent ?? 0) < 35 ? "Leerlauf" : "Aktiv"
-        return snapshot.gpuCores.map { "\(state) · \($0) GPU-Kerne" } ?? state
+        let state = (snapshot.gpuPercent ?? 0) < 35 ? String(localized: "Leerlauf") : String(localized: "Aktiv")
+        return snapshot.gpuCores.map { String(localized: "\(state) · \($0) GPU-Kerne") } ?? state
     }
 
     private var batteryTime: String {
         let remaining = snapshot.battery.timeRemaining
-        if remaining.contains(":") { return "\(remaining) übrig" }
+        if remaining.contains(":") { return String(localized: "\(remaining) übrig") }
         return remaining
     }
 
@@ -342,7 +342,7 @@ struct DashboardView: View {
 
     private var peakText: String {
         guard let peak = snapshot.temperaturePeak else { return snapshot.chipName }
-        return "\(snapshot.chipName) · Spitze 5 Min \(Int(peak.rounded())) °C"
+        return String(localized: "\(snapshot.chipName) · Spitze 5 Min \(Int(peak.rounded())) °C")
     }
 
     private var thermalColor: Color {
@@ -377,7 +377,7 @@ private struct StatusCard<Content: View>: View {
                 Text(title)
                     .font(.system(size: 11, weight: .bold))
                     .tracking(1.2)
-                    .foregroundStyle(title == "ZUSTAND" ? accent : Color.white.opacity(0.75))
+                    .foregroundStyle(title == String(localized: "ZUSTAND") ? accent : Color.white.opacity(0.75))
                     .lineLimit(1)
                 Spacer(minLength: 4)
                 ForEach(badges, id: \.self) { badge in

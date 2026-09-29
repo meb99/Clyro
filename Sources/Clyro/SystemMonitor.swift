@@ -372,11 +372,11 @@ private enum SystemProbe {
             let minutes = (description[kIOPSTimeToEmptyKey] as? NSNumber)?.intValue ?? -1
             let remaining: String
             if sourceState == kIOPSACPowerValue {
-                remaining = "Netzbetrieb"
+                remaining = String(localized: "Netzbetrieb")
             } else if minutes > 0 {
                 remaining = String(format: "%d:%02d", minutes / 60, minutes % 60)
             } else {
-                remaining = "Berechnung …"
+                remaining = String(localized: "Berechnung …")
             }
 
             let health = smartBatteryHealth()
@@ -558,7 +558,7 @@ enum NetworkKind {
 
         for interface in interfaces where (SCNetworkInterfaceGetBSDName(interface) as String?) == primary {
             let type = SCNetworkInterfaceGetInterfaceType(interface) as String?
-            if type == (kSCNetworkInterfaceTypeIEEE80211 as String) { return "WLAN" }
+            if type == (kSCNetworkInterfaceTypeIEEE80211 as String) { return String(localized: "WLAN") }
             if type == (kSCNetworkInterfaceTypeEthernet as String) { return "Ethernet" }
             return (SCNetworkInterfaceGetLocalizedDisplayName(interface) as String?) ?? primary
         }

@@ -34,6 +34,8 @@
 		A1000000000000000000011A /* CleanupSafetyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000022A /* CleanupSafetyTests.swift */; };
 		A1000000000000000000011B /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000022B /* Assets.xcassets */; };
 		A1000000000000000000011C /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000022C /* OnboardingView.swift */; };
+		A1000000000000000000011D /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000022D /* Localizable.strings */; };
+		A1000000000000000000011E /* Localization.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000230 /* Localization.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -77,6 +79,9 @@
 		A1000000000000000000020E /* ClyroTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ClyroTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		A1000000000000000000022B /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A1000000000000000000022C /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
+		A1000000000000000000022E /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
+		A1000000000000000000022F /* de */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = de; path = de.lproj/Localizable.strings; sourceTree = "<group>"; };
+		A10000000000000000000230 /* Localization.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Localization.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -103,6 +108,7 @@
 			children = (
 				A10000000000000000000402 /* Sources */,
 				A10000000000000000000403 /* Assets */,
+				A10000000000000000000407 /* Resources */,
 				A10000000000000000000406 /* ClyroTests */,
 				A1000000000000000000020B /* Info.plist */,
 				A10000000000000000000405 /* Frameworks */,
@@ -136,6 +142,7 @@
 				A10000000000000000000228 /* SystemExtras.swift */,
 				A10000000000000000000229 /* ForestViews.swift */,
 				A1000000000000000000022C /* OnboardingView.swift */,
+				A10000000000000000000230 /* Localization.swift */,
 			);
 			name = Sources;
 			path = Sources/Clyro;
@@ -175,7 +182,27 @@
 			path = Tests/ClyroTests;
 			sourceTree = "<group>";
 		};
+		A10000000000000000000407 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				A1000000000000000000022D /* Localizable.strings */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
+
+/* Begin PBXVariantGroup section */
+		A1000000000000000000022D /* Localizable.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				A1000000000000000000022F /* de */,
+				A1000000000000000000022E /* en */,
+			);
+			name = Localizable.strings;
+			sourceTree = "<group>";
+		};
+/* End PBXVariantGroup section */
 
 /* Begin PBXNativeTarget section */
 		A10000000000000000000501 /* Clyro */ = {
@@ -237,6 +264,7 @@
 			hasScannedForEncodings = 0;
 			knownRegions = (
 				de,
+				en,
 				Base,
 			);
 			mainGroup = A10000000000000000000401;
@@ -257,6 +285,7 @@
 			files = (
 				A1000000000000000000010A /* ClyroIcon.svg in Resources */,
 				A1000000000000000000011B /* Assets.xcassets in Resources */,
+				A1000000000000000000011D /* Localizable.strings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -290,6 +319,7 @@
 				A10000000000000000000118 /* SystemExtras.swift in Sources */,
 				A10000000000000000000119 /* ForestViews.swift in Sources */,
 				A1000000000000000000011C /* OnboardingView.swift in Sources */,
+				A1000000000000000000011E /* Localization.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

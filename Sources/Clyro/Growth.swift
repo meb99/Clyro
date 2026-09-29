@@ -9,11 +9,11 @@ struct ClyroGrowth: View {
 
     static func stageName(for growth: Double) -> String {
         switch growth {
-        case ..<0.15: "Keimling"
-        case ..<0.35: "Setzling"
-        case ..<0.55: "junger Baum"
-        case ..<0.8: "kleiner Hain"
-        default: "Wald"
+        case ..<0.15: String(localized: "Keimling")
+        case ..<0.35: String(localized: "Setzling")
+        case ..<0.55: String(localized: "junger Baum")
+        case ..<0.8: String(localized: "kleiner Hain")
+        default: String(localized: "Wald")
         }
     }
 

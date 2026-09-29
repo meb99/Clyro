@@ -26,7 +26,7 @@ enum AdminShell {
 
 // MARK: - Systembereiche (Admin)
 
-/// Systemweite Orte, die Mole mit sudo bereinigt: nur Dateien älter als eine Frist, nie ganze Ordner.
+/// Systemweite Orte, die nur mit Administratorrechten bereinigt werden: nur Dateien älter als eine Frist, nie ganze Ordner.
 enum AdminCleanup {
     struct Family {
         let id: String
@@ -38,14 +38,14 @@ enum AdminCleanup {
     }
 
     static let families: [Family] = [
-        Family(id: "caches", title: "System-Caches", root: "/Library/Caches", patterns: ["*.cache", "*.tmp", "*.log"], days: 7, depth: 5),
-        Family(id: "crash", title: "System-Absturzberichte", root: "/Library/Logs/DiagnosticReports", patterns: ["*"], days: 7, depth: 1),
-        Family(id: "syslog", title: "Systemprotokolle", root: "/private/var/log", patterns: ["*.log", "*.gz", "*.asl"], days: 7, depth: 3),
-        Family(id: "adobe", title: "Adobe-Protokolle", root: "/Library/Logs/Adobe", patterns: ["*"], days: 7, depth: 5),
-        Family(id: "creativecloud", title: "Creative-Cloud-Protokolle", root: "/Library/Logs/CreativeCloud", patterns: ["*"], days: 7, depth: 5),
-        Family(id: "diagnostics", title: "Diagnosedaten", root: "/private/var/db/diagnostics", patterns: ["*"], days: 7, depth: 5),
-        Family(id: "powerlog", title: "Energieprotokolle", root: "/private/var/db/powerlog", patterns: ["*"], days: 7, depth: 5),
-        Family(id: "memory", title: "Speicherberichte", root: "/private/var/db/reportmemoryexception/MemoryLimitViolations", patterns: ["*"], days: 30, depth: 5)
+        Family(id: "caches", title: String(localized: "System-Caches"), root: "/Library/Caches", patterns: ["*.cache", "*.tmp", "*.log"], days: 7, depth: 5),
+        Family(id: "crash", title: String(localized: "System-Absturzberichte"), root: "/Library/Logs/DiagnosticReports", patterns: ["*"], days: 7, depth: 1),
+        Family(id: "syslog", title: String(localized: "Systemprotokolle"), root: "/private/var/log", patterns: ["*.log", "*.gz", "*.asl"], days: 7, depth: 3),
+        Family(id: "adobe", title: String(localized: "Adobe-Protokolle"), root: "/Library/Logs/Adobe", patterns: ["*"], days: 7, depth: 5),
+        Family(id: "creativecloud", title: String(localized: "Creative-Cloud-Protokolle"), root: "/Library/Logs/CreativeCloud", patterns: ["*"], days: 7, depth: 5),
+        Family(id: "diagnostics", title: String(localized: "Diagnosedaten"), root: "/private/var/db/diagnostics", patterns: ["*"], days: 7, depth: 5),
+        Family(id: "powerlog", title: String(localized: "Energieprotokolle"), root: "/private/var/db/powerlog", patterns: ["*"], days: 7, depth: 5),
+        Family(id: "memory", title: String(localized: "Speicherberichte"), root: "/private/var/db/reportmemoryexception/MemoryLimitViolations", patterns: ["*"], days: 30, depth: 5)
     ]
 
     /// Stellvertreter-Adresse für die lokalen Time-Machine-Schnappschüsse.
@@ -66,7 +66,7 @@ enum AdminCleanup {
                 bytes: bytes,
                 isSelected: true,
                 ownerName: family.title,
-                detail: "\(family.root) · älter als \(family.days) Tage"
+                detail: String(localized: "\(family.root) · älter als \(family.days) Tage")
             ))
         }
 
@@ -78,8 +78,8 @@ enum AdminCleanup {
                 bytes: 0,
                 isSelected: false,
                 isRecommended: false,
-                ownerName: "Lokale Time-Machine-Schnappschüsse",
-                detail: "\(snapshots.count) Schnappschüsse · Größe unbekannt · Wiederherstellungspunkte gehen verloren"
+                ownerName: String(localized: "Lokale Time-Machine-Schnappschüsse"),
+                detail: String(localized: "\(snapshots.count) Schnappschüsse · Größe unbekannt · Wiederherstellungspunkte gehen verloren")
             ))
         }
         return result
@@ -99,7 +99,7 @@ enum AdminCleanup {
         }
         guard !lines.isEmpty else { return false }
         let script = lines.joined(separator: "; ") + "; exit 0"
-        return AdminShell.run(script, prompt: "Clyro möchte systemweite Caches und Protokolle bereinigen.")
+        return AdminShell.run(script, prompt: String(localized: "Clyro möchte systemweite Caches und Protokolle bereinigen."))
     }
 
     private static func estimate(_ family: Family) -> Int64 {
@@ -162,8 +162,8 @@ enum TouchIDSudo {
             script = "[ -f \(file) ] && /usr/bin/sed -i '' -E '/^[[:space:]]*auth.*pam_tid\\.so/d' \(file); exit 0"
         }
         let prompt = enabled
-            ? "Clyro möchte Touch ID für sudo im Terminal einrichten."
-            : "Clyro möchte Touch ID für sudo wieder entfernen."
+            ? String(localized: "Clyro möchte Touch ID für sudo im Terminal einrichten.")
+            : String(localized: "Clyro möchte Touch ID für sudo wieder entfernen.")
         return AdminShell.run(script, prompt: prompt)
     }
 }
@@ -249,8 +249,8 @@ final class ReminderService {
             if free < Int64(limitGB) * 1_000_000_000, isDue(Self.lastDiskKey, every: 86_400) {
                 ClyroNotifier.post(
                     id: "disk",
-                    title: "Wenig Speicher frei",
-                    body: "Nur noch \(ClyroFormat.byteCount(free)) frei. Ein Scan in Clyro schafft meist schnell Platz."
+                    title: String(localized: "Wenig Speicher frei"),
+                    body: String(localized: "Nur noch \(ClyroFormat.byteCount(free)) frei. Ein Scan zeigt, was sich entfernen lässt.")
                 )
                 defaults.set(now, forKey: Self.lastDiskKey)
             }
@@ -262,10 +262,10 @@ final class ReminderService {
             if now.timeIntervalSince(last) > Double(days) * 86_400, isDue(Self.lastStaleKey, every: 3 * 86_400) {
                 ClyroNotifier.post(
                     id: "stale",
-                    title: "Zeit für etwas Pflege",
+                    title: String(localized: "Bereinigung empfohlen"),
                     body: cleaner.history.isEmpty
-                        ? "Du hast mit Clyro noch nicht bereinigt."
-                        : "Die letzte Bereinigung ist über \(days) Tage her."
+                        ? String(localized: "Es wurde noch keine Bereinigung durchgeführt.")
+                        : String(localized: "Die letzte Bereinigung ist über \(days) Tage her.")
                 )
                 defaults.set(now, forKey: Self.lastStaleKey)
             }
