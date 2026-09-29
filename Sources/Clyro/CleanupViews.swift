@@ -45,7 +45,7 @@ struct CleanupView: View {
                 HistoryView()
                     .environmentObject(cleaner)
             }
-            .frame(width: 820, height: 560)
+            .frame(width: 900, height: 700)
         }
     }
 

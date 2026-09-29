@@ -408,6 +408,8 @@ enum CleanupKind: String, CaseIterable, Codable, Identifiable {
     case installers
     case projectArtifacts
     case trash
+    /// Systembereiche außerhalb des Benutzerordners, die nur mit Admin-Passwort bereinigt werden können.
+    case adminSystem
     // Ältere Einträge im Verlauf.
     case logs
     case packageCaches
@@ -416,7 +418,7 @@ enum CleanupKind: String, CaseIterable, Codable, Identifiable {
 
     /// Reihenfolge der Kategorien in der Ergebnisliste.
     static let displayOrder: [CleanupKind] = [
-        .caches, .systemCaches, .other, .developerData, .aiTools,
+        .caches, .systemCaches, .adminSystem, .other, .developerData, .aiTools,
         .browserCaches, .appRemnants, .installers, .projectArtifacts, .trash
     ]
 
@@ -435,6 +437,7 @@ enum CleanupKind: String, CaseIterable, Codable, Identifiable {
         case .installers: "Installationsdateien"
         case .projectArtifacts: "Projekt-Artefakte"
         case .trash: "Papierkorb"
+        case .adminSystem: "Systembereiche (Admin)"
         case .logs: "Protokolle"
         case .packageCaches: "Paket-Caches"
         }
@@ -452,6 +455,7 @@ enum CleanupKind: String, CaseIterable, Codable, Identifiable {
         case .installers: "DMG-, PKG-, ISO-, XIP- und Installer-ZIP-Dateien."
         case .projectArtifacts: "Wiederherstellbare Build-Ordner wie node_modules, target oder .build."
         case .trash: "Leert den Papierkorb endgültig."
+        case .adminSystem: "Systemweite Caches, Protokolle und Diagnosedaten älter als 7 Tage. macOS fragt einmal nach deinem Passwort."
         case .logs: "Protokoll- und Absturzdateien"
         case .packageCaches: "Downloads von Paketmanagern"
         }
@@ -469,6 +473,7 @@ enum CleanupKind: String, CaseIterable, Codable, Identifiable {
         case .installers: "arrow.down.doc.fill"
         case .projectArtifacts: "shippingbox.and.arrow.backward.fill"
         case .trash: "trash.fill"
+        case .adminSystem: "lock.shield.fill"
         case .logs: "doc.text.magnifyingglass"
         case .packageCaches: "archivebox.fill"
         }

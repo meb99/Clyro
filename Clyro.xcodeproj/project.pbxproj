@@ -28,6 +28,8 @@
 		A10000000000000000000115 /* OptimizeEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000225 /* OptimizeEngine.swift */; };
 		A10000000000000000000116 /* UpdatesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000226 /* UpdatesView.swift */; };
 		A10000000000000000000117 /* MenuBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000227 /* MenuBarView.swift */; };
+		A10000000000000000000118 /* SystemExtras.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000228 /* SystemExtras.swift */; };
+		A10000000000000000000119 /* ForestViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000229 /* ForestViews.swift */; };
 		A1000000000000000000010A /* ClyroIcon.svg in Resources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000020A /* ClyroIcon.svg */; };
 		A1000000000000000000010B /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A1000000000000000000020D /* IOKit.framework */; };
 /* End PBXBuildFile section */
@@ -46,6 +48,8 @@
 		A1000000000000000000021E /* ThermalSensors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThermalSensors.swift; sourceTree = "<group>"; };
 		A10000000000000000000226 /* UpdatesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdatesView.swift; sourceTree = "<group>"; };
 		A10000000000000000000227 /* MenuBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarView.swift; sourceTree = "<group>"; };
+		A10000000000000000000228 /* SystemExtras.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemExtras.swift; sourceTree = "<group>"; };
+		A10000000000000000000229 /* ForestViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ForestViews.swift; sourceTree = "<group>"; };
 		A10000000000000000000225 /* OptimizeEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OptimizeEngine.swift; sourceTree = "<group>"; };
 		A10000000000000000000224 /* AppsViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppsViews.swift; sourceTree = "<group>"; };
 		A10000000000000000000223 /* OptimizeViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OptimizeViews.swift; sourceTree = "<group>"; };
@@ -107,6 +111,8 @@
 				A10000000000000000000225 /* OptimizeEngine.swift */,
 				A10000000000000000000226 /* UpdatesView.swift */,
 				A10000000000000000000227 /* MenuBarView.swift */,
+				A10000000000000000000228 /* SystemExtras.swift */,
+				A10000000000000000000229 /* ForestViews.swift */,
 			);
 			name = Sources;
 			path = Sources/Clyro;
@@ -226,6 +232,8 @@
 				A10000000000000000000115 /* OptimizeEngine.swift in Sources */,
 				A10000000000000000000116 /* UpdatesView.swift in Sources */,
 				A10000000000000000000117 /* MenuBarView.swift in Sources */,
+				A10000000000000000000118 /* SystemExtras.swift in Sources */,
+				A10000000000000000000119 /* ForestViews.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
