@@ -157,7 +157,7 @@ extension ProcessCrewRole {
         case .workshop: ClyroTheme.gold
         case .atelier: Color(red: 0.78, green: 0.49, blue: 0.95)
         case .courier: Color(red: 0.42, green: 0.76, blue: 0.96)
-        case .guard: Color(red: 0.45, green: 0.84, blue: 0.60)
+        case .guardian: Color(red: 0.45, green: 0.84, blue: 0.60)
         case .engineRoom: Color(red: 0.65, green: 0.68, blue: 0.76)
         case .helper: ClyroTheme.mint
         }

@@ -57,7 +57,7 @@ enum ProcessCrewRole: String, CaseIterable, Identifiable, Hashable {
     case workshop
     case atelier
     case courier
-    case guard
+    case guardian
     case engineRoom
     case helper
 
@@ -71,7 +71,7 @@ enum ProcessCrewRole: String, CaseIterable, Identifiable, Hashable {
         case .workshop: "Werkstatt"
         case .atelier: "Atelier"
         case .courier: "Kurier"
-        case .guard: "Wächter"
+        case .guardian: "Wächter"
         case .engineRoom: "Maschinenraum"
         case .helper: "Helferlein"
         }
@@ -85,7 +85,7 @@ enum ProcessCrewRole: String, CaseIterable, Identifiable, Hashable {
         case .workshop: "🛠️"
         case .atelier: "🎨"
         case .courier: "☁️"
-        case .guard: "🛡️"
+        case .guardian: "🛡️"
         case .engineRoom: "⚙️"
         case .helper: "✨"
         }
@@ -99,7 +99,7 @@ enum ProcessCrewRole: String, CaseIterable, Identifiable, Hashable {
         case .workshop: "hammer.fill"
         case .atelier: "paintpalette.fill"
         case .courier: "externaldrive.badge.icloud"
-        case .guard: "shield.lefthalf.filled"
+        case .guardian: "shield.lefthalf.filled"
         case .engineRoom: "gearshape.2.fill"
         case .helper: "sparkles"
         }
@@ -127,7 +127,7 @@ enum ProcessCrewRole: String, CaseIterable, Identifiable, Hashable {
             return .courier
         }
         if contains(name, any: ["vpn", "security", "firewall", "trustd", "keychain", "antivirus", "malware"] ) {
-            return .guard
+            return .guardian
         }
         if contains(name, any: ["windowserver", "kernel_task", "launchd", "finder", "dock", "systemuiserver", "controlcenter", "spotlight", "mds", "coreaudiod", "bluetoothd", "loginwindow"] ) {
             return .engineRoom
@@ -151,7 +151,7 @@ enum ProcessCrewRole: String, CaseIterable, Identifiable, Hashable {
         case .workshop: return "Baut, prüft oder startet Entwicklungsprojekte."
         case .atelier: return "Rendert kreative Inhalte und hält Arbeitsflächen bereit."
         case .courier: return "Gleicht Dateien sicher mit einem Cloud-Dienst ab."
-        case .guard: return "Überwacht Verbindungen, Zugriffe und Sicherheit."
+        case .guardian: return "Überwacht Verbindungen, Zugriffe und Sicherheit."
         case .engineRoom: return "Hält eine wichtige macOS-Funktion am Laufen."
         case .helper: return "Unterstützt eine App oder arbeitet unauffällig im Hintergrund."
         }
