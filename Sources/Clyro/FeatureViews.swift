@@ -80,7 +80,7 @@ struct CleanupView: View {
 
     private var scanStage: some View {
         VStack(spacing: 8) {
-            ClyroArtifact(symbol: "wind", satellite: "sparkles", accent: accent, secondary: ClyroTheme.mint)
+            ClyroArtifact(symbol: "wind", satellite: "sparkles", accent: accent, secondary: ClyroTheme.mint, growth: cleaner.state == .scanning ? 0.2 : 0.1)
             Text(cleaner.state == .scanning ? "Clyro prüft deinen Mac" : "Bereit für den ersten Scan")
                 .font(.system(size: 24, weight: .semibold))
             Text(cleaner.state == .scanning
@@ -1276,10 +1276,10 @@ struct HistoryView: View {
 
             if cleaner.history.isEmpty {
                 VStack(spacing: 10) {
-                    ClyroArtifact(symbol: "clock.arrow.circlepath", satellite: "checkmark", accent: accent, secondary: secondary)
+                    ClyroArtifact(symbol: "clock.arrow.circlepath", satellite: "checkmark", accent: accent, secondary: secondary, growth: 0.05)
                     Text("Noch kein Verlauf")
                         .font(.system(size: 22, weight: .semibold))
-                    Text("Nach der ersten Bereinigung erscheint hier eine lokale, transparente Chronik.")
+                    Text("Jede Bereinigung lässt deinen Keimling ein Stück weiter wachsen.")
                         .font(.system(size: 11, weight: .medium))
                         .foregroundStyle(.secondary)
                 }
@@ -1288,7 +1288,7 @@ struct HistoryView: View {
             } else {
                 HStack(spacing: 14) {
                     VStack(spacing: 10) {
-                        ClyroArtifact(symbol: "clock.fill", satellite: "checkmark", accent: accent, secondary: secondary)
+                        ClyroArtifact(symbol: "clock.fill", satellite: "checkmark", accent: accent, secondary: secondary, growth: ClyroGrowth.growth(forFreedBytes: totalBytes))
                             .scaleEffect(0.76)
                             .frame(height: 145)
                         Text("\(cleaner.history.count)")
@@ -1296,6 +1296,9 @@ struct HistoryView: View {
                         Text("Bereinigungen dokumentiert")
                             .font(.system(size: 10, weight: .medium))
                             .foregroundStyle(.secondary)
+                        Text("Dein Garten: \(ClyroGrowth.stageName(for: ClyroGrowth.growth(forFreedBytes: totalBytes)))")
+                            .font(.system(size: 11, weight: .bold))
+                            .foregroundStyle(accent)
                         Spacer()
                     }
                     .frame(width: 220)
