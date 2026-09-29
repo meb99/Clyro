@@ -185,7 +185,7 @@ struct ProjectsView: View {
 
     private let palette = ClyroTheme.palette(for: .projects)
     private var accent: Color { palette.accent }
-    private static let autoSelectAfterDays = 30
+    private static let autoSelectAfterDays = 7
 
     private var selectedArtifacts: [ProjectArtifact] {
         artifacts.filter { selected.contains($0.url) }
@@ -341,6 +341,7 @@ struct ProjectsView: View {
                 for artifact in targets {
                     do {
                         try FileManager.default.trashItem(at: artifact.url, resultingItemURL: nil)
+                        ClyroLog.append("Projekte: \(artifact.url.path)")
                         moved += 1
                         bytes += artifact.sizeBytes
                     } catch {

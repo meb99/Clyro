@@ -16,6 +16,10 @@ Clyro ist ein nativer, lokaler macOS-Systemmonitor und vorsichtiger Cleaner. Das
 
 Clyro deckt jetzt den kompletten Funktionsumfang klassischer Mac-Pflegewerkzeuge ab (Status, Clean, Uninstall, Optimize, Analyze, Purge, Installer) – mit eigenem Look und Clyro-Artefakten:
 
+- **Bereinigen wie im Vorbild:** Browser-Caches (Safari, Chrome, Edge, Brave, Firefox – nur bei geschlossenem Browser), pnpm- und Homebrew-Downloads, Installer auch aus Schreibtisch, iCloud-Downloads und Mail-Downloads, verwaiste Einstellungen deinstallierter Apps (nie vorausgewählt)
+- **Aktivitätsprotokoll:** jede verschobene Datei landet lokal in `~/Library/Logs/Clyro/operations.log`
+- **Status:** Akku mit Kapazität und Zyklen, Load Average bei der CPU
+- **Projekte:** eigene Suchordner in den Einstellungen, sechs Ebenen Suchtiefe, jüngere Ordner (unter 7 Tagen) nicht vorausgewählt
 - **Optimieren:** sichere Wartungsschritte (Quick-Look-Cache, DNS-Cache, Spotlight-Status, Dock/Finder neu starten) mit **Vorschau-Modus** (Trockenlauf, standardmäßig an)
 - **Projekte:** findet `node_modules`, Rust `target`, Swift `.build`, `Pods` und `dist`/`build` in deinen Projektordnern; nur Projektordner mit passender Projektdatei, ältere Ordner vorausgewählt, alles in den Papierkorb
 - **Gründlich deinstallieren:** Apps-Liste mit Papierkorb-Button, findet Rückstände in `~/Library` (Einstellungen, Caches, Container, Launch Agents …), Auswahl je Rückstand, macOS-eigene und laufende Apps sind geschützt

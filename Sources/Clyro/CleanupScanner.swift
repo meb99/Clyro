@@ -60,6 +60,7 @@ final class CleanupScanner: ObservableObject {
                         let estimatedSize = FileProbe.sizeOfItem(at: url)
                         do {
                             try FileManager.default.trashItem(at: url, resultingItemURL: nil)
+                            ClyroLog.append("Bereinigen: \(url.path)")
                             moved += 1
                             bytes += max(0, estimatedSize)
                         } catch {
@@ -131,16 +132,29 @@ private enum CleanupProbe {
     static func scan(includeDeveloperData: Bool, whitelist: Set<String>) -> [CleanupCategory] {
         let home = FileManager.default.homeDirectoryForCurrentUser
         var categories = [
-            category(.caches, root: home.appendingPathComponent("Library/Caches"), olderThanDays: 14, whitelist: whitelist),
+            category(
+                .caches,
+                root: home.appendingPathComponent("Library/Caches"),
+                olderThanDays: 14,
+                whitelist: whitelist,
+                excluding: specialCacheFolders
+            ),
+            browserCaches(home: home, whitelist: whitelist),
             category(.logs, root: home.appendingPathComponent("Library/Logs"), olderThanDays: 14, whitelist: whitelist),
             filteredCategory(
                 .installers,
-                roots: [home.appendingPathComponent("Downloads"), home.appendingPathComponent("Desktop")],
+                roots: [
+                    "Downloads",
+                    "Desktop",
+                    "Library/Mobile Documents/com~apple~CloudDocs/Downloads",
+                    "Library/Containers/com.apple.mail/Data/Library/Mail Downloads"
+                ].map { home.appendingPathComponent($0) },
                 olderThanDays: 30,
                 extensions: ["dmg", "pkg", "mpkg", "iso", "xip", "zip"],
                 whitelist: whitelist
             ),
-            packageCaches(home: home, whitelist: whitelist)
+            packageCaches(home: home, whitelist: whitelist),
+            orphanedData(home: home, whitelist: whitelist)
         ]
         if includeDeveloperData {
             categories.append(category(
@@ -153,9 +167,101 @@ private enum CleanupProbe {
         return categories
     }
 
+    /// Ordner in ~/Library/Caches, die eine eigene Kategorie haben und deshalb nicht doppelt auftauchen sollen.
+    private static let specialCacheFolders: Set<String> = [
+        "com.apple.safari", "google", "bravesoftware", "microsoft edge", "firefox",
+        "com.operasoftware.opera", "company.thebrowser.browser", "homebrew"
+    ]
+
+    private static func browserCaches(home: URL, whitelist: Set<String>) -> CleanupCategory {
+        let browsers: [(bundleID: String, path: String)] = [
+            ("com.apple.Safari", "Library/Caches/com.apple.Safari"),
+            ("com.google.Chrome", "Library/Caches/Google/Chrome"),
+            ("com.microsoft.edgemac", "Library/Caches/Microsoft Edge"),
+            ("com.brave.Browser", "Library/Caches/BraveSoftware"),
+            ("org.mozilla.firefox", "Library/Caches/Firefox"),
+            ("com.operasoftware.Opera", "Library/Caches/com.operasoftware.Opera"),
+            ("company.thebrowser.Browser", "Library/Caches/company.thebrowser.Browser")
+        ]
+        let urls = browsers.compactMap { browser -> URL? in
+            let url = home.appendingPathComponent(browser.path)
+            guard FileManager.default.fileExists(atPath: url.path),
+                  !whitelist.contains(url.lastPathComponent.lowercased()),
+                  NSRunningApplication.runningApplications(withBundleIdentifier: browser.bundleID).isEmpty else { return nil }
+            return url
+        }
+        let bytes = urls.reduce(Int64(0)) { $0 + FileProbe.sizeOfItem(at: $1) }
+        return CleanupCategory(kind: .browserCaches, bytes: bytes, itemCount: urls.count, paths: urls, isSelected: bytes > 0)
+    }
+
+    /// Einstellungen und Daten von Apps, die nicht mehr installiert sind. Bewusst vorsichtig und nie vorausgewählt.
+    private static func orphanedData(home: URL, whitelist: Set<String>) -> CleanupCategory {
+        let library = home.appendingPathComponent("Library")
+        let threshold = Calendar.current.date(byAdding: .day, value: -30, to: Date()) ?? Date()
+        let installedPrefixes = installedVendorPrefixes()
+        let topLevelDomains: Set<String> = ["com", "org", "net", "io", "dev", "app", "co", "me", "ai"]
+        let sources: [(folder: String, suffix: String)] = [
+            ("Application Support", ""),
+            ("Preferences", ".plist"),
+            ("Saved Application State", ".savedState")
+        ]
+
+        var urls: [URL] = []
+        for source in sources {
+            let root = library.appendingPathComponent(source.folder, isDirectory: true)
+            for url in topLevelItems(at: root) {
+                var identifier = url.lastPathComponent
+                if !source.suffix.isEmpty {
+                    guard identifier.hasSuffix(source.suffix) else { continue }
+                    identifier = String(identifier.dropLast(source.suffix.count))
+                }
+                let parts = identifier.split(separator: ".").map(String.init)
+                guard parts.count >= 3,
+                      topLevelDomains.contains(parts[0].lowercased()),
+                      identifier.range(of: "^[A-Za-z0-9._-]+$", options: .regularExpression) != nil,
+                      !identifier.lowercased().hasPrefix("com.apple."),
+                      !whitelist.contains(url.lastPathComponent.lowercased()),
+                      !installedPrefixes.contains("\(parts[0]).\(parts[1])".lowercased()),
+                      NSWorkspace.shared.urlForApplication(withBundleIdentifier: identifier) == nil else { continue }
+                let values = try? url.resourceValues(forKeys: [.contentModificationDateKey, .isSymbolicLinkKey])
+                guard values?.isSymbolicLink != true,
+                      (values?.contentModificationDate ?? .distantFuture) < threshold else { continue }
+                urls.append(url)
+            }
+        }
+        let bytes = urls.reduce(Int64(0)) { $0 + FileProbe.sizeOfItem(at: $1) }
+        return CleanupCategory(kind: .appRemnants, bytes: bytes, itemCount: urls.count, paths: urls, isSelected: false)
+    }
+
+    /// Hersteller-Präfixe (z. B. "com.google") aller installierten Apps; deren Zusatzprogramme gelten nie als verwaist.
+    private static func installedVendorPrefixes() -> Set<String> {
+        let home = FileManager.default.homeDirectoryForCurrentUser
+        let roots = [
+            URL(fileURLWithPath: "/Applications", isDirectory: true),
+            URL(fileURLWithPath: "/System/Applications", isDirectory: true),
+            home.appendingPathComponent("Applications", isDirectory: true)
+        ]
+        var prefixes = Set<String>()
+        for root in roots {
+            for url in topLevelItems(at: root) {
+                let candidates = url.pathExtension == "app" ? [url] : topLevelItems(at: url).filter { $0.pathExtension == "app" }
+                for app in candidates {
+                    guard let identifier = Bundle(url: app)?.bundleIdentifier else { continue }
+                    let parts = identifier.split(separator: ".")
+                    if parts.count >= 2 { prefixes.insert("\(parts[0]).\(parts[1])".lowercased()) }
+                }
+            }
+        }
+        return prefixes
+    }
+
     private static func packageCaches(home: URL, whitelist: Set<String>) -> CleanupCategory {
         let threshold = Calendar.current.date(byAdding: .day, value: -14, to: Date()) ?? Date()
-        let roots = [".npm/_cacache", ".cache/pip", ".gradle/caches"].map { home.appendingPathComponent($0) }
+        let roots = [
+            ".npm/_cacache", ".cache/pip", ".gradle/caches",
+            "Library/pnpm/store", ".local/share/pnpm/store",
+            "Library/Caches/Homebrew/downloads"
+        ].map { home.appendingPathComponent($0) }
         let urls = roots.filter { url in
             guard !whitelist.contains(url.lastPathComponent.lowercased()),
                   FileManager.default.fileExists(atPath: url.path) else { return false }
@@ -170,11 +276,13 @@ private enum CleanupProbe {
         _ kind: CleanupKind,
         root: URL,
         olderThanDays days: Int,
-        whitelist: Set<String>
+        whitelist: Set<String>,
+        excluding: Set<String> = []
     ) -> CleanupCategory {
         let threshold = Calendar.current.date(byAdding: .day, value: -days, to: Date()) ?? Date()
         let urls = topLevelItems(at: root).filter { url in
-            guard !whitelist.contains(url.lastPathComponent.lowercased()) else { return false }
+            guard !whitelist.contains(url.lastPathComponent.lowercased()),
+                  !excluding.contains(url.lastPathComponent.lowercased()) else { return false }
             let values = try? url.resourceValues(forKeys: [.contentModificationDateKey, .isSymbolicLinkKey])
             return values?.isSymbolicLink != true && (values?.contentModificationDate ?? .distantFuture) < threshold
         }

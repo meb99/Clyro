@@ -235,10 +235,10 @@ struct DashboardView: View {
 
                     Spacer(minLength: 0)
 
-                    Text(snapshot.battery.isCharging ? "Mit Strom verbunden" : batteryAdvice)
+                    Text(batteryDetail)
                         .font(.system(size: 10, weight: .medium))
                         .foregroundStyle(.secondary)
-                        .lineLimit(1)
+                        .lineLimit(2)
                 }
 
                 Spacer(minLength: 0)
@@ -360,11 +360,21 @@ struct DashboardView: View {
 
     private var cpuDetail: String {
         guard let top = snapshot.processes.first else { return "Keine Prozessdaten" }
+        if let load = snapshot.loadAverage {
+            return "Last \(String(format: "%.1f", load)) · Top: \(top.name)"
+        }
         return "Top: \(top.name)"
     }
 
     private var memoryBadge: String {
         snapshot.memoryPercent < 70 ? "Entspannt" : snapshot.memoryPercent < 86 ? "Normal" : "Hoch"
+    }
+
+    private var batteryDetail: String {
+        var parts = [snapshot.battery.isCharging ? "Mit Strom verbunden" : batteryAdvice]
+        if let health = snapshot.battery.healthPercent { parts.append("Kapazität \(health) %") }
+        if let cycles = snapshot.battery.cycleCount { parts.append("\(cycles) Zyklen") }
+        return parts.joined(separator: " · ")
     }
 
     private var batteryAdvice: String {
