@@ -3,6 +3,7 @@ import SwiftUI
 struct RootView: View {
     @State private var selection: AppSection = .cleanup
     @AppStorage(OnboardingView.doneKey) private var onboardingDone = false
+    @ObservedObject private var updater = UpdateService.shared
 
     private var palette: ClyroPalette {
         ClyroTheme.palette(for: selection)
@@ -57,6 +58,14 @@ struct RootView: View {
             OnboardingView()
                 .interactiveDismissDisabled()
         }
+        // Der Update-Hinweis erscheint erst nach der Einführung.
+        .sheet(item: Binding(
+            get: { onboardingDone ? updater.presentedRelease : nil },
+            set: { updater.presentedRelease = $0 }
+        )) { release in
+            UpdateSheet(release: release)
+        }
+        .task { updater.checkOnLaunch() }
     }
 
     private var group: NavGroup {
@@ -73,8 +82,9 @@ struct RootView: View {
             }
             .frame(width: 34, height: 34)
             .padding(.trailing, 4)
+            .accessibilityHidden(true)
 
-            ForEach(NavGroup.allCases) { entry in
+            ForEach(Array(NavGroup.allCases.enumerated()), id: \.element) { index, entry in
                 Button {
                     withAnimation(.easeOut(duration: 0.16)) {
                         selection = entry.section
@@ -93,6 +103,9 @@ struct RootView: View {
                         .contentShape(Capsule())
                 }
                 .buttonStyle(.plain)
+                // ⌘1 bis ⌘5 wechseln zwischen den Bereichen.
+                .keyboardShortcut(KeyEquivalent(Character(String(index + 1))), modifiers: .command)
+                .help(entry.title)
                 .accessibilityLabel(entry.title)
                 .accessibilityAddTraits(group == entry ? .isSelected : [])
             }

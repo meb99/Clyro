@@ -15,7 +15,6 @@
 		A10000000000000000000106 /* Components.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000206 /* Components.swift */; };
 		A10000000000000000000107 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000207 /* RootView.swift */; };
 		A10000000000000000000108 /* DashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000208 /* DashboardView.swift */; };
-		A10000000000000000000109 /* FeatureViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000209 /* FeatureViews.swift */; };
 		A1000000000000000000010C /* ToolEngines.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000021C /* ToolEngines.swift */; };
 		A1000000000000000000010E /* ThermalSensors.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000021E /* ThermalSensors.swift */; };
 		A1000000000000000000010F /* Growth.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000021F /* Growth.swift */; };
@@ -36,6 +35,14 @@
 		A1000000000000000000011C /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000022C /* OnboardingView.swift */; };
 		A1000000000000000000011D /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000022D /* Localizable.strings */; };
 		A1000000000000000000011E /* Localization.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000230 /* Localization.swift */; };
+		A1000000000000000000011F /* CleanupRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000231 /* CleanupRules.swift */; };
+		A10000000000000000000120 /* CleanupProbe.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000232 /* CleanupProbe.swift */; };
+		A10000000000000000000121 /* CleanupHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000233 /* CleanupHelpers.swift */; };
+		A10000000000000000000122 /* StorageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000234 /* StorageView.swift */; };
+		A10000000000000000000123 /* StartupItemsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000235 /* StartupItemsView.swift */; };
+		A10000000000000000000124 /* HistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000236 /* HistoryView.swift */; };
+		A10000000000000000000125 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000237 /* SettingsView.swift */; };
+		A10000000000000000000126 /* UpdateService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000238 /* UpdateService.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -57,7 +64,6 @@
 		A10000000000000000000206 /* Components.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components.swift; sourceTree = "<group>"; };
 		A10000000000000000000207 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 		A10000000000000000000208 /* DashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardView.swift; sourceTree = "<group>"; };
-		A10000000000000000000209 /* FeatureViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeatureViews.swift; sourceTree = "<group>"; };
 		A1000000000000000000021C /* ToolEngines.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToolEngines.swift; sourceTree = "<group>"; };
 		A1000000000000000000021E /* ThermalSensors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThermalSensors.swift; sourceTree = "<group>"; };
 		A10000000000000000000226 /* UpdatesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdatesView.swift; sourceTree = "<group>"; };
@@ -82,6 +88,14 @@
 		A1000000000000000000022E /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
 		A1000000000000000000022F /* de */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = de; path = de.lproj/Localizable.strings; sourceTree = "<group>"; };
 		A10000000000000000000230 /* Localization.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Localization.swift; sourceTree = "<group>"; };
+		A10000000000000000000231 /* CleanupRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CleanupRules.swift; sourceTree = "<group>"; };
+		A10000000000000000000232 /* CleanupProbe.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CleanupProbe.swift; sourceTree = "<group>"; };
+		A10000000000000000000233 /* CleanupHelpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CleanupHelpers.swift; sourceTree = "<group>"; };
+		A10000000000000000000234 /* StorageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StorageView.swift; sourceTree = "<group>"; };
+		A10000000000000000000235 /* StartupItemsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StartupItemsView.swift; sourceTree = "<group>"; };
+		A10000000000000000000236 /* HistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryView.swift; sourceTree = "<group>"; };
+		A10000000000000000000237 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		A10000000000000000000238 /* UpdateService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateService.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -127,7 +141,6 @@
 				A10000000000000000000206 /* Components.swift */,
 				A10000000000000000000207 /* RootView.swift */,
 				A10000000000000000000208 /* DashboardView.swift */,
-				A10000000000000000000209 /* FeatureViews.swift */,
 				A1000000000000000000021C /* ToolEngines.swift */,
 				A1000000000000000000021E /* ThermalSensors.swift */,
 				A1000000000000000000021F /* Growth.swift */,
@@ -143,6 +156,14 @@
 				A10000000000000000000229 /* ForestViews.swift */,
 				A1000000000000000000022C /* OnboardingView.swift */,
 				A10000000000000000000230 /* Localization.swift */,
+				A10000000000000000000231 /* CleanupRules.swift */,
+				A10000000000000000000232 /* CleanupProbe.swift */,
+				A10000000000000000000233 /* CleanupHelpers.swift */,
+				A10000000000000000000234 /* StorageView.swift */,
+				A10000000000000000000235 /* StartupItemsView.swift */,
+				A10000000000000000000236 /* HistoryView.swift */,
+				A10000000000000000000237 /* SettingsView.swift */,
+				A10000000000000000000238 /* UpdateService.swift */,
 			);
 			name = Sources;
 			path = Sources/Clyro;
@@ -304,7 +325,6 @@
 				A10000000000000000000106 /* Components.swift in Sources */,
 				A10000000000000000000107 /* RootView.swift in Sources */,
 				A10000000000000000000108 /* DashboardView.swift in Sources */,
-				A10000000000000000000109 /* FeatureViews.swift in Sources */,
 				A1000000000000000000010C /* ToolEngines.swift in Sources */,
 				A1000000000000000000010E /* ThermalSensors.swift in Sources */,
 				A1000000000000000000010F /* Growth.swift in Sources */,
@@ -320,6 +340,14 @@
 				A10000000000000000000119 /* ForestViews.swift in Sources */,
 				A1000000000000000000011C /* OnboardingView.swift in Sources */,
 				A1000000000000000000011E /* Localization.swift in Sources */,
+				A1000000000000000000011F /* CleanupRules.swift in Sources */,
+				A10000000000000000000120 /* CleanupProbe.swift in Sources */,
+				A10000000000000000000121 /* CleanupHelpers.swift in Sources */,
+				A10000000000000000000122 /* StorageView.swift in Sources */,
+				A10000000000000000000123 /* StartupItemsView.swift in Sources */,
+				A10000000000000000000124 /* HistoryView.swift in Sources */,
+				A10000000000000000000125 /* SettingsView.swift in Sources */,
+				A10000000000000000000126 /* UpdateService.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -461,7 +489,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 1.0.0;
+				MARKETING_VERSION = 1.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = dev.meb99.Clyro;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -484,7 +512,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 1.0.0;
+				MARKETING_VERSION = 1.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = dev.meb99.Clyro;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;

@@ -32,7 +32,10 @@ Treemap der Festplatte mit Ordnernavigation und einer Liste der größten Dateie
 Gesundheitswert, CPU pro Kern, GPU, Arbeitsspeicher mit Speicherdruck und Swap, Akku, Festplatte mit SMART-Status, Netzwerk, Temperaturen und eine Prozessliste. Dieselben Werte stehen kompakt im Menüleistenmenü bereit.
 
 **Weiteres**
-Start bei der Anmeldung, Touch ID für `sudo`, Mitteilungen bei knappem Speicher, optionale wöchentliche Bereinigung, Whitelist, Verlauf mit Wochenübersicht.
+Start bei der Anmeldung, Touch ID für `sudo`, Mitteilungen bei knappem Speicher, optionale wöchentliche Bereinigung, Whitelist, Verlauf mit Wochenübersicht. Clyro prüft einmal am Tag auf neue Versionen und installiert sie nach Bestätigung selbst.
+
+**Bedienung**
+`⌘1` bis `⌘5` wechseln zwischen den Bereichen, `↩` startet den Scan, `⌘R` scannt erneut, `⌘,` öffnet die Einstellungen. Alle Bedienelemente sind für VoiceOver beschriftet.
 
 ## Installation
 
@@ -72,8 +75,11 @@ Sources/Clyro
 ├── ClyroApp.swift        Einstieg, Fenster, Menüleiste, Einstellungen
 ├── RootView.swift        Navigation
 ├── Localization.swift    Sprachwahl (DE/EN)
-├── CleanupScanner.swift  Bereinigungsregeln, Schutzlisten, Scan und Löschen
+├── CleanupScanner.swift  Ablauf von Scan und Löschen
+├── CleanupRules.swift    Bereinigungsregeln, Schutzlisten, Whitelist
+├── CleanupProbe.swift    Scan der einzelnen Kategorien
 ├── SystemExtras.swift    Administratorbereiche, Touch ID, Autostart, Mitteilungen
+├── UpdateService.swift   Update-Prüfung und Installation
 ├── OptimizeEngine.swift  Wartungsaufgaben
 ├── ToolEngines.swift     Protokoll, Build-Artefakte, App-Rückstände
 ├── SystemMonitor.swift   Systemwerte über Mach, IOKit und sysctl

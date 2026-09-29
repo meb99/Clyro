@@ -303,6 +303,7 @@ struct MenuBarStatusView: View {
                 .buttonStyle(.plain)
                 .foregroundStyle(.white.opacity(0.7))
                 .help("Einstellungen")
+                .accessibilityLabel("Einstellungen")
                 Button {
                     NSApp.terminate(nil)
                 } label: {
@@ -313,6 +314,7 @@ struct MenuBarStatusView: View {
                 .buttonStyle(.plain)
                 .foregroundStyle(.white.opacity(0.7))
                 .help("Clyro beenden")
+                .accessibilityLabel("Clyro beenden")
             }
 
             Divider().overlay(ClyroTheme.border)

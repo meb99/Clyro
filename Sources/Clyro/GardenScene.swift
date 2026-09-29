@@ -85,6 +85,7 @@ struct ClyroGardenScene: View {
         .onChange(of: phase) { _, _ in
             phaseStart = Date().timeIntervalSinceReferenceDate
         }
+        .accessibilityHidden(true)
     }
 
     private func displayedGrowth(at now: Double) -> Double {
@@ -674,6 +675,7 @@ struct ClyroStartStage<Extra: View>: View {
                             .frame(maxWidth: 460)
                     }
                     Button(buttonTitle, action: action)
+                        .keyboardShortcut(.defaultAction)
                         .buttonStyle(ClyroPillButtonStyle())
                         .padding(.top, 10)
                     extra

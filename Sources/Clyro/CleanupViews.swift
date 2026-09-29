@@ -88,7 +88,9 @@ struct CleanupView: View {
                 }
                 Spacer()
                 circleButton("arrow.clockwise", help: "Neu scannen") { cleaner.scan() }
+                    .keyboardShortcut("r", modifiers: .command)
                 circleButton("xmark", help: "Schließen") { cleaner.close() }
+                    .keyboardShortcut(.cancelAction)
             }
 
             ScrollView {
@@ -130,6 +132,7 @@ struct CleanupView: View {
         }
         .buttonStyle(.plain)
         .help(help)
+        .accessibilityLabel(help)
     }
 
     private var footer: some View {
@@ -304,6 +307,10 @@ private struct CleanupCategoryCard: View {
                     .foregroundStyle(category.selectionState == .none ? Color.white.opacity(0.35) : accent)
             }
             .buttonStyle(.plain)
+            .accessibilityLabel(category.kind.title)
+            .accessibilityValue(category.selectionState == .all ? String(localized: "ausgewählt")
+                                : category.selectionState == .partial ? String(localized: "teilweise ausgewählt")
+                                : String(localized: "nicht ausgewählt"))
         }
     }
 }
@@ -328,6 +335,8 @@ private struct CleanupItemRow: View {
                         .foregroundStyle(item.isSelected ? accent : Color.white.opacity(0.35))
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel(item.displayName)
+                .accessibilityValue(item.isSelected ? String(localized: "ausgewählt") : String(localized: "nicht ausgewählt"))
                 .frame(width: 20)
             }
 
@@ -353,6 +362,7 @@ private struct CleanupItemRow: View {
             .buttonStyle(.plain)
             .foregroundStyle(.white.opacity(0.5))
             .help("Im Finder zeigen")
+            .accessibilityLabel("Im Finder zeigen")
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 6)
