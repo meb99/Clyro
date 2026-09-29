@@ -35,6 +35,7 @@ struct RootView: View {
                     case .optimize: OptimizeView()
                     case .projects: ProjectsView()
                     case .storage: StorageView()
+                    case .explorer: ExplorerView()
                     case .processes: ProcessesView()
                     case .applications: ApplicationsView()
                     case .startup: StartupItemsView()

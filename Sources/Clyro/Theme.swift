@@ -44,6 +44,13 @@ enum ClyroTheme {
                 accent: Color(red: 0.90, green: 0.50, blue: 0.85),
                 secondary: Color(red: 0.68, green: 0.49, blue: 0.98)
             )
+        case .explorer:
+            ClyroPalette(
+                top: Color(red: 0.03, green: 0.09, blue: 0.14),
+                bottom: Color(red: 0.06, green: 0.20, blue: 0.32),
+                accent: Color(red: 0.36, green: 0.72, blue: 0.98),
+                secondary: Color(red: 0.30, green: 0.85, blue: 0.85)
+            )
         case .storage:
             ClyroPalette(
                 top: Color(red: 0.15, green: 0.065, blue: 0.03),

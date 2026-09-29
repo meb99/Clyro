@@ -20,6 +20,7 @@
 		A1000000000000000000010D /* ToolViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000021D /* ToolViews.swift */; };
 		A1000000000000000000010E /* ThermalSensors.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000021E /* ThermalSensors.swift */; };
 		A1000000000000000000010F /* Growth.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000021F /* Growth.swift */; };
+		A10000000000000000000110 /* ExplorerViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000220 /* ExplorerViews.swift */; };
 		A1000000000000000000010A /* ClyroIcon.svg in Resources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000020A /* ClyroIcon.svg */; };
 		A1000000000000000000010B /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A1000000000000000000020D /* IOKit.framework */; };
 /* End PBXBuildFile section */
@@ -36,6 +37,7 @@
 		A10000000000000000000209 /* FeatureViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeatureViews.swift; sourceTree = "<group>"; };
 		A1000000000000000000021C /* ToolEngines.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToolEngines.swift; sourceTree = "<group>"; };
 		A1000000000000000000021E /* ThermalSensors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThermalSensors.swift; sourceTree = "<group>"; };
+		A10000000000000000000220 /* ExplorerViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExplorerViews.swift; sourceTree = "<group>"; };
 		A1000000000000000000021F /* Growth.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Growth.swift; sourceTree = "<group>"; };
 		A1000000000000000000021D /* ToolViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToolViews.swift; sourceTree = "<group>"; };
 		A1000000000000000000020A /* ClyroIcon.svg */ = {isa = PBXFileReference; lastKnownFileType = image.svg; path = ClyroIcon.svg; sourceTree = "<group>"; };
@@ -83,6 +85,7 @@
 				A1000000000000000000021D /* ToolViews.swift */,
 				A1000000000000000000021E /* ThermalSensors.swift */,
 				A1000000000000000000021F /* Growth.swift */,
+				A10000000000000000000220 /* ExplorerViews.swift */,
 			);
 			name = Sources;
 			path = Sources/Clyro;
@@ -194,6 +197,7 @@
 				A1000000000000000000010D /* ToolViews.swift in Sources */,
 				A1000000000000000000010E /* ThermalSensors.swift in Sources */,
 				A1000000000000000000010F /* Growth.swift in Sources */,
+				A10000000000000000000110 /* ExplorerViews.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
