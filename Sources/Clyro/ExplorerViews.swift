@@ -288,8 +288,7 @@ struct ExplorerView: View {
         Group {
             if !started {
                 ClyroStartStage(
-                    title: "Speicher erkunden",
-                    message: "Sieh auf einen Blick, welche Ordner den meisten Platz belegen, und klick dich hinein.",
+                    title: "Der Herbst zeigt, was abfällt –\nfinde heraus, was Platz belegt.",
                     buttonTitle: "Analysieren",
                     busyTitle: "Clyro misst deine Ordner",
                     busyMessage: "Die größten Einträge werden zuerst berechnet …",

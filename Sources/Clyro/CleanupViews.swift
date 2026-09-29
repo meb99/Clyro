@@ -27,9 +27,7 @@ struct CleanupView: View {
                 bloomStage(celebration)
             } else if cleaner.state == .cleaning {
                 wateringStage
-            } else if cleaner.state == .scanning {
-                scanningStage
-            } else if cleaner.categories.isEmpty {
+            } else if cleaner.state == .scanning || cleaner.categories.isEmpty {
                 startStage
             } else {
                 resultsScreen
@@ -54,16 +52,15 @@ struct CleanupView: View {
     // MARK: - Start und Scan
 
     private var startStage: some View {
-        VStack(spacing: 14) {
-            ClyroGardenScene(phase: .idle, growth: 0.14, accent: accent)
-                .frame(width: 340, height: 290)
-            Text("Ein wenig Wasser, ein wenig Licht –\nund dein Mac wächst wieder frei.")
-                .font(.system(size: 20, weight: .medium, design: .serif))
-                .foregroundStyle(.white.opacity(0.78))
-                .multilineTextAlignment(.center)
-            Button("Mac scannen") { cleaner.scan() }
-                .buttonStyle(ClyroPillButtonStyle())
-                .padding(.top, 10)
+        ClyroStartStage(
+            title: "Der Winter räumt auf –\nund macht Platz für Neues.",
+            buttonTitle: "Mac scannen",
+            busyTitle: "Wird durchsucht · \(ClyroFormat.byteCount(cleaner.progressBytes))",
+            busyMessage: displayPath(cleaner.progressPath),
+            accent: accent,
+            isBusy: cleaner.state == .scanning,
+            action: { cleaner.scan() }
+        ) {
             if !cleaner.history.isEmpty {
                 Button("Verlauf ansehen") { showHistory = true }
                     .buttonStyle(.plain)
@@ -72,28 +69,6 @@ struct CleanupView: View {
                     .padding(.top, 2)
             }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
-
-    private var scanningStage: some View {
-        VStack(spacing: 18) {
-            ClyroGardenScene(phase: .scanning, growth: 0.2, accent: accent)
-                .frame(width: 340, height: 290)
-            Text("Wird durchsucht · \(ClyroFormat.byteCount(cleaner.progressBytes))")
-                .font(.system(size: 34, weight: .bold))
-                .monospacedDigit()
-            HStack(spacing: 10) {
-                Circle().fill(accent).frame(width: 9, height: 9)
-                Text(displayPath(cleaner.progressPath))
-                    .font(.system(size: 15, weight: .medium))
-                    .foregroundStyle(.white.opacity(0.62))
-                    .lineLimit(1)
-                    .truncationMode(.middle)
-            }
-            .frame(maxWidth: 560)
-            .frame(height: 22)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     private func displayPath(_ path: String) -> String {
@@ -220,7 +195,7 @@ struct CleanupView: View {
                 .frame(width: 340, height: 290)
             Text("\(ClyroFormat.byteCount(celebration.bytes)) freigegeben")
                 .font(.system(size: 30, weight: .bold, design: .rounded))
-            Text("Dein Mac ist frisch gegossen – der Keimling wächst.")
+            Text("Frisch verschneit und aufgeräumt – dein Mac hat wieder Platz.")
                 .font(.system(size: 14, weight: .medium))
                 .foregroundStyle(.secondary)
             Button("Weiter") { cleaner.dismissCelebration() }
