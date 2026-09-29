@@ -34,23 +34,18 @@ struct OptimizeView: View {
     // MARK: - Start
 
     private var startStage: some View {
-        VStack(spacing: 14) {
-            ClyroGardenScene(phase: .idle, growth: 0.2, accent: accent)
-                .frame(width: 340, height: 290)
-            Text("Ein paar sanfte Handgriffe,\ndamit alles wieder rund läuft.")
-                .font(.system(size: 20, weight: .medium, design: .serif))
-                .foregroundStyle(.white.opacity(0.78))
-                .multilineTextAlignment(.center)
-            Button("Optimieren") { run() }
-                .buttonStyle(ClyroPillButtonStyle())
-                .padding(.top, 10)
+        ClyroStartStage(
+            title: "Frühling für deinen Mac –\nein paar Handgriffe, und alles blüht auf.",
+            buttonTitle: "Optimieren",
+            accent: accent,
+            action: { run() }
+        ) {
             if dryRun {
                 Text("Vorschau ist aktiv – es wird nichts verändert (Einstellungen)")
                     .font(.system(size: 11, weight: .medium))
                     .foregroundStyle(.secondary)
             }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     // MARK: - Wartung

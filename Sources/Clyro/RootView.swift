@@ -43,6 +43,7 @@ struct RootView: View {
                     }
                 }
                 .id(selection)
+                .environment(\.clyroSeason, ClyroSeason.of(selection))
                 .transition(.opacity.combined(with: .scale(scale: 0.992)))
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             }

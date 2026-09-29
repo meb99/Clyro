@@ -73,10 +73,13 @@ struct ApplicationsView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            toolbar
-                .padding(.horizontal, 22)
-                .padding(.top, 14)
-                .padding(.bottom, 6)
+            // Die Unterseiten erscheinen erst, nachdem die Apps geladen wurden.
+            if hasLoaded {
+                toolbar
+                    .padding(.horizontal, 22)
+                    .padding(.top, 14)
+                    .padding(.bottom, 6)
+            }
 
             switch mode {
             case .uninstall: uninstallContent
@@ -91,6 +94,7 @@ struct ApplicationsView: View {
                 selection.subtract(urls)
             }
             .environmentObject(cleaner)
+            .environment(\.clyroSeason, .summer)
         }
     }
 
@@ -173,8 +177,7 @@ struct ApplicationsView: View {
     private var uninstallContent: some View {
         if !hasLoaded || isLoading {
             ClyroStartStage(
-                title: "Deine Apps ansehen",
-                message: "Clyro misst jede installierte App und findet beim Deinstallieren auch die Rückstände.",
+                title: "Mitten im Sommer –\nsieh nach, was bei dir alles wächst.",
                 buttonTitle: "Apps laden",
                 busyTitle: "Clyro misst deine Apps",
                 busyMessage: "Größen, Versionen und letzte Nutzung werden ermittelt …",
