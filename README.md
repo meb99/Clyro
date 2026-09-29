@@ -91,7 +91,7 @@ Tests/ClyroTests          Tests der Schutzregeln
 
 ## Releases
 
-Ein Tag der Form `v1.2.0` startet den Workflow `release.yml`. Er baut eine Universal-App, erstellt eine DMG und veröffentlicht sie als GitHub-Release.
+Der Workflow `release.yml` baut eine Universal-App, erstellt eine DMG und veröffentlicht sie als GitHub-Release. Er startet bei einem Tag der Form `v1.2.0` oder manuell unter *Actions → Release → Run workflow* mit einer Versionsnummer; der Tag wird dann automatisch angelegt.
 
 ## Lizenz
 
