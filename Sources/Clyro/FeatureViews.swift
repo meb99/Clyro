@@ -71,9 +71,6 @@ struct CleanupView: View {
             }
         }
         .padding(22)
-        .onAppear {
-            if cleaner.categories.isEmpty { cleaner.scan() }
-        }
         .alert("Ausgewählte Dateien verschieben?", isPresented: $showConfirmation) {
             Button("Abbrechen", role: .cancel) {}
             Button("In den Papierkorb", role: .destructive) { cleaner.cleanSelected() }
@@ -90,7 +87,7 @@ struct CleanupView: View {
                 accent: accent
             )
             .frame(width: 260, height: 220)
-            Text(cleaner.state == .scanning ? "Clyro prüft deinen Mac" : "Bereit für den ersten Scan")
+            Text(cleaner.state == .scanning ? "Clyro prüft deinen Mac" : "Bereit zum Scannen")
                 .font(.system(size: 24, weight: .semibold))
             Text(cleaner.state == .scanning
                  ? "Caches, Protokolle, Installer und Entwicklerdaten werden lokal analysiert."
@@ -219,6 +216,7 @@ private struct CleanupCategoryRow: View {
 struct StorageView: View {
     @State private var files: [LargeFileItem] = []
     @State private var isScanning = false
+    @State private var hasScanned = false
     @State private var threshold: LargeFileThreshold = .hundredMB
     @State private var query = ""
 
@@ -242,23 +240,33 @@ struct StorageView: View {
         VStack(alignment: .leading, spacing: 14) {
             header
 
-            HStack(spacing: 14) {
-                storageSidebar
-                    .frame(width: 238)
+            if !hasScanned || isScanning {
+                ClyroStartStage(
+                    title: "Große Dateien finden",
+                    message: "Clyro sucht in Downloads, Schreibtisch, Dokumenten und Filmen. Es wird nichts gelöscht.",
+                    buttonTitle: "Speicher scannen",
+                    busyTitle: "Clyro durchsucht deinen Speicher",
+                    busyMessage: "Downloads, Schreibtisch, Dokumente und Filme werden geprüft …",
+                    accent: accent,
+                    isBusy: isScanning,
+                    action: { scan() }
+                )
+            } else {
+                HStack(spacing: 14) {
+                    storageSidebar
+                        .frame(width: 238)
 
-                VStack(spacing: 12) {
-                    StorageMosaicView(files: Array(filteredFiles.prefix(3)), accent: accent, secondary: secondary)
-                        .frame(height: 172)
-                    fileList
+                    VStack(spacing: 12) {
+                        StorageMosaicView(files: Array(filteredFiles.prefix(3)), accent: accent, secondary: secondary)
+                            .frame(height: 172)
+                        fileList
+                    }
                 }
             }
         }
         .padding(22)
-        .task {
-            if files.isEmpty { scan() }
-        }
         .onChange(of: threshold) {
-            scan()
+            if hasScanned { scan() }
         }
     }
 
@@ -412,10 +420,14 @@ struct StorageView: View {
         guard !isScanning else { return }
         isScanning = true
         let minimumSize = threshold.bytes
+        let started = Date()
         Task {
-            files = await Task.detached(priority: .utility) {
+            let found = await Task.detached(priority: .utility) {
                 LargeFileProbe.scan(minimumSize: minimumSize)
             }.value
+            await ScanTiming.hold(since: started)
+            files = found
+            hasScanned = true
             isScanning = false
         }
     }
@@ -925,6 +937,7 @@ private struct CrewRoleFilter: View {
 struct ApplicationsView: View {
     @State private var applications: [InstalledApplication] = []
     @State private var isLoading = false
+    @State private var hasLoaded = false
     @State private var query = ""
     @State private var sort: ApplicationSort = .size
     @State private var uninstallTarget: InstalledApplication?
@@ -972,12 +985,17 @@ struct ApplicationsView: View {
                     .frame(width: 210)
             }
 
-            if isLoading {
-                VStack(spacing: 12) {
-                    ClyroArtifact(symbol: "app.gift.fill", satellite: "magnifyingglass", accent: accent, secondary: secondary)
-                    ProgressView("Apps werden analysiert …").tint(accent)
-                }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            if !hasLoaded || isLoading {
+                ClyroStartStage(
+                    title: "Deine Apps ansehen",
+                    message: "Clyro misst jede installierte App und findet beim Deinstallieren auch die Rückstände.",
+                    buttonTitle: "Apps laden",
+                    busyTitle: "Clyro misst deine Apps",
+                    busyMessage: "Größen und Versionen werden ermittelt …",
+                    accent: accent,
+                    isBusy: isLoading,
+                    action: { Task { await loadApps() } }
+                )
             } else {
                 HStack(spacing: 14) {
                     VStack(spacing: 10) {
@@ -1022,7 +1040,6 @@ struct ApplicationsView: View {
             }
         }
         .padding(22)
-        .task { await loadApps() }
         .sheet(item: $uninstallTarget) { target in
             UninstallSheet(app: target, accent: accent) {
                 applications.removeAll { $0.id == target.id }
@@ -1031,11 +1048,15 @@ struct ApplicationsView: View {
     }
 
     private func loadApps() async {
-        guard applications.isEmpty else { return }
+        guard !isLoading else { return }
         isLoading = true
-        applications = await Task.detached(priority: .utility) {
+        let started = Date()
+        let found = await Task.detached(priority: .utility) {
             ApplicationProbe.scan()
         }.value
+        await ScanTiming.hold(since: started)
+        applications = found
+        hasLoaded = true
         isLoading = false
     }
 }
@@ -1132,6 +1153,8 @@ private enum ApplicationProbe {
 
 struct StartupItemsView: View {
     @State private var items: [StartupItem] = []
+    @State private var isScanning = false
+    @State private var hasScanned = false
     @State private var query = ""
 
     private let accent = ClyroTheme.palette(for: .startup).accent
@@ -1162,7 +1185,18 @@ struct StartupItemsView: View {
                     .frame(width: 210)
             }
 
-            if items.isEmpty {
+            if !hasScanned || isScanning {
+                ClyroStartStage(
+                    title: "Autostart prüfen",
+                    message: "Clyro zeigt, welche Dienste im Hintergrund mit deinem Mac starten. Es wird nichts verändert.",
+                    buttonTitle: "Autostart scannen",
+                    busyTitle: "Clyro sucht Hintergrunddienste",
+                    busyMessage: "Launch Agents und Launch Daemons werden gelesen …",
+                    accent: accent,
+                    isBusy: isScanning,
+                    action: { scanStartup() }
+                )
+            } else if items.isEmpty {
                 VStack(spacing: 10) {
                     ClyroArtifact(symbol: "bolt.slash.fill", satellite: "checkmark", accent: accent, secondary: secondary)
                     Text("Keine Autostart-Dienste gefunden")
@@ -1208,8 +1242,18 @@ struct StartupItemsView: View {
             }
         }
         .padding(22)
-        .task {
-            items = await Task.detached(priority: .utility) { StartupProbe.scan() }.value
+    }
+
+    private func scanStartup() {
+        guard !isScanning else { return }
+        isScanning = true
+        let started = Date()
+        Task {
+            let found = await Task.detached(priority: .utility) { StartupProbe.scan() }.value
+            await ScanTiming.hold(since: started)
+            items = found
+            hasScanned = true
+            isScanning = false
         }
     }
 }

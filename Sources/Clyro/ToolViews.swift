@@ -286,9 +286,6 @@ struct ProjectsView: View {
             }
         }
         .padding(22)
-        .onAppear {
-            if !hasScanned { scan() }
-        }
         .alert("Build-Ordner verschieben?", isPresented: $showConfirmation) {
             Button("Abbrechen", role: .cancel) {}
             Button("In den Papierkorb", role: .destructive) { purge() }
@@ -335,10 +332,12 @@ struct ProjectsView: View {
     private func scan() {
         guard !isScanning else { return }
         isScanning = true
+        let started = Date()
         Task {
             let results = await Task.detached(priority: .utility) {
                 ProjectPurgeProbe.scan()
             }.value
+            await ScanTiming.hold(since: started)
             artifacts = results
             selected = Set(results.filter { $0.ageDays >= Self.autoSelectAfterDays }.map(\.url))
             hasScanned = true
