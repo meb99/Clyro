@@ -20,10 +20,10 @@ enum ClyroSeason {
 
     static func of(_ section: AppSection) -> ClyroSeason {
         switch section {
-        case .cleanup, .projects, .storage, .history: .winter
+        case .cleanup, .storage, .history: .winter
         case .optimize: .spring
         case .explorer: .autumn
-        case .applications, .startup, .overview, .processes: .summer
+        case .applications, .startup, .overview: .summer
         }
     }
 }

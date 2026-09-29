@@ -4,10 +4,8 @@ enum AppSection: String, CaseIterable, Identifiable {
     case overview
     case cleanup
     case optimize
-    case projects
     case storage
     case explorer
-    case processes
     case applications
     case startup
     case history
@@ -19,10 +17,8 @@ enum AppSection: String, CaseIterable, Identifiable {
         case .overview: "Übersicht"
         case .cleanup: "Bereinigen"
         case .optimize: "Optimieren"
-        case .projects: "Projekte"
         case .storage: "Speicher"
         case .explorer: "Ordner"
-        case .processes: "Prozesse"
         case .applications: "Apps"
         case .startup: "Autostart"
         case .history: "Verlauf"
@@ -42,10 +38,8 @@ enum AppSection: String, CaseIterable, Identifiable {
         case .overview: "square.grid.2x2.fill"
         case .cleanup: "sparkles"
         case .optimize: "dial.medium.fill"
-        case .projects: "shippingbox.and.arrow.backward.fill"
         case .storage: "internaldrive.fill"
         case .explorer: "chart.pie.fill"
-        case .processes: "list.bullet.rectangle.portrait.fill"
         case .applications: "app.dashed"
         case .startup: "bolt.fill"
         case .history: "clock.arrow.circlepath"
@@ -96,126 +90,6 @@ struct SystemProcess: Identifiable, Hashable {
     let cpuTicks: UInt64
     let executablePath: String
     var power: Double?
-
-    var crewRole: ProcessCrewRole {
-        ProcessCrewRole.classify(name)
-    }
-
-    var explanation: String {
-        ProcessCrewRole.explanation(for: name)
-    }
-}
-
-enum ProcessCrewRole: String, CaseIterable, Identifiable, Hashable {
-    case navigator
-    case messenger
-    case studio
-    case workshop
-    case atelier
-    case courier
-    case guardian
-    case engineRoom
-    case helper
-
-    var id: String { rawValue }
-
-    var title: String {
-        switch self {
-        case .navigator: "Navigator"
-        case .messenger: "Messenger"
-        case .studio: "Studio"
-        case .workshop: "Werkstatt"
-        case .atelier: "Atelier"
-        case .courier: "Kurier"
-        case .guardian: "Wächter"
-        case .engineRoom: "Maschinenraum"
-        case .helper: "Helferlein"
-        }
-    }
-
-    var emoji: String {
-        switch self {
-        case .navigator: "🧭"
-        case .messenger: "💬"
-        case .studio: "🎞️"
-        case .workshop: "🛠️"
-        case .atelier: "🎨"
-        case .courier: "☁️"
-        case .guardian: "🛡️"
-        case .engineRoom: "⚙️"
-        case .helper: "✨"
-        }
-    }
-
-    var systemImage: String {
-        switch self {
-        case .navigator: "safari.fill"
-        case .messenger: "bubble.left.and.bubble.right.fill"
-        case .studio: "play.rectangle.fill"
-        case .workshop: "hammer.fill"
-        case .atelier: "paintpalette.fill"
-        case .courier: "externaldrive.badge.icloud"
-        case .guardian: "shield.lefthalf.filled"
-        case .engineRoom: "gearshape.2.fill"
-        case .helper: "sparkles"
-        }
-    }
-
-    static func classify(_ processName: String) -> ProcessCrewRole {
-        let name = processName.lowercased()
-
-        if contains(name, any: ["safari", "chrome", "chromium", "firefox", "opera", "brave", "vivaldi", "edge", "arc helper"]) {
-            return .navigator
-        }
-        if contains(name, any: ["mail", "messages", "whatsapp", "telegram", "discord", "slack", "teams", "signal", "facetime"]) {
-            return .messenger
-        }
-        if contains(name, any: ["music", "spotify", "vlc", "quicktime", "tv", "podcast", "photo", "final cut", "premiere"]) {
-            return .studio
-        }
-        if contains(name, any: ["xcode", "terminal", "iterm", "visual studio", "code helper", "swift", "python", "node", "git", "docker"]) {
-            return .workshop
-        }
-        if contains(name, any: ["figma", "photoshop", "illustrator", "affinity", "sketch", "canva", "blender"]) {
-            return .atelier
-        }
-        if contains(name, any: ["icloud", "cloudd", "bird", "dropbox", "onedrive", "google drive", "sync"] ) {
-            return .courier
-        }
-        if contains(name, any: ["vpn", "security", "firewall", "trustd", "keychain", "antivirus", "malware"] ) {
-            return .guardian
-        }
-        if contains(name, any: ["windowserver", "kernel_task", "launchd", "finder", "dock", "systemuiserver", "controlcenter", "spotlight", "mds", "coreaudiod", "bluetoothd", "loginwindow"] ) {
-            return .engineRoom
-        }
-        return .helper
-    }
-
-    static func explanation(for processName: String) -> String {
-        let name = processName.lowercased()
-        if name.contains("windowserver") { return "Zeichnet Fenster, Animationen und externe Bildschirme." }
-        if name.contains("kernel_task") { return "Verwaltet die Hardware und schützt den Mac vor Überhitzung." }
-        if name == "finder" { return "Organisiert Dateien, Ordner und deinen Schreibtisch." }
-        if name == "dock" { return "Steuert Dock, App-Wechsel und Mission Control." }
-        if name.contains("coreaudiod") { return "Kümmert sich um Lautsprecher, Mikrofone und Audio." }
-        if name.contains("mds") || name.contains("spotlight") { return "Indiziert Dateien, damit Spotlight sie schnell findet." }
-
-        switch classify(processName) {
-        case .navigator: return "Lädt Webseiten, Tabs, Erweiterungen und Webvideos."
-        case .messenger: return "Hält Nachrichten, Anrufe und Benachrichtigungen bereit."
-        case .studio: return "Verarbeitet Musik, Bilder oder Videos für dich."
-        case .workshop: return "Baut, prüft oder startet Entwicklungsprojekte."
-        case .atelier: return "Rendert kreative Inhalte und hält Arbeitsflächen bereit."
-        case .courier: return "Gleicht Dateien sicher mit einem Cloud-Dienst ab."
-        case .guardian: return "Überwacht Verbindungen, Zugriffe und Sicherheit."
-        case .engineRoom: return "Hält eine wichtige macOS-Funktion am Laufen."
-        case .helper: return "Unterstützt eine App oder arbeitet unauffällig im Hintergrund."
-        }
-    }
-
-    private static func contains(_ value: String, any candidates: [String]) -> Bool {
-        candidates.contains { value.contains($0) }
-    }
 }
 
 struct CPUCounters: Hashable {
