@@ -6,6 +6,7 @@ enum AppSection: String, CaseIterable, Identifiable {
     case optimize
     case projects
     case storage
+    case explorer
     case processes
     case applications
     case startup
@@ -20,6 +21,7 @@ enum AppSection: String, CaseIterable, Identifiable {
         case .optimize: "Optimieren"
         case .projects: "Projekte"
         case .storage: "Speicher"
+        case .explorer: "Ordner"
         case .processes: "Prozesse"
         case .applications: "Apps"
         case .startup: "Autostart"
@@ -42,6 +44,7 @@ enum AppSection: String, CaseIterable, Identifiable {
         case .optimize: "dial.medium.fill"
         case .projects: "shippingbox.and.arrow.backward.fill"
         case .storage: "internaldrive.fill"
+        case .explorer: "chart.pie.fill"
         case .processes: "list.bullet.rectangle.portrait.fill"
         case .applications: "app.dashed"
         case .startup: "bolt.fill"
@@ -76,7 +79,7 @@ enum NavGroup: String, CaseIterable, Identifiable {
         case .clean: [.cleanup, .projects, .history]
         case .optimize: [.optimize, .startup]
         case .apps: [.applications]
-        case .storage: [.storage]
+        case .storage: [.storage, .explorer]
         }
     }
 

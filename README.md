@@ -20,6 +20,7 @@ Clyro deckt jetzt den kompletten Funktionsumfang klassischer Mac-Pflegewerkzeuge
 - **Aktivitätsprotokoll:** jede verschobene Datei landet lokal in `~/Library/Logs/Clyro/operations.log`
 - **Status:** Akku mit Kapazität und Zyklen, Load Average bei der CPU
 - **Projekte:** eigene Suchordner in den Einstellungen, sechs Ebenen Suchtiefe, jüngere Ordner (unter 7 Tagen) nicht vorausgewählt
+- **Ordner-Explorer** (Speicher → Ordner): durch den Speicher klicken, größte Einträge zuerst, Größen live berechnet, unvollständige Größen (fehlende macOS-Freigabe) mit Schloss markiert, Papierkorb nur mit Bestätigung; persönliche Standardordner und alles außerhalb von Home sind geschützt
 - **Optimieren:** sichere Wartungsschritte (Quick-Look-Cache, DNS-Cache, Spotlight-Status, Dock/Finder neu starten) mit **Vorschau-Modus** (Trockenlauf, standardmäßig an)
 - **Projekte:** findet `node_modules`, Rust `target`, Swift `.build`, `Pods` und `dist`/`build` in deinen Projektordnern; nur Projektordner mit passender Projektdatei, ältere Ordner vorausgewählt, alles in den Papierkorb
 - **Gründlich deinstallieren:** Apps-Liste mit Papierkorb-Button, findet Rückstände in `~/Library` (Einstellungen, Caches, Container, Launch Agents …), Auswahl je Rückstand, macOS-eigene und laufende Apps sind geschützt
