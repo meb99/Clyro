@@ -37,13 +37,6 @@ enum ClyroTheme {
                 accent: Color(red: 0.30, green: 0.85, blue: 0.85),
                 secondary: mint
             )
-        case .projects:
-            ClyroPalette(
-                top: Color(red: 0.10, green: 0.05, blue: 0.13),
-                bottom: Color(red: 0.26, green: 0.10, blue: 0.30),
-                accent: Color(red: 0.90, green: 0.50, blue: 0.85),
-                secondary: Color(red: 0.68, green: 0.49, blue: 0.98)
-            )
         case .explorer:
             ClyroPalette(
                 top: Color(red: 0.03, green: 0.09, blue: 0.14),
@@ -57,13 +50,6 @@ enum ClyroTheme {
                 bottom: Color(red: 0.34, green: 0.15, blue: 0.055),
                 accent: Color(red: 0.95, green: 0.60, blue: 0.31),
                 secondary: Color(red: 0.91, green: 0.42, blue: 0.25)
-            )
-        case .processes:
-            ClyroPalette(
-                top: Color(red: 0.065, green: 0.055, blue: 0.145),
-                bottom: Color(red: 0.20, green: 0.105, blue: 0.30),
-                accent: Color(red: 0.68, green: 0.49, blue: 0.98),
-                secondary: blue
             )
         case .applications:
             ClyroPalette(
