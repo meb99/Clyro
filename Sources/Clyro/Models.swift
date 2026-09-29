@@ -3,6 +3,7 @@ import Foundation
 enum AppSection: String, CaseIterable, Identifiable {
     case overview
     case cleanup
+    case storage
     case processes
     case applications
     case startup
@@ -14,6 +15,7 @@ enum AppSection: String, CaseIterable, Identifiable {
         switch self {
         case .overview: "Übersicht"
         case .cleanup: "Bereinigen"
+        case .storage: "Speicher"
         case .processes: "Prozesse"
         case .applications: "Apps"
         case .startup: "Autostart"
@@ -25,6 +27,7 @@ enum AppSection: String, CaseIterable, Identifiable {
         switch self {
         case .overview: "square.grid.2x2.fill"
         case .cleanup: "sparkles"
+        case .storage: "internaldrive.fill"
         case .processes: "list.bullet.rectangle.portrait.fill"
         case .applications: "app.dashed"
         case .startup: "bolt.fill"
@@ -290,6 +293,72 @@ struct InstalledApplication: Identifiable, Hashable {
     let sizeBytes: Int64
 
     var id: URL { url }
+}
+
+struct LargeFileItem: Identifiable, Hashable {
+    let url: URL
+    let sizeBytes: Int64
+    let modifiedAt: Date
+
+    var id: URL { url }
+
+    var displayName: String {
+        url.lastPathComponent
+    }
+
+    var locationName: String {
+        let home = FileManager.default.homeDirectoryForCurrentUser.path
+        return url.deletingLastPathComponent().path.replacingOccurrences(of: home, with: "~")
+    }
+
+    var kind: LargeFileKind {
+        LargeFileKind.classify(url.pathExtension)
+    }
+}
+
+enum LargeFileKind: String, CaseIterable, Hashable {
+    case video
+    case archive
+    case installer
+    case image
+    case audio
+    case document
+    case other
+
+    var title: String {
+        switch self {
+        case .video: "Video"
+        case .archive: "Archiv"
+        case .installer: "Installer"
+        case .image: "Bild"
+        case .audio: "Audio"
+        case .document: "Dokument"
+        case .other: "Sonstiges"
+        }
+    }
+
+    var emoji: String {
+        switch self {
+        case .video: "🎬"
+        case .archive: "📦"
+        case .installer: "💿"
+        case .image: "🖼️"
+        case .audio: "🎵"
+        case .document: "📄"
+        case .other: "🧩"
+        }
+    }
+
+    static func classify(_ fileExtension: String) -> LargeFileKind {
+        let value = fileExtension.lowercased()
+        if ["mov", "mp4", "mkv", "avi", "m4v", "webm"].contains(value) { return .video }
+        if ["zip", "rar", "7z", "tar", "gz", "xz"].contains(value) { return .archive }
+        if ["dmg", "pkg", "iso"].contains(value) { return .installer }
+        if ["jpg", "jpeg", "png", "heic", "tiff", "raw", "psd"].contains(value) { return .image }
+        if ["mp3", "m4a", "wav", "flac", "aac"].contains(value) { return .audio }
+        if ["pdf", "doc", "docx", "pages", "ppt", "pptx", "key"].contains(value) { return .document }
+        return .other
+    }
 }
 
 struct StartupItem: Identifiable, Hashable {

@@ -6,12 +6,13 @@ struct RootView: View {
     var body: some View {
         NavigationSplitView {
             sidebar
-                .navigationSplitViewColumnWidth(min: 190, ideal: 215, max: 240)
+                .navigationSplitViewColumnWidth(min: 176, ideal: 198, max: 216)
         } detail: {
             Group {
                 switch selection {
                 case .overview: DashboardView()
                 case .cleanup: CleanupView()
+                case .storage: StorageView()
                 case .processes: ProcessesView()
                 case .applications: ApplicationsView()
                 case .startup: StartupItemsView()
@@ -35,20 +36,20 @@ struct RootView: View {
                         .font(.system(size: 19, weight: .bold))
                         .foregroundStyle(ClyroTheme.mint)
                 }
-                .frame(width: 39, height: 39)
+                .frame(width: 35, height: 35)
                 VStack(alignment: .leading, spacing: 1) {
                     Text("Clyro")
-                        .font(.system(size: 19, weight: .bold, design: .rounded))
+                        .font(.system(size: 17, weight: .bold, design: .rounded))
                     Text("Mac care, made clear")
                         .font(.system(size: 10, weight: .medium, design: .rounded))
                         .foregroundStyle(ClyroTheme.secondaryText)
                 }
             }
-            .padding(.horizontal, 18)
-            .padding(.top, 23)
-            .padding(.bottom, 26)
+            .padding(.horizontal, 15)
+            .padding(.top, 8)
+            .padding(.bottom, 18)
 
-            VStack(spacing: 6) {
+            VStack(spacing: 4) {
                 ForEach(AppSection.allCases) { item in
                     Button {
                         selection = item
@@ -59,10 +60,10 @@ struct RootView: View {
                             Text(item.title)
                             Spacer()
                         }
-                        .font(.system(size: 14, weight: .semibold, design: .rounded))
+                        .font(.system(size: 13, weight: .semibold, design: .rounded))
                         .foregroundStyle(selection == item ? .white : .white.opacity(0.58))
                         .padding(.horizontal, 13)
-                        .frame(height: 42)
+                        .frame(height: 38)
                         .background(
                             RoundedRectangle(cornerRadius: 11, style: .continuous)
                                 .fill(selection == item ? ClyroTheme.mint.opacity(0.14) : .clear)
@@ -89,5 +90,6 @@ struct RootView: View {
             .padding(14)
         }
         .background(ClyroTheme.sidebar)
+        .safeAreaPadding(.top, 46)
     }
 }

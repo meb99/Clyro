@@ -1,3 +1,4 @@
+import AppKit
 import Foundation
 import SwiftUI
 
@@ -13,6 +14,7 @@ struct DashboardView: View {
                     healthHeader
                     metricGrid
                     batteryAndNetwork
+                    quickActionsCard
                     processCard
                 }
                 .padding(26)
@@ -35,6 +37,36 @@ struct DashboardView: View {
             }
         }
         .animation(.easeOut(duration: 0.25), value: monitor.hasLoaded)
+    }
+
+    private var quickActionsCard: some View {
+        VStack(alignment: .leading, spacing: 13) {
+            HStack(spacing: 8) {
+                Text("⚡️").font(.system(size: 18))
+                Text("Schnellaktionen")
+                    .font(.system(size: 15, weight: .bold, design: .rounded))
+                Spacer()
+                Text("öffnet nur – verändert nichts")
+                    .font(.system(size: 10, weight: .medium, design: .rounded))
+                    .foregroundStyle(ClyroTheme.secondaryText)
+            }
+
+            HStack(spacing: 10) {
+                QuickActionButton(emoji: "📥", title: "Downloads", subtitle: "Ordner öffnen") {
+                    openFolder("Downloads")
+                }
+                QuickActionButton(emoji: "📊", title: "Aktivitätsanzeige", subtitle: "Apple-Werkzeug") {
+                    openApplication("/System/Applications/Utilities/Activity Monitor.app")
+                }
+                QuickActionButton(emoji: "💾", title: "Mac-Speicher", subtitle: "Einstellungen") {
+                    openStorageSettings()
+                }
+                QuickActionButton(emoji: "🧩", title: "Programme", subtitle: "Apps anzeigen") {
+                    NSWorkspace.shared.open(URL(fileURLWithPath: "/Applications", isDirectory: true))
+                }
+            }
+        }
+        .clyroCard(padding: 16)
     }
 
     private var healthHeader: some View {
@@ -290,5 +322,56 @@ struct DashboardView: View {
 
     private var batteryAdvice: String {
         snapshot.battery.percentage < 20 ? "Bald mit Strom verbinden" : "Batteriestand ist in Ordnung"
+    }
+
+    private func openFolder(_ name: String) {
+        let url = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(name, isDirectory: true)
+        NSWorkspace.shared.open(url)
+    }
+
+    private func openApplication(_ path: String) {
+        NSWorkspace.shared.open(URL(fileURLWithPath: path))
+    }
+
+    private func openStorageSettings() {
+        if let url = URL(string: "x-apple.systempreferences:com.apple.settings.Storage"),
+           NSWorkspace.shared.open(url) {
+            return
+        }
+        openApplication("/System/Applications/System Settings.app")
+    }
+}
+
+private struct QuickActionButton: View {
+    let emoji: String
+    let title: String
+    let subtitle: String
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 10) {
+                Text(emoji)
+                    .font(.system(size: 20))
+                    .frame(width: 34, height: 34)
+                    .background(RoundedRectangle(cornerRadius: 10).fill(.white.opacity(0.055)))
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title)
+                        .font(.system(size: 11, weight: .bold, design: .rounded))
+                    Text(subtitle)
+                        .font(.system(size: 9, weight: .medium, design: .rounded))
+                        .foregroundStyle(ClyroTheme.secondaryText)
+                }
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, 10)
+            .frame(maxWidth: .infinity, minHeight: 50)
+            .background(
+                RoundedRectangle(cornerRadius: 13, style: .continuous)
+                    .fill(.white.opacity(0.035))
+                    .overlay(RoundedRectangle(cornerRadius: 13).stroke(ClyroTheme.border))
+            )
+        }
+        .buttonStyle(.plain)
     }
 }

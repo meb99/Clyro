@@ -129,6 +129,314 @@ private struct CleanupCategoryRow: View {
     }
 }
 
+struct StorageView: View {
+    @State private var files: [LargeFileItem] = []
+    @State private var isScanning = false
+    @State private var threshold: LargeFileThreshold = .hundredMB
+    @State private var query = ""
+
+    private var filteredFiles: [LargeFileItem] {
+        guard !query.isEmpty else { return files }
+        return files.filter {
+            $0.displayName.localizedCaseInsensitiveContains(query)
+                || $0.locationName.localizedCaseInsensitiveContains(query)
+                || $0.kind.title.localizedCaseInsensitiveContains(query)
+        }
+    }
+
+    private var totalBytes: Int64 {
+        files.reduce(0) { $0 + $1.sizeBytes }
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            header
+            summary
+            fileList
+        }
+        .padding(28)
+        .task {
+            if files.isEmpty { scan() }
+        }
+        .onChange(of: threshold) {
+            scan()
+        }
+    }
+
+    private var header: some View {
+        HStack(alignment: .top, spacing: 16) {
+            SectionHeader(
+                "Speicherfinder",
+                subtitle: "Findet große Dateien in deinen persönlichen Ordnern, ohne etwas zu löschen."
+            )
+            Spacer()
+            TextField("Dateien suchen", text: $query)
+                .textFieldStyle(.roundedBorder)
+                .frame(width: 210)
+            Picker("Mindestgröße", selection: $threshold) {
+                ForEach(LargeFileThreshold.allCases) { option in
+                    Text(option.title).tag(option)
+                }
+            }
+            .frame(width: 150)
+            Button {
+                scan()
+            } label: {
+                Label(isScanning ? "Scanne …" : "Neu scannen", systemImage: "arrow.clockwise")
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(ClyroTheme.mintSoft)
+            .disabled(isScanning)
+        }
+    }
+
+    private var summary: some View {
+        HStack(spacing: 14) {
+            StorageSummaryTile(
+                emoji: "🔎",
+                title: "Gefunden",
+                value: "\(files.count)",
+                detail: "ab \(threshold.title)",
+                color: ClyroTheme.mint
+            )
+            StorageSummaryTile(
+                emoji: "🗄️",
+                title: "Zusammen",
+                value: ClyroFormat.byteCount(totalBytes),
+                detail: "nur eine Übersicht",
+                color: ClyroTheme.blue
+            )
+            StorageSummaryTile(
+                emoji: "🐘",
+                title: "Größte Datei",
+                value: files.first?.displayName ?? "–",
+                detail: files.first.map { ClyroFormat.byteCount($0.sizeBytes) } ?? "Noch keine Werte",
+                color: ClyroTheme.orange
+            )
+        }
+    }
+
+    private var fileList: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack {
+                Text("Datei und Speicherort")
+                Spacer()
+                Text("Geändert").frame(width: 100, alignment: .trailing)
+                Text("Größe").frame(width: 90, alignment: .trailing)
+                Color.clear.frame(width: 34)
+            }
+            .font(.system(size: 11, weight: .semibold, design: .rounded))
+            .foregroundStyle(ClyroTheme.secondaryText)
+            .padding(.bottom, 12)
+
+            Divider().overlay(.white.opacity(0.055))
+
+            if isScanning && files.isEmpty {
+                VStack(spacing: 12) {
+                    ProgressView()
+                        .controlSize(.large)
+                        .tint(ClyroTheme.mint)
+                    Text("Downloads, Schreibtisch, Dokumente und Filme werden geprüft …")
+                        .font(.system(size: 13, design: .rounded))
+                        .foregroundStyle(ClyroTheme.secondaryText)
+                }
+                .frame(maxWidth: .infinity, minHeight: 210)
+            } else if filteredFiles.isEmpty {
+                VStack(spacing: 11) {
+                    Text(query.isEmpty ? "🎉" : "🔎")
+                        .font(.system(size: 36))
+                    Text(query.isEmpty ? "Keine großen Dateien gefunden" : "Keine passende Datei")
+                        .font(.system(size: 17, weight: .bold, design: .rounded))
+                    Text(query.isEmpty
+                         ? "In den geprüften Ordnern liegt nichts über \(threshold.title)."
+                         : "Ändere den Suchbegriff oder die Mindestgröße.")
+                        .font(.system(size: 12, design: .rounded))
+                        .foregroundStyle(ClyroTheme.secondaryText)
+                }
+                .frame(maxWidth: .infinity, minHeight: 210)
+            } else {
+                ScrollView {
+                    LazyVStack(spacing: 0) {
+                        ForEach(filteredFiles) { file in
+                            LargeFileRow(file: file)
+                                .padding(.vertical, 7)
+                            if file.id != filteredFiles.last?.id {
+                                Divider()
+                                    .overlay(.white.opacity(0.045))
+                                    .padding(.leading, 62)
+                            }
+                        }
+                    }
+                }
+                .scrollIndicators(.hidden)
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .clyroCard()
+    }
+
+    private func scan() {
+        guard !isScanning else { return }
+        isScanning = true
+        let minimumSize = threshold.bytes
+        Task {
+            files = await Task.detached(priority: .utility) {
+                LargeFileProbe.scan(minimumSize: minimumSize)
+            }.value
+            isScanning = false
+        }
+    }
+}
+
+private enum LargeFileThreshold: Int64, CaseIterable, Identifiable {
+    case hundredMB = 100_000_000
+    case fiveHundredMB = 500_000_000
+    case oneGB = 1_000_000_000
+
+    var id: Int64 { rawValue }
+    var bytes: Int64 { rawValue }
+
+    var title: String {
+        switch self {
+        case .hundredMB: "100 MB"
+        case .fiveHundredMB: "500 MB"
+        case .oneGB: "1 GB"
+        }
+    }
+}
+
+private struct StorageSummaryTile: View {
+    let emoji: String
+    let title: String
+    let value: String
+    let detail: String
+    let color: Color
+
+    var body: some View {
+        HStack(spacing: 13) {
+            Text(emoji)
+                .font(.system(size: 25))
+                .frame(width: 46, height: 46)
+                .background(RoundedRectangle(cornerRadius: 13).fill(color.opacity(0.12)))
+            VStack(alignment: .leading, spacing: 3) {
+                Text(title)
+                    .font(.system(size: 11, weight: .semibold, design: .rounded))
+                    .foregroundStyle(ClyroTheme.secondaryText)
+                Text(value)
+                    .font(.system(size: 15, weight: .bold, design: .rounded))
+                    .lineLimit(1)
+                Text(detail)
+                    .font(.system(size: 10, weight: .medium, design: .rounded))
+                    .foregroundStyle(color)
+                    .lineLimit(1)
+            }
+            Spacer(minLength: 0)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .clyroCard(padding: 15)
+    }
+}
+
+private struct LargeFileRow: View {
+    let file: LargeFileItem
+
+    var body: some View {
+        HStack(spacing: 13) {
+            ZStack(alignment: .bottomTrailing) {
+                Image(nsImage: NSWorkspace.shared.icon(forFile: file.url.path))
+                    .resizable()
+                    .interpolation(.high)
+                    .frame(width: 42, height: 42)
+                Text(file.kind.emoji)
+                    .font(.system(size: 11))
+                    .frame(width: 19, height: 19)
+                    .background(Circle().fill(ClyroTheme.sidebar))
+                    .offset(x: 3, y: 3)
+            }
+            .padding(.trailing, 3)
+
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(spacing: 7) {
+                    Text(file.displayName)
+                        .font(.system(size: 13, weight: .bold, design: .rounded))
+                        .lineLimit(1)
+                    Text(file.kind.title)
+                        .font(.system(size: 9, weight: .semibold, design: .rounded))
+                        .foregroundStyle(ClyroTheme.mint)
+                        .padding(.horizontal, 7)
+                        .padding(.vertical, 3)
+                        .background(Capsule().fill(ClyroTheme.mint.opacity(0.10)))
+                }
+                Text(file.locationName)
+                    .font(.system(size: 10, design: .monospaced))
+                    .foregroundStyle(ClyroTheme.secondaryText)
+                    .lineLimit(1)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+
+            Text(file.modifiedAt.formatted(date: .abbreviated, time: .omitted))
+                .font(.system(size: 11, design: .rounded))
+                .foregroundStyle(ClyroTheme.secondaryText)
+                .frame(width: 100, alignment: .trailing)
+            Text(ClyroFormat.byteCount(file.sizeBytes))
+                .font(.system(size: 12, weight: .bold, design: .rounded))
+                .frame(width: 90, alignment: .trailing)
+            Button {
+                NSWorkspace.shared.activateFileViewerSelecting([file.url])
+            } label: {
+                Image(systemName: "folder")
+                    .frame(width: 28, height: 28)
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(ClyroTheme.mint)
+            .help("Im Finder zeigen")
+        }
+    }
+}
+
+private enum LargeFileProbe {
+    static func scan(minimumSize: Int64) -> [LargeFileItem] {
+        let fileManager = FileManager.default
+        let home = fileManager.homeDirectoryForCurrentUser
+        let roots = ["Downloads", "Desktop", "Documents", "Movies"].map {
+            home.appendingPathComponent($0, isDirectory: true)
+        }
+        let keys: Set<URLResourceKey> = [
+            .isRegularFileKey,
+            .fileSizeKey,
+            .contentModificationDateKey,
+            .isHiddenKey
+        ]
+        var results: [LargeFileItem] = []
+
+        for root in roots where fileManager.fileExists(atPath: root.path) {
+            guard let enumerator = fileManager.enumerator(
+                at: root,
+                includingPropertiesForKeys: Array(keys),
+                options: [.skipsHiddenFiles, .skipsPackageDescendants],
+                errorHandler: { _, _ in true }
+            ) else { continue }
+
+            for case let url as URL in enumerator {
+                guard let values = try? url.resourceValues(forKeys: keys),
+                      values.isRegularFile == true,
+                      values.isHidden != true else { continue }
+                let size = Int64(values.fileSize ?? 0)
+                guard size >= minimumSize else { continue }
+                results.append(
+                    LargeFileItem(
+                        url: url,
+                        sizeBytes: size,
+                        modifiedAt: values.contentModificationDate ?? .distantPast
+                    )
+                )
+            }
+        }
+
+        return results.sorted { $0.sizeBytes > $1.sizeBytes }
+    }
+}
+
 struct ProcessesView: View {
     @EnvironmentObject private var monitor: SystemMonitor
     @AppStorage("showTechnicalDetails") private var showTechnicalDetails = false
@@ -609,7 +917,7 @@ struct SettingsView: View {
                     .foregroundStyle(.secondary)
             }
             Section("Über Clyro") {
-                LabeledContent("Version", value: "0.3.0")
+                LabeledContent("Version", value: "0.4.0")
                 LabeledContent("Datenschutz", value: "100 % lokal")
             }
         }
