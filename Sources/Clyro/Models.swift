@@ -53,38 +53,38 @@ enum AppSection: String, CaseIterable, Identifiable {
     }
 }
 
-/// Die fünf Hauptbereiche der oberen Leiste; verwandte Seiten liegen als Reiter darin.
+/// Die fünf Hauptbereiche der oberen Leiste. Jeder Bereich ist genau eine Seite, es gibt keine Unterreiter.
 enum NavGroup: String, CaseIterable, Identifiable {
-    case overview
     case clean
-    case optimize
     case apps
-    case storage
+    case optimize
+    case analyze
+    case status
 
     var id: String { rawValue }
 
     var title: String {
         switch self {
-        case .overview: "Übersicht"
         case .clean: "Bereinigen"
-        case .optimize: "Optimieren"
         case .apps: "Apps"
-        case .storage: "Speicher"
+        case .optimize: "Optimieren"
+        case .analyze: "Analyse"
+        case .status: "Status"
         }
     }
 
-    var sections: [AppSection] {
+    var section: AppSection {
         switch self {
-        case .overview: [.overview, .processes]
-        case .clean: [.cleanup, .projects, .history]
-        case .optimize: [.optimize, .startup]
-        case .apps: [.applications]
-        case .storage: [.storage, .explorer]
+        case .clean: .cleanup
+        case .apps: .applications
+        case .optimize: .optimize
+        case .analyze: .explorer
+        case .status: .overview
         }
     }
 
     static func group(of section: AppSection) -> NavGroup {
-        allCases.first { $0.sections.contains(section) } ?? .overview
+        allCases.first { $0.section == section } ?? .clean
     }
 }
 
