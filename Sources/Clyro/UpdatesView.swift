@@ -182,9 +182,10 @@ private final class AppcastParser: NSObject, XMLParserDelegate {
                 qualifiedName qName: String?, attributes attributeDict: [String: String] = [:]) {
         text = ""
         if elementName == "item" { current = Entry() }
-        if elementName == "enclosure", current != nil {
-            if let short = attributeDict["sparkle:shortVersionString"] { current?.short = current?.short ?? short }
-            if let build = attributeDict["sparkle:version"] { current?.build = current?.build ?? build }
+        if elementName == "enclosure", var entry = current {
+            if entry.short == nil { entry.short = attributeDict["sparkle:shortVersionString"] }
+            if entry.build == nil { entry.build = attributeDict["sparkle:version"] }
+            current = entry
         }
     }
 
