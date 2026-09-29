@@ -49,64 +49,50 @@ struct RootView: View {
         .animation(.easeInOut(duration: 0.32), value: selection)
     }
 
-    private var group: NavGroup {
-        NavGroup.group(of: selection)
+    private var topNavigation: some View {
+        HStack(spacing: 3) {
+            ForEach(AppSection.primary) { entry in
+                Button {
+                    withAnimation(.easeOut(duration: 0.16)) { selection = entry }
+                } label: {
+                    barLabel(entry.title, active: selection == entry)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(entry.title)
+                .accessibilityAddTraits(selection == entry ? .isSelected : [])
+            }
+
+            Menu {
+                ForEach(AppSection.secondary) { entry in
+                    Button(entry.title) {
+                        withAnimation(.easeOut(duration: 0.16)) { selection = entry }
+                    }
+                }
+            } label: {
+                barLabel(
+                    AppSection.secondary.contains(selection) ? selection.title : "Mehr",
+                    active: AppSection.secondary.contains(selection)
+                )
+            }
+            .menuStyle(.borderlessButton)
+            .menuIndicator(.hidden)
+            .fixedSize()
+        }
+        .padding(5)
+        .background(palette.top.opacity(0.74), in: Capsule())
+        .overlay(Capsule().stroke(.white.opacity(0.10), lineWidth: 0.8))
+        .shadow(color: .black.opacity(0.16), radius: 14, y: 6)
     }
 
-    private var topNavigation: some View {
-        VStack(spacing: 10) {
-            HStack(spacing: 3) {
-                ForEach(NavGroup.allCases) { entry in
-                    Button {
-                        withAnimation(.easeOut(duration: 0.16)) {
-                            if group != entry { selection = entry.sections[0] }
-                        }
-                    } label: {
-                        Text(entry.title)
-                            .font(.system(size: 13, weight: .semibold))
-                            .foregroundStyle(group == entry ? .black.opacity(0.84) : .white.opacity(0.56))
-                            .padding(.horizontal, 16)
-                            .frame(height: 34)
-                            .background {
-                                if group == entry {
-                                    Capsule().fill(.white)
-                                }
-                            }
-                            .contentShape(Capsule())
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel(entry.title)
-                    .accessibilityAddTraits(group == entry ? .isSelected : [])
-                }
+    private func barLabel(_ title: String, active: Bool) -> some View {
+        Text(title)
+            .font(.system(size: 13, weight: .semibold))
+            .foregroundStyle(active ? .black.opacity(0.84) : .white.opacity(0.56))
+            .padding(.horizontal, 16)
+            .frame(height: 34)
+            .background {
+                if active { Capsule().fill(.white) }
             }
-            .padding(5)
-            .background(palette.top.opacity(0.74), in: Capsule())
-            .overlay(Capsule().stroke(.white.opacity(0.10), lineWidth: 0.8))
-            .shadow(color: .black.opacity(0.16), radius: 14, y: 6)
-
-            if group.sections.count > 1 {
-                HStack(spacing: 18) {
-                    ForEach(group.sections) { section in
-                        Button {
-                            withAnimation(.easeOut(duration: 0.16)) {
-                                selection = section
-                            }
-                        } label: {
-                            Text(section.tabTitle)
-                                .font(.system(size: 12, weight: selection == section ? .bold : .medium))
-                                .foregroundStyle(selection == section ? palette.accent : .white.opacity(0.5))
-                                .padding(.vertical, 2)
-                                .overlay(alignment: .bottom) {
-                                    if selection == section {
-                                        Capsule().fill(palette.accent).frame(height: 2).offset(y: 4)
-                                    }
-                                }
-                        }
-                        .buttonStyle(.plain)
-                    }
-                }
-                .transition(.opacity)
-            }
-        }
+            .contentShape(Capsule())
     }
 }

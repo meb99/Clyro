@@ -27,13 +27,10 @@ enum AppSection: String, CaseIterable, Identifiable {
         }
     }
 
-    var tabTitle: String {
-        switch self {
-        case .overview: "Status"
-        case .optimize: "Wartung"
-        default: title
-        }
-    }
+    /// Direkt in der einen oberen Leiste sichtbar.
+    static let primary: [AppSection] = [.overview, .cleanup, .optimize, .applications, .storage, .processes]
+    /// Seltener genutzte Seiten, erreichbar über „Mehr“ in derselben Leiste.
+    static let secondary: [AppSection] = [.projects, .startup, .history]
 
     var icon: String {
         switch self {
@@ -47,41 +44,6 @@ enum AppSection: String, CaseIterable, Identifiable {
         case .startup: "bolt.fill"
         case .history: "clock.arrow.circlepath"
         }
-    }
-}
-
-/// Die fünf Hauptbereiche der oberen Leiste; verwandte Seiten liegen als Reiter darin.
-enum NavGroup: String, CaseIterable, Identifiable {
-    case overview
-    case clean
-    case optimize
-    case apps
-    case storage
-
-    var id: String { rawValue }
-
-    var title: String {
-        switch self {
-        case .overview: "Übersicht"
-        case .clean: "Bereinigen"
-        case .optimize: "Optimieren"
-        case .apps: "Apps"
-        case .storage: "Speicher"
-        }
-    }
-
-    var sections: [AppSection] {
-        switch self {
-        case .overview: [.overview, .processes]
-        case .clean: [.cleanup, .projects, .history]
-        case .optimize: [.optimize, .startup]
-        case .apps: [.applications]
-        case .storage: [.storage]
-        }
-    }
-
-    static func group(of section: AppSection) -> NavGroup {
-        allCases.first { $0.sections.contains(section) } ?? .overview
     }
 }
 
