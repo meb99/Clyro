@@ -388,6 +388,7 @@ private struct StatusCard<Content: View>: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .clyroCard(padding: 14)
+        .accessibilityElement(children: .combine)
     }
 }
 

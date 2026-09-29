@@ -121,6 +121,8 @@ struct ApplicationsView: View {
                 .buttonStyle(.plain)
                 .foregroundStyle(.white.opacity(0.6))
                 .help("Neu laden")
+                .accessibilityLabel("Neu laden")
+                .keyboardShortcut("r", modifiers: .command)
             }
 
             Spacer()
@@ -291,6 +293,7 @@ private struct AppRow: View {
                         .font(.system(size: 24))
                         .foregroundStyle(isSelected ? accent : Color.white.opacity(0.35))
                         .frame(width: 30)
+                        .accessibilityLabel(isSelected ? String(localized: "ausgewählt") : String(localized: "nicht ausgewählt"))
                 }
             }
             .padding(.horizontal, 14)

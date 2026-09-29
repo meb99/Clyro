@@ -410,6 +410,8 @@ struct ExplorerView: View {
                 }
                 .buttonStyle(.plain)
                 .help("Eine Ebene höher")
+                .accessibilityLabel("Eine Ebene höher")
+                .keyboardShortcut(.upArrow, modifiers: .command)
             }
             Text(title)
                 .font(.system(size: 18, weight: .semibold))
@@ -446,6 +448,8 @@ struct ExplorerView: View {
             .buttonStyle(.plain)
             .foregroundStyle(.white.opacity(0.65))
             .help("Neu berechnen")
+            .accessibilityLabel("Neu berechnen")
+            .keyboardShortcut("r", modifiers: .command)
         }
         .frame(height: 32)
     }
@@ -620,5 +624,8 @@ private struct TreemapTileView: View {
         .frame(width: max(0, rect.width), height: max(0, rect.height))
         .position(x: rect.midX, y: rect.midY)
         .help("\(entry.name) · \(ClyroFormat.byteCount(entry.sizeBytes ?? 0))")
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(entry.name), \(ClyroFormat.byteCount(entry.sizeBytes ?? 0))")
+        .accessibilityAddTraits(.isButton)
     }
 }

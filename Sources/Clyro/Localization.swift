@@ -32,17 +32,7 @@ enum AppLanguage: String, CaseIterable, Identifiable {
         guard language != current else { return }
         UserDefaults.standard.set([language.rawValue], forKey: "AppleLanguages")
         UserDefaults.standard.synchronize()
-        relaunch()
-    }
-
-    private static func relaunch() {
-        let path = Bundle.main.bundlePath
-        let task = Process()
-        task.executableURL = URL(fileURLWithPath: "/bin/sh")
-        // Kurz warten, bis diese Instanz beendet ist, dann dieselbe App erneut öffnen.
-        task.arguments = ["-c", "sleep 0.6; /usr/bin/open -n \"$0\"", path]
-        try? task.run()
-        NSApp.terminate(nil)
+        AppRelauncher.relaunch()
     }
 }
 
@@ -75,7 +65,9 @@ struct LanguageSwitch: View {
                         .contentShape(Capsule())
                 }
                 .buttonStyle(.plain)
-                .help(language == .german ? "Deutsch" : "English")
+                .help(language.name)
+                .accessibilityLabel(language.name)
+                .accessibilityAddTraits(isCurrent ? .isSelected : [])
             }
         }
         .padding(3)

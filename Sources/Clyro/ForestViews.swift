@@ -21,6 +21,7 @@ struct ClyroForest: View {
             }
         }
         .opacity(0.9)
+        .accessibilityHidden(true)
     }
 
     private var trees: [Tree] {
