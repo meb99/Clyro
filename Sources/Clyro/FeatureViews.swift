@@ -925,7 +925,7 @@ struct SettingsView: View {
                     .foregroundStyle(.secondary)
             }
             Section("Über Clyro") {
-                LabeledContent("Version", value: "0.5.0")
+                LabeledContent("Version", value: "0.6.0")
                 LabeledContent("Datenschutz", value: "100 % lokal")
             }
         }

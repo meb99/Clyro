@@ -3,6 +3,14 @@ import SwiftUI
 
 enum ClyroTheme {
     static let background = Color(nsColor: .windowBackgroundColor)
+    static let appBackground = LinearGradient(
+        colors: [
+            Color(nsColor: .windowBackgroundColor),
+            Color(red: 0.045, green: 0.065, blue: 0.060)
+        ],
+        startPoint: .topLeading,
+        endPoint: .bottomTrailing
+    )
     static let sidebar = Color(nsColor: .underPageBackgroundColor)
     static let card = Color(nsColor: .controlBackgroundColor).opacity(0.72)
     static let cardStrong = Color(nsColor: .selectedContentBackgroundColor).opacity(0.14)

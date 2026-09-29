@@ -14,6 +14,7 @@ struct ClyroApp: App {
                 .frame(minWidth: 980, minHeight: 680)
         }
         .defaultSize(width: 1180, height: 790)
+        .windowStyle(.hiddenTitleBar)
 
         Settings {
             SettingsView()
