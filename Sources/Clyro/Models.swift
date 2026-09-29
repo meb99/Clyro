@@ -269,6 +269,10 @@ struct SystemSnapshot: Hashable {
     var diskWriteBytesPerSecond = 0.0
     var battery = BatterySnapshot()
     var temperatureCelsius: Double?
+    var gpuTemperatureCelsius: Double?
+    var gpuPercent: Double?
+    var gpuCores: Int?
+    var processCount = 0
     var loadAverage: Double?
     var thermalState: ProcessInfo.ThermalState = .nominal
     var processes: [SystemProcess] = []
@@ -449,6 +453,10 @@ struct InstalledApplication: Identifiable, Hashable {
     let version: String
     let bundleIdentifier: String
     let sizeBytes: Int64
+    var lastUsed: Date?
+    var addedDate: Date?
+    var isIntelOnly = false
+    var isRunning = false
 
     var id: URL { url }
 }

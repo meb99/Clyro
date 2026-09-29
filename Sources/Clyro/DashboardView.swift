@@ -52,11 +52,12 @@ struct DashboardView: View {
                 icon: "cpu",
                 value: String(format: "%.0f", snapshot.cpuPercent),
                 unit: "%",
-                badge: cpuBadge,
+                badge: snapshot.temperatureCelsius.map { "\(Int($0.rounded())) °C" } ?? cpuBadge,
                 detail: cpuDetail,
                 color: ClyroTheme.mint,
                 history: monitor.cpuHistory
             )
+            gpuTile
             CompactMetricTile(
                 title: "Arbeitsspeicher",
                 icon: "memorychip",
@@ -67,13 +68,13 @@ struct DashboardView: View {
                 color: ClyroTheme.gold,
                 history: monitor.memoryHistory
             )
-            diskTile
         }
     }
 
     private var activityRow: some View {
         HStack(spacing: 10) {
             batteryTile
+            diskTile
             CompactMetricTile(
                 title: "Netzwerk",
                 icon: "network",
@@ -85,7 +86,36 @@ struct DashboardView: View {
                 history: normalizedNetworkHistory
             )
             thermalTile
-            quickActionsTile
+        }
+    }
+
+    @ViewBuilder
+    private var gpuTile: some View {
+        if let gpu = snapshot.gpuPercent {
+            CompactMetricTile(
+                title: "GPU",
+                icon: "display",
+                value: String(format: "%.0f", gpu),
+                unit: "%",
+                badge: snapshot.gpuTemperatureCelsius.map { "\(Int($0.rounded())) °C" } ?? (gpu < 35 ? "Leerlauf" : "Aktiv"),
+                detail: snapshot.gpuCores.map { "\($0) GPU-Kerne" } ?? "Grafikprozessor",
+                color: ClyroTheme.blue,
+                history: monitor.gpuHistory
+            )
+        } else {
+            VStack(alignment: .leading, spacing: 8) {
+                Label("GPU", systemImage: "display")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(.secondary)
+                Text("–")
+                    .font(.system(size: 29, weight: .bold, design: .rounded))
+                Spacer(minLength: 0)
+                Text("Keine GPU-Werte verfügbar")
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundStyle(.secondary)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            .clyroCard(padding: 14)
         }
     }
 
@@ -111,6 +141,10 @@ struct DashboardView: View {
                 ClyroOrb(score: snapshot.healthScore)
                     .frame(width: 46, height: 46)
             }
+
+            Text(snapshot.healthScore >= 92 ? "Alle Prüfungen bestanden" : "Ein paar Werte sind auffällig")
+                .font(.system(size: 11, weight: .medium))
+                .foregroundStyle(.secondary)
 
             Spacer(minLength: 0)
 
@@ -200,24 +234,37 @@ struct DashboardView: View {
         }
     }
 
-    @ViewBuilder
     private var thermalTile: some View {
-        if let temperature = snapshot.temperatureCelsius {
-            CompactMetricTile(
-                title: "Temperatur",
-                icon: "thermometer.medium",
-                value: String(format: "%.0f", temperature),
-                unit: "°C",
-                badge: snapshot.thermalState == .nominal ? "Kühl" : "Warm",
-                detail: snapshot.thermalText,
-                color: thermalColor,
-                history: monitor.temperatureHistory
-            )
-        } else {
-            VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
                 Label("Temperatur", systemImage: "thermometer.medium")
                     .font(.system(size: 12, weight: .semibold))
                     .foregroundStyle(.secondary)
+                Spacer()
+                CompactBadge(text: snapshot.thermalState == .nominal ? "Normal" : "Warm")
+            }
+
+            if let cpu = snapshot.temperatureCelsius {
+                HStack(alignment: .firstTextBaseline, spacing: 14) {
+                    temperatureValue("CPU", cpu, color: ClyroTheme.mint)
+                    if let gpu = snapshot.gpuTemperatureCelsius {
+                        temperatureValue("GPU", gpu, color: ClyroTheme.blue)
+                    }
+                }
+                GeometryReader { geometry in
+                    ZStack(alignment: .leading) {
+                        Capsule().fill(.white.opacity(0.07))
+                        Capsule()
+                            .fill(thermalColor)
+                            .frame(width: geometry.size.width * min(1, cpu / 100))
+                    }
+                }
+                .frame(height: 8)
+                Text(peakText)
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            } else {
                 Text(snapshot.thermalText)
                     .font(.system(size: 17, weight: .bold, design: .rounded))
                     .foregroundStyle(thermalColor)
@@ -227,9 +274,25 @@ struct DashboardView: View {
                     .font(.system(size: 10, weight: .medium))
                     .foregroundStyle(.secondary)
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-            .clyroCard(padding: 14)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .clyroCard(padding: 14)
+    }
+
+    private func temperatureValue(_ label: String, _ value: Double, color: Color) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 5) {
+            Text(label)
+                .font(.system(size: 12, weight: .bold))
+                .foregroundStyle(color)
+            Text(String(format: "%.0f°", value))
+                .font(.system(size: 26, weight: .bold, design: .rounded))
+        }
+    }
+
+    private var peakText: String {
+        let peak = monitor.temperatureHistory.max() ?? 0
+        let chip = snapshot.chipName
+        return peak > 0 ? "\(chip) · Spitze \(Int(peak.rounded())) °C" : chip
     }
 
     @ViewBuilder
@@ -291,43 +354,18 @@ struct DashboardView: View {
         }
     }
 
-    private var quickActionsTile: some View {
-        VStack(alignment: .leading, spacing: 9) {
-            Label("Schnellaktionen", systemImage: "bolt.fill")
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundStyle(.secondary)
-
-            HStack(spacing: 6) {
-                CompactActionButton(icon: "arrow.down.circle", title: "Downloads") {
-                    openFolder("Downloads")
-                }
-                CompactActionButton(icon: "chart.xyaxis.line", title: "Aktivität") {
-                    openApplication("/System/Applications/Utilities/Activity Monitor.app")
-                }
-                CompactActionButton(icon: "internaldrive", title: "Speicher") {
-                    openStorageSettings()
-                }
-                CompactActionButton(icon: "square.grid.2x2", title: "Programme") {
-                    NSWorkspace.shared.open(URL(fileURLWithPath: "/Applications", isDirectory: true))
-                }
-            }
-            .frame(maxHeight: .infinity)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .clyroCard(padding: 14)
-    }
-
     private var processTable: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 10) {
-                Text("PROZESSE (\(snapshot.processes.count))")
+                Text("NAME (\(snapshot.processCount))")
                     .frame(maxWidth: .infinity, alignment: .leading)
-                Text("ROLLE")
-                    .frame(width: 110, alignment: .leading)
-                Text("RAM")
-                    .frame(width: 82, alignment: .trailing)
-                Text("CPU")
-                    .frame(width: 116, alignment: .trailing)
+                Text("SPEICHER")
+                    .frame(width: 90, alignment: .trailing)
+                Text("% CPU")
+                    .frame(width: 130, alignment: .trailing)
+                Text("PID")
+                    .frame(width: 64, alignment: .trailing)
+                Color.clear.frame(width: 26)
             }
             .font(.system(size: 10, weight: .bold))
             .foregroundStyle(.secondary)
@@ -344,16 +382,17 @@ struct DashboardView: View {
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
             } else {
-                let visibleProcesses = Array(snapshot.processes.prefix(8))
-                ForEach(visibleProcesses) { process in
-                    CompactProcessRow(process: process)
-                    if process.id != visibleProcesses.last?.id {
-                        Divider()
-                            .overlay(.white.opacity(0.035))
-                            .padding(.leading, 30)
+                ScrollView {
+                    LazyVStack(spacing: 0) {
+                        ForEach(snapshot.processes) { process in
+                            CompactProcessRow(process: process)
+                            Divider()
+                                .overlay(.white.opacity(0.035))
+                                .padding(.leading, 30)
+                        }
                     }
                 }
-                Spacer(minLength: 0)
+                .scrollIndicators(.hidden)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
@@ -395,23 +434,6 @@ struct DashboardView: View {
 
     private var batteryAdvice: String {
         snapshot.battery.percentage < 20 ? "Bald mit Strom verbinden" : "Batteriestand in Ordnung"
-    }
-
-    private func openFolder(_ name: String) {
-        let url = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(name, isDirectory: true)
-        NSWorkspace.shared.open(url)
-    }
-
-    private func openApplication(_ path: String) {
-        NSWorkspace.shared.open(URL(fileURLWithPath: path))
-    }
-
-    private func openStorageSettings() {
-        if let url = URL(string: "x-apple.systempreferences:com.apple.settings.Storage"),
-           NSWorkspace.shared.open(url) {
-            return
-        }
-        openApplication("/System/Applications/System Settings.app")
     }
 }
 
@@ -473,34 +495,6 @@ private struct CompactBadge: View {
     }
 }
 
-private struct CompactActionButton: View {
-    let icon: String
-    let title: String
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            VStack(spacing: 5) {
-                Image(systemName: icon)
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(ClyroTheme.mint)
-                Text(title)
-                    .font(.system(size: 9, weight: .semibold))
-                    .foregroundStyle(.primary)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.8)
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .fill(.white.opacity(0.035))
-                    .overlay(RoundedRectangle(cornerRadius: 8).stroke(ClyroTheme.border, lineWidth: 0.75))
-            )
-        }
-        .buttonStyle(.plain)
-    }
-}
-
 private struct CompactProcessRow: View {
     let process: SystemProcess
 
@@ -522,48 +516,68 @@ private struct CompactProcessRow: View {
             .frame(width: 20, height: 20)
 
             Text(process.name)
-                .font(.system(size: 11, weight: .semibold))
+                .font(.system(size: 12, weight: .semibold))
                 .lineLimit(1)
                 .frame(maxWidth: .infinity, alignment: .leading)
 
-            Text("\(process.crewRole.emoji) \(process.crewRole.title)")
-                .font(.system(size: 9, weight: .semibold))
-                .foregroundStyle(process.crewRole.color)
-                .lineLimit(1)
-                .frame(width: 110, alignment: .leading)
-
             Text(ClyroFormat.byteCount(process.memoryBytes))
-                .font(.system(size: 10, weight: .medium))
+                .font(.system(size: 11, weight: .medium, design: .monospaced))
                 .foregroundStyle(.secondary)
-                .frame(width: 82, alignment: .trailing)
+                .frame(width: 90, alignment: .trailing)
 
-            HStack(spacing: 7) {
+            HStack(spacing: 8) {
                 GeometryReader { geometry in
                     ZStack(alignment: .leading) {
                         Capsule().fill(.white.opacity(0.07))
                         Capsule()
-                            .fill(process.cpuPercent > 40 ? ClyroTheme.orange : process.crewRole.color)
+                            .fill(process.cpuPercent > 40 ? ClyroTheme.orange : Color.white.opacity(0.45))
                             .frame(width: geometry.size.width * min(1, process.cpuPercent / 100))
                     }
                 }
-                .frame(width: 62, height: 5)
+                .frame(width: 70, height: 5)
                 Text(String(format: "%.1f", process.cpuPercent))
-                    .font(.system(size: 10, weight: .medium, design: .monospaced))
-                    .foregroundStyle(.secondary)
+                    .font(.system(size: 11, weight: .medium, design: .monospaced))
+                    .foregroundStyle(process.cpuPercent > 40 ? ClyroTheme.orange : Color.secondary)
                     .frame(width: 42, alignment: .trailing)
             }
-            .frame(width: 116, alignment: .trailing)
+            .frame(width: 130, alignment: .trailing)
+
+            Text("\(process.id)")
+                .font(.system(size: 11, weight: .medium, design: .monospaced))
+                .foregroundStyle(.secondary)
+                .frame(width: 64, alignment: .trailing)
+
+            Menu {
+                if let appURL {
+                    Button("Im Finder zeigen") { NSWorkspace.shared.activateFileViewerSelecting([appURL]) }
+                }
+                Button("App beenden") {
+                    NSRunningApplication(processIdentifier: process.id)?.terminate()
+                }
+                .disabled(NSRunningApplication(processIdentifier: process.id) == nil)
+            } label: {
+                Image(systemName: "ellipsis")
+                    .frame(width: 26, height: 22)
+            }
+            .menuStyle(.borderlessButton)
+            .menuIndicator(.hidden)
+            .frame(width: 26)
         }
-        .frame(height: 27)
+        .frame(height: 30)
     }
 
-    private var appIcon: NSImage? {
+    private var appURL: URL? {
         guard !process.executablePath.isEmpty else { return nil }
         let pieces = process.executablePath.components(separatedBy: ".app/")
         guard pieces.count > 1 else { return nil }
         let appPath = pieces[0] + ".app"
         guard FileManager.default.fileExists(atPath: appPath) else { return nil }
-        return NSWorkspace.shared.icon(forFile: appPath)
+        return URL(fileURLWithPath: appPath)
+    }
+
+    private var appIcon: NSImage? {
+        guard let appURL else { return nil }
+        return NSWorkspace.shared.icon(forFile: appURL.path)
     }
 }
 
