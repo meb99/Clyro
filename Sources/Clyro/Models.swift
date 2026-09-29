@@ -449,6 +449,10 @@ struct InstalledApplication: Identifiable, Hashable {
     let version: String
     let bundleIdentifier: String
     let sizeBytes: Int64
+    var lastUsed: Date?
+    var addedDate: Date?
+    var isIntelOnly = false
+    var isRunning = false
 
     var id: URL { url }
 }
