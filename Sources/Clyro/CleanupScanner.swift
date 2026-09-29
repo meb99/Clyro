@@ -135,9 +135,9 @@ private enum CleanupProbe {
             category(.logs, root: home.appendingPathComponent("Library/Logs"), olderThanDays: 14, whitelist: whitelist),
             filteredCategory(
                 .installers,
-                root: home.appendingPathComponent("Downloads"),
+                roots: [home.appendingPathComponent("Downloads"), home.appendingPathComponent("Desktop")],
                 olderThanDays: 30,
-                extensions: ["dmg", "pkg", "zip"],
+                extensions: ["dmg", "pkg", "mpkg", "iso", "xip", "zip"],
                 whitelist: whitelist
             ),
             packageCaches(home: home, whitelist: whitelist)
@@ -184,13 +184,13 @@ private enum CleanupProbe {
 
     private static func filteredCategory(
         _ kind: CleanupKind,
-        root: URL,
+        roots: [URL],
         olderThanDays days: Int,
         extensions: Set<String>,
         whitelist: Set<String>
     ) -> CleanupCategory {
         let threshold = Calendar.current.date(byAdding: .day, value: -days, to: Date()) ?? Date()
-        let urls = topLevelItems(at: root).filter { url in
+        let urls = roots.flatMap { topLevelItems(at: $0) }.filter { url in
             guard !whitelist.contains(url.lastPathComponent.lowercased()) else { return false }
             guard extensions.contains(url.pathExtension.lowercased()) else { return false }
             let values = try? url.resourceValues(forKeys: [.contentModificationDateKey, .isRegularFileKey])
