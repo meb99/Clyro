@@ -42,10 +42,13 @@ final class CleanupScanner: ObservableObject {
         let includeDeveloperData = UserDefaults.standard.object(forKey: "includeDeveloperData") as? Bool ?? true
         let whitelist = CleanupWhitelist.current()
 
+        let started = Date()
+
         Task {
             let results = await Task.detached(priority: .utility) {
                 CleanupProbe.scan(includeDeveloperData: includeDeveloperData, whitelist: whitelist)
             }.value
+            await ScanTiming.hold(since: started)
             categories = results
             state = .ready
         }
@@ -98,8 +101,9 @@ final class CleanupScanner: ObservableObject {
                 saveHistory()
                 celebration = CleanupCelebration(bytes: estimatedBytes)
             }
+            // Nach dem Aufräumen beginnt wieder der Startbildschirm; Ergebnisse gibt es erst nach einem neuen Scan.
+            categories = []
             state = .idle
-            scan()
         }
     }
 

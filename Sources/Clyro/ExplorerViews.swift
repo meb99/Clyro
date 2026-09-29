@@ -177,6 +177,8 @@ final class ExplorerScanner: ObservableObject {
 struct ExplorerView: View {
     @StateObject private var scanner = ExplorerScanner()
     @State private var pendingTrash: ExplorerEntry?
+    @State private var started = false
+    @State private var isStarting = false
 
     private let palette = ClyroTheme.palette(for: .explorer)
     private var accent: Color { palette.accent }
@@ -184,6 +186,17 @@ struct ExplorerView: View {
     private var displayPath: String {
         let home = FileManager.default.homeDirectoryForCurrentUser.path
         return scanner.location.path.replacingOccurrences(of: home, with: "~")
+    }
+
+    private func begin() {
+        guard !isStarting else { return }
+        isStarting = true
+        scanner.scan()
+        Task {
+            await ScanTiming.hold(since: Date(), minimum: 2.0)
+            started = true
+            isStarting = false
+        }
     }
 
     private var largestBytes: Int64 {
@@ -239,7 +252,18 @@ struct ExplorerView: View {
             }
             .padding(.horizontal, 4)
 
-            if scanner.entries.isEmpty && !scanner.isScanning {
+            if !started {
+                ClyroStartStage(
+                    title: "Speicher erkunden",
+                    message: "Klick dich Ordner für Ordner durch deinen Mac und sieh, wo der Platz hingeht.",
+                    buttonTitle: "Erkunden",
+                    busyTitle: "Clyro misst deine Ordner",
+                    busyMessage: "Die größten Einträge werden zuerst berechnet …",
+                    accent: accent,
+                    isBusy: isStarting,
+                    action: { begin() }
+                )
+            } else if scanner.entries.isEmpty && !scanner.isScanning {
                 VStack(spacing: 10) {
                     ClyroArtifact(symbol: "folder.fill", satellite: "questionmark", accent: accent, secondary: palette.secondary, growth: 0.1)
                     Text("Nichts zu sehen")
@@ -267,9 +291,6 @@ struct ExplorerView: View {
             }
         }
         .padding(22)
-        .onAppear {
-            if scanner.entries.isEmpty && !scanner.isScanning { scanner.scan() }
-        }
         .alert(
             "In den Papierkorb verschieben?",
             isPresented: Binding(get: { pendingTrash != nil }, set: { if !$0 { pendingTrash = nil } })

@@ -39,6 +39,7 @@ Clyro deckt jetzt den kompletten Funktionsumfang klassischer Mac-Pflegewerkzeuge
 - platzsparende Prozessliste mit App-Icons, Rollen, RAM und CPU
 - eigene Farbstimmung und animierter Hintergrund für jeden Bereich
 - eigenes Wachstumsmotiv: ein Keimling, der mit deiner Pflege zum blühenden Wald wird (Gesundheitswert und Verlauf lassen ihn wachsen)
+- Einheitlicher Ablauf: jede Scan-Seite startet mit einem Startbildschirm, zeigt eine Scan-Animation (mindestens 2,6 s) und liefert Ergebnisse erst danach
 - Animationen: Sonne beim Scan (Photosynthese), Gießkanne beim Bereinigen, Aufblühen mit Blütenblättern im Ergebnis – alles live in SwiftUI gezeichnet
 - neue visuelle Speicherlandschaft für die größten gefundenen Dateien
 - App-Bibliothek mit Suche, Sortierung, Gesamtgröße und Finder-Verknüpfung

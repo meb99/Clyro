@@ -200,3 +200,55 @@ struct ClyroGardenScene: View {
         value - value.rounded(.down)
     }
 }
+
+/// Sorgt dafür, dass die Scan-Animation auch bei sehr schnellen Scans sichtbar bleibt.
+enum ScanTiming {
+    static func hold(since started: Date, minimum: Double = 2.6) async {
+        let elapsed = Date().timeIntervalSince(started)
+        guard elapsed < minimum else { return }
+        try? await Task.sleep(nanoseconds: UInt64((minimum - elapsed) * 1_000_000_000))
+    }
+}
+
+/// Einheitlicher Startbildschirm: erst Button, dann Scan-Animation, erst danach Ergebnisse.
+struct ClyroStartStage: View {
+    let title: String
+    let message: String
+    let buttonTitle: String
+    let busyTitle: String
+    let busyMessage: String
+    let accent: Color
+    var isBusy = false
+    let action: () -> Void
+
+    var body: some View {
+        VStack(spacing: 8) {
+            ClyroGardenScene(
+                phase: isBusy ? .scanning : .idle,
+                growth: isBusy ? 0.2 : 0.12,
+                accent: accent
+            )
+            .frame(width: 260, height: 220)
+
+            Text(isBusy ? busyTitle : title)
+                .font(.system(size: 24, weight: .semibold))
+            Text(isBusy ? busyMessage : message)
+                .font(.system(size: 12, weight: .medium))
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: 420)
+
+            if isBusy {
+                ProgressView().tint(accent).frame(width: 240).padding(.top, 4)
+            } else {
+                Button(buttonTitle, action: action)
+                    .buttonStyle(.borderedProminent)
+                    .tint(accent)
+                    .controlSize(.large)
+                    .padding(.top, 4)
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .clyroPanel(padding: 20, cornerRadius: 20)
+    }
+}
