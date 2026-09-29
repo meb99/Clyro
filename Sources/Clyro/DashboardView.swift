@@ -9,119 +9,45 @@ struct DashboardView: View {
 
     var body: some View {
         ZStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 18) {
-                    healthHeader
-                    metricGrid
-                    batteryAndNetwork
-                    quickActionsCard
-                    processCard
+            GeometryReader { geometry in
+                let compact = geometry.size.height < 660
+
+                VStack(spacing: 10) {
+                    overviewRow
+                        .frame(height: compact ? 132 : 144)
+
+                    activityRow
+                        .frame(height: compact ? 112 : 122)
+
+                    processTable
+                        .frame(maxHeight: .infinity)
                 }
-                .padding(26)
-                .frame(maxWidth: 1180)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
+                .frame(maxWidth: 1320, maxHeight: .infinity)
                 .frame(maxWidth: .infinity)
             }
-            .scrollIndicators(.hidden)
-            .opacity(monitor.hasLoaded ? 1 : 0.25)
+            .opacity(monitor.hasLoaded ? 1 : 0.22)
 
             if !monitor.hasLoaded {
-                VStack(spacing: 12) {
+                VStack(spacing: 10) {
                     ProgressView()
                         .controlSize(.large)
                         .tint(ClyroTheme.mint)
                     Text("Systemdaten werden geladen …")
-                        .font(.system(size: 14, weight: .semibold, design: .rounded))
-                        .foregroundStyle(ClyroTheme.secondaryText)
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(.secondary)
                 }
-                .clyroCard()
+                .clyroCard(padding: 18)
             }
         }
-        .animation(.easeOut(duration: 0.25), value: monitor.hasLoaded)
+        .animation(.easeOut(duration: 0.2), value: monitor.hasLoaded)
     }
 
-    private var quickActionsCard: some View {
-        VStack(alignment: .leading, spacing: 13) {
-            HStack(spacing: 8) {
-                Label("Schnellaktionen", systemImage: "bolt.fill")
-                    .font(.system(size: 15, weight: .semibold))
-                    .symbolRenderingMode(.hierarchical)
-                Spacer()
-                Text("öffnet nur – verändert nichts")
-                    .font(.system(size: 10, weight: .medium))
-                    .foregroundStyle(ClyroTheme.secondaryText)
-            }
-
-            HStack(spacing: 10) {
-                QuickActionButton(icon: "arrow.down.circle", title: "Downloads", subtitle: "Ordner öffnen") {
-                    openFolder("Downloads")
-                }
-                QuickActionButton(icon: "chart.xyaxis.line", title: "Aktivitätsanzeige", subtitle: "Apple-Werkzeug") {
-                    openApplication("/System/Applications/Utilities/Activity Monitor.app")
-                }
-                QuickActionButton(icon: "internaldrive", title: "Mac-Speicher", subtitle: "Einstellungen") {
-                    openStorageSettings()
-                }
-                QuickActionButton(icon: "square.grid.2x2", title: "Programme", subtitle: "Apps anzeigen") {
-                    NSWorkspace.shared.open(URL(fileURLWithPath: "/Applications", isDirectory: true))
-                }
-            }
-        }
-        .clyroCard(padding: 16)
-    }
-
-    private var healthHeader: some View {
-        HStack(alignment: .top, spacing: 18) {
-            ZStack {
-                Circle()
-                    .fill(ClyroTheme.mint.opacity(0.13))
-                Image(systemName: snapshot.healthScore > 80 ? "sun.max.fill" : "gauge.with.dots.needle.50percent")
-                    .font(.system(size: 29))
-                    .foregroundStyle(ClyroTheme.mint)
-            }
-            .frame(width: 58, height: 58)
-
-            VStack(alignment: .leading, spacing: 7) {
-                HStack(alignment: .firstTextBaseline, spacing: 11) {
-                    Text("\(snapshot.healthScore)")
-                        .font(.system(size: 42, weight: .bold, design: .rounded))
-                    Text(snapshot.healthText)
-                        .font(.system(size: 19, weight: .semibold, design: .rounded))
-                        .foregroundStyle(.white.opacity(0.62))
-                }
-
-                HStack(spacing: 7) {
-                    TagView(text: snapshot.chipName)
-                    TagView(text: ClyroFormat.byteCount(snapshot.memoryTotalBytes))
-                    TagView(text: "macOS \(shortOSVersion)")
-                    TagView(text: "Laufzeit \(ClyroFormat.uptime(snapshot.uptime))")
-                }
-            }
-
-            Spacer()
-
-            Button {
-                monitor.refresh()
-            } label: {
-                Image(systemName: "arrow.clockwise")
-                    .font(.system(size: 15, weight: .semibold))
-                    .frame(width: 36, height: 36)
-            }
-            .buttonStyle(.plain)
-            .background(Circle().fill(.white.opacity(0.06)))
-            .foregroundStyle(ClyroTheme.mint)
-            .disabled(monitor.isRefreshing)
-        }
-        .clyroCard(padding: 22)
-    }
-
-    private var shortOSVersion: String {
-        let numbers = snapshot.osVersion.split(separator: " ").first(where: { $0.first?.isNumber == true })
-        return numbers.map(String.init) ?? snapshot.osVersion
-    }
-
-    private var metricGrid: some View {
-        HStack(spacing: 16) {
-            MetricCard(
+    private var overviewRow: some View {
+        HStack(spacing: 10) {
+            statusTile
+            CompactMetricTile(
                 title: "CPU",
                 icon: "cpu",
                 value: String(format: "%.0f", snapshot.cpuPercent),
@@ -131,7 +57,7 @@ struct DashboardView: View {
                 color: ClyroTheme.mint,
                 history: monitor.cpuHistory
             )
-            MetricCard(
+            CompactMetricTile(
                 title: "Arbeitsspeicher",
                 icon: "memorychip",
                 value: String(format: "%.0f", snapshot.memoryPercent),
@@ -141,50 +67,14 @@ struct DashboardView: View {
                 color: ClyroTheme.gold,
                 history: monitor.memoryHistory
             )
-            diskCard
+            diskTile
         }
     }
 
-    private var diskCard: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            HStack {
-                Label("Festplatte", systemImage: "internaldrive.fill")
-                    .font(.system(size: 15, weight: .semibold, design: .rounded))
-                    .foregroundStyle(.white.opacity(0.64))
-                Spacer()
-                Text(ClyroFormat.byteCount(snapshot.diskTotalBytes))
-                    .font(.system(size: 12, weight: .semibold, design: .rounded))
-                    .foregroundStyle(.white.opacity(0.67))
-                    .padding(.horizontal, 9)
-                    .padding(.vertical, 5)
-                    .background(RoundedRectangle(cornerRadius: 7).fill(.white.opacity(0.065)))
-            }
-
-            Text(ClyroFormat.byteCount(snapshot.diskUsedBytes))
-                .font(.system(size: 29, weight: .bold, design: .rounded))
-
-            GeometryReader { geometry in
-                ZStack(alignment: .leading) {
-                    Capsule().fill(.white.opacity(0.07))
-                    Capsule()
-                        .fill(ClyroTheme.blue)
-                        .frame(width: geometry.size.width * min(1, snapshot.diskPercent / 100))
-                }
-            }
-            .frame(height: 13)
-            .padding(.vertical, 14)
-
-            Text("\(ClyroFormat.byteCount(snapshot.diskTotalBytes - snapshot.diskUsedBytes)) frei · \(Int(snapshot.diskPercent)) % belegt")
-                .font(.system(size: 13, weight: .medium, design: .rounded))
-                .foregroundStyle(ClyroTheme.secondaryText)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .clyroCard()
-    }
-
-    private var batteryAndNetwork: some View {
-        HStack(spacing: 16) {
-            MetricCard(
+    private var activityRow: some View {
+        HStack(spacing: 10) {
+            batteryTile
+            CompactMetricTile(
                 title: "Netzwerk",
                 icon: "network",
                 value: ClyroFormat.speed(snapshot.downloadBytesPerSecond),
@@ -194,111 +84,228 @@ struct DashboardView: View {
                 color: ClyroTheme.blue,
                 history: normalizedNetworkHistory
             )
-
-            batteryCard
+            quickActionsTile
         }
+    }
+
+    private var statusTile: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Label("ZUSTAND", systemImage: "sun.max.fill")
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundStyle(ClyroTheme.mint)
+                Spacer()
+                CompactBadge(text: snapshot.chipName)
+                CompactBadge(text: "macOS \(shortOSVersion)")
+            }
+
+            HStack(spacing: 8) {
+                Text("\(snapshot.healthScore)")
+                    .font(.system(size: 34, weight: .bold, design: .rounded))
+                Text(snapshot.healthText)
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                Spacer(minLength: 4)
+                ClyroOrb(score: snapshot.healthScore)
+                    .frame(width: 46, height: 46)
+            }
+
+            Spacer(minLength: 0)
+
+            HStack {
+                Text("Laufzeit \(ClyroFormat.uptime(snapshot.uptime))")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                Spacer()
+                Button {
+                    monitor.refresh()
+                } label: {
+                    Image(systemName: "arrow.clockwise")
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(ClyroTheme.mint)
+                .disabled(monitor.isRefreshing)
+                .help("Systemdaten aktualisieren")
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .clyroCard(padding: 14)
+    }
+
+    private var diskTile: some View {
+        VStack(alignment: .leading, spacing: 9) {
+            HStack {
+                Label("Festplatte", systemImage: "internaldrive.fill")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(.secondary)
+                Spacer()
+                CompactBadge(text: ClyroFormat.byteCount(snapshot.diskTotalBytes))
+            }
+
+            HStack(alignment: .firstTextBaseline, spacing: 4) {
+                Text(ClyroFormat.byteCount(snapshot.diskUsedBytes))
+                    .font(.system(size: 27, weight: .bold, design: .rounded))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.75)
+                Text("belegt")
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundStyle(.secondary)
+            }
+
+            Spacer(minLength: 0)
+
+            GeometryReader { geometry in
+                ZStack(alignment: .leading) {
+                    Capsule().fill(.white.opacity(0.07))
+                    Capsule()
+                        .fill(ClyroTheme.blue)
+                        .frame(width: geometry.size.width * min(1, snapshot.diskPercent / 100))
+                }
+            }
+            .frame(height: 8)
+
+            Text("\(ClyroFormat.byteCount(snapshot.diskTotalBytes - snapshot.diskUsedBytes)) frei · \(Int(snapshot.diskPercent)) % belegt")
+                .font(.system(size: 11, weight: .medium))
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .clyroCard(padding: 14)
     }
 
     @ViewBuilder
-    private var batteryCard: some View {
+    private var batteryTile: some View {
         if snapshot.battery.isPresent {
-            HStack(spacing: 20) {
-                VStack(alignment: .leading, spacing: 11) {
+            HStack(spacing: 10) {
+                VStack(alignment: .leading, spacing: 8) {
                     Label("Batterie", systemImage: snapshot.battery.isCharging ? "battery.100percent.bolt" : "battery.75percent")
-                        .font(.system(size: 15, weight: .semibold, design: .rounded))
-                        .foregroundStyle(.white.opacity(0.64))
-                    HStack(alignment: .firstTextBaseline, spacing: 7) {
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(.secondary)
+
+                    HStack(alignment: .firstTextBaseline, spacing: 5) {
                         Text("\(snapshot.battery.percentage)%")
-                            .font(.system(size: 34, weight: .bold, design: .rounded))
+                            .font(.system(size: 29, weight: .bold, design: .rounded))
                         Text(snapshot.battery.timeRemaining)
-                            .font(.system(size: 15, weight: .semibold, design: .rounded))
-                            .foregroundStyle(ClyroTheme.secondaryText)
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundStyle(.secondary)
                     }
+
+                    Spacer(minLength: 0)
+
                     Text(snapshot.battery.isCharging ? "Mit Strom verbunden" : batteryAdvice)
-                        .font(.system(size: 13, weight: .medium, design: .rounded))
-                        .foregroundStyle(ClyroTheme.secondaryText)
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
                 }
-                Spacer()
+
+                Spacer(minLength: 0)
+
                 ZStack {
-                    Circle().stroke(.white.opacity(0.07), lineWidth: 8)
+                    Circle().stroke(.white.opacity(0.07), lineWidth: 6)
                     Circle()
                         .trim(from: 0, to: Double(snapshot.battery.percentage) / 100)
-                        .stroke(ClyroTheme.mint, style: StrokeStyle(lineWidth: 8, lineCap: .round))
+                        .stroke(ClyroTheme.mint, style: StrokeStyle(lineWidth: 6, lineCap: .round))
                         .rotationEffect(.degrees(-90))
-                    Image(systemName: "bolt.fill")
+                    Image(systemName: snapshot.battery.isCharging ? "bolt.fill" : "battery.75percent")
+                        .font(.system(size: 14, weight: .semibold))
                         .foregroundStyle(ClyroTheme.mint)
                 }
-                .frame(width: 72, height: 72)
+                .frame(width: 48, height: 48)
             }
-            .frame(maxWidth: .infinity, minHeight: 122)
-            .clyroCard()
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+            .clyroCard(padding: 14)
         } else {
-            HStack(spacing: 18) {
+            HStack(spacing: 12) {
                 Image(systemName: "desktopcomputer")
-                    .font(.system(size: 31))
+                    .font(.system(size: 27))
                     .foregroundStyle(ClyroTheme.mint)
-                VStack(alignment: .leading, spacing: 5) {
-                    Text("Mac ohne Batterie")
-                        .font(.system(size: 17, weight: .semibold, design: .rounded))
-                    Text("Auf diesem Mac wurde keine interne Batterie erkannt.")
-                        .font(.system(size: 13, design: .rounded))
-                        .foregroundStyle(ClyroTheme.secondaryText)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Desktop-Mac")
+                        .font(.system(size: 14, weight: .semibold))
+                    Text("Keine interne Batterie erkannt")
+                        .font(.system(size: 10))
+                        .foregroundStyle(.secondary)
                 }
-                Spacer()
             }
-            .frame(maxWidth: .infinity, minHeight: 122)
-            .clyroCard()
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+            .clyroCard(padding: 14)
         }
     }
 
-    private var processCard: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                    HStack(spacing: 8) {
-                        Label("Die Clyro Crew", systemImage: "list.bullet.rectangle")
-                            .font(.system(size: 17, weight: .semibold))
-                            .symbolRenderingMode(.hierarchical)
-                    }
-                    Text("Was gerade auf deinem Mac arbeitet – verständlich erklärt.")
-                        .font(.system(size: 12, weight: .medium, design: .rounded))
-                        .foregroundStyle(ClyroTheme.secondaryText)
-                }
-                Spacer()
-                HStack(spacing: 18) {
-                    Label("RAM", systemImage: "memorychip")
-                        .frame(width: 86, alignment: .trailing)
-                    Label("CPU", systemImage: "cpu")
-                        .frame(width: 72, alignment: .trailing)
-                }
-                .font(.system(size: 11, weight: .semibold, design: .rounded))
-                .foregroundStyle(ClyroTheme.secondaryText)
-            }
+    private var quickActionsTile: some View {
+        VStack(alignment: .leading, spacing: 9) {
+            Label("Schnellaktionen", systemImage: "bolt.fill")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(.secondary)
 
-            Divider().overlay(.white.opacity(0.055))
+            HStack(spacing: 6) {
+                CompactActionButton(icon: "arrow.down.circle", title: "Downloads") {
+                    openFolder("Downloads")
+                }
+                CompactActionButton(icon: "chart.xyaxis.line", title: "Aktivität") {
+                    openApplication("/System/Applications/Utilities/Activity Monitor.app")
+                }
+                CompactActionButton(icon: "internaldrive", title: "Speicher") {
+                    openStorageSettings()
+                }
+                CompactActionButton(icon: "square.grid.2x2", title: "Programme") {
+                    NSWorkspace.shared.open(URL(fileURLWithPath: "/Applications", isDirectory: true))
+                }
+            }
+            .frame(maxHeight: .infinity)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .clyroCard(padding: 14)
+    }
+
+    private var processTable: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: 10) {
+                Text("PROZESSE (\(snapshot.processes.count))")
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                Text("ROLLE")
+                    .frame(width: 110, alignment: .leading)
+                Text("RAM")
+                    .frame(width: 82, alignment: .trailing)
+                Text("CPU")
+                    .frame(width: 116, alignment: .trailing)
+            }
+            .font(.system(size: 10, weight: .bold))
+            .foregroundStyle(.secondary)
+            .padding(.bottom, 8)
+
+            Divider().overlay(ClyroTheme.border)
 
             if snapshot.processes.isEmpty {
-                HStack(spacing: 12) {
-                    ProgressView()
-                        .tint(ClyroTheme.mint)
-                    Text("Die Crew wird gerade zusammengestellt …")
-                        .foregroundStyle(ClyroTheme.secondaryText)
+                HStack(spacing: 10) {
+                    ProgressView().controlSize(.small)
+                    Text("Prozesse werden eingelesen …")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundStyle(.secondary)
                 }
-                .frame(maxWidth: .infinity, minHeight: 64, alignment: .leading)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
             } else {
-                let visibleProcesses = Array(snapshot.processes.prefix(7))
+                let visibleProcesses = Array(snapshot.processes.prefix(8))
                 ForEach(visibleProcesses) { process in
-                    ProcessCrewRow(process: process, showsTechnicalDetails: false)
+                    CompactProcessRow(process: process)
                     if process.id != visibleProcesses.last?.id {
                         Divider()
-                            .overlay(.white.opacity(0.045))
-                            .padding(.leading, 64)
+                            .overlay(.white.opacity(0.035))
+                            .padding(.leading, 30)
                     }
                 }
+                Spacer(minLength: 0)
             }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .clyroCard()
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .clyroCard(padding: 12)
+    }
+
+    private var shortOSVersion: String {
+        let numbers = snapshot.osVersion.split(separator: " ").first(where: { $0.first?.isNumber == true })
+        return numbers.map(String.init) ?? snapshot.osVersion
     }
 
     private var normalizedNetworkHistory: [Double] {
@@ -312,7 +319,7 @@ struct DashboardView: View {
 
     private var cpuDetail: String {
         guard let top = snapshot.processes.first else { return "Keine Prozessdaten" }
-        return "Größter Verbraucher: \(top.name)"
+        return "Top: \(top.name)"
     }
 
     private var memoryBadge: String {
@@ -320,7 +327,7 @@ struct DashboardView: View {
     }
 
     private var batteryAdvice: String {
-        snapshot.battery.percentage < 20 ? "Bald mit Strom verbinden" : "Batteriestand ist in Ordnung"
+        snapshot.battery.percentage < 20 ? "Bald mit Strom verbinden" : "Batteriestand in Ordnung"
     }
 
     private func openFolder(_ name: String) {
@@ -341,38 +348,178 @@ struct DashboardView: View {
     }
 }
 
-private struct QuickActionButton: View {
+private struct CompactMetricTile: View {
+    let title: String
+    let icon: String
+    let value: String
+    let unit: String
+    let badge: String
+    let detail: String
+    let color: Color
+    let history: [Double]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Label(title, systemImage: icon)
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                Spacer()
+                CompactBadge(text: badge)
+            }
+
+            HStack(alignment: .firstTextBaseline, spacing: 4) {
+                Text(value)
+                    .font(.system(size: 29, weight: .bold, design: .rounded))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.68)
+                Text(unit)
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundStyle(.secondary)
+            }
+
+            Sparkline(values: history, color: color)
+                .frame(height: 28)
+
+            Text(detail)
+                .font(.system(size: 10, weight: .medium))
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .clyroCard(padding: 14)
+    }
+}
+
+private struct CompactBadge: View {
+    let text: String
+
+    var body: some View {
+        Text(text)
+            .font(.system(size: 9, weight: .semibold))
+            .foregroundStyle(.secondary)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 4)
+            .background(RoundedRectangle(cornerRadius: 5).fill(.white.opacity(0.055)))
+            .lineLimit(1)
+    }
+}
+
+private struct CompactActionButton: View {
     let icon: String
     let title: String
-    let subtitle: String
     let action: () -> Void
 
     var body: some View {
         Button(action: action) {
-            HStack(spacing: 10) {
+            VStack(spacing: 5) {
                 Image(systemName: icon)
-                    .font(.system(size: 16, weight: .medium))
+                    .font(.system(size: 15, weight: .semibold))
                     .foregroundStyle(ClyroTheme.mint)
-                    .symbolRenderingMode(.hierarchical)
-                    .frame(width: 34, height: 34)
-                    .background(RoundedRectangle(cornerRadius: 8).fill(ClyroTheme.mint.opacity(0.09)))
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(title)
-                        .font(.system(size: 11, weight: .semibold))
-                    Text(subtitle)
-                        .font(.system(size: 9, weight: .medium))
-                        .foregroundStyle(ClyroTheme.secondaryText)
-                }
-                Spacer(minLength: 0)
+                Text(title)
+                    .font(.system(size: 9, weight: .semibold))
+                    .foregroundStyle(.primary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
             }
-            .padding(.horizontal, 10)
-            .frame(maxWidth: .infinity, minHeight: 50)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(
-                RoundedRectangle(cornerRadius: 9, style: .continuous)
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
                     .fill(.white.opacity(0.035))
-                    .overlay(RoundedRectangle(cornerRadius: 9).stroke(ClyroTheme.border))
+                    .overlay(RoundedRectangle(cornerRadius: 8).stroke(ClyroTheme.border, lineWidth: 0.75))
             )
         }
         .buttonStyle(.plain)
+    }
+}
+
+private struct CompactProcessRow: View {
+    let process: SystemProcess
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Group {
+                if let appIcon {
+                    Image(nsImage: appIcon)
+                        .resizable()
+                        .interpolation(.high)
+                } else {
+                    Image(systemName: process.crewRole.systemImage)
+                        .resizable()
+                        .scaledToFit()
+                        .padding(3)
+                        .foregroundStyle(process.crewRole.color)
+                }
+            }
+            .frame(width: 20, height: 20)
+
+            Text(process.name)
+                .font(.system(size: 11, weight: .semibold))
+                .lineLimit(1)
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+            Text("\(process.crewRole.emoji) \(process.crewRole.title)")
+                .font(.system(size: 9, weight: .semibold))
+                .foregroundStyle(process.crewRole.color)
+                .lineLimit(1)
+                .frame(width: 110, alignment: .leading)
+
+            Text(ClyroFormat.byteCount(process.memoryBytes))
+                .font(.system(size: 10, weight: .medium))
+                .foregroundStyle(.secondary)
+                .frame(width: 82, alignment: .trailing)
+
+            HStack(spacing: 7) {
+                GeometryReader { geometry in
+                    ZStack(alignment: .leading) {
+                        Capsule().fill(.white.opacity(0.07))
+                        Capsule()
+                            .fill(process.cpuPercent > 40 ? ClyroTheme.orange : process.crewRole.color)
+                            .frame(width: geometry.size.width * min(1, process.cpuPercent / 100))
+                    }
+                }
+                .frame(width: 62, height: 5)
+                Text(String(format: "%.1f", process.cpuPercent))
+                    .font(.system(size: 10, weight: .medium, design: .monospaced))
+                    .foregroundStyle(.secondary)
+                    .frame(width: 42, alignment: .trailing)
+            }
+            .frame(width: 116, alignment: .trailing)
+        }
+        .frame(height: 27)
+    }
+
+    private var appIcon: NSImage? {
+        guard !process.executablePath.isEmpty else { return nil }
+        let pieces = process.executablePath.components(separatedBy: ".app/")
+        guard pieces.count > 1 else { return nil }
+        let appPath = pieces[0] + ".app"
+        guard FileManager.default.fileExists(atPath: appPath) else { return nil }
+        return NSWorkspace.shared.icon(forFile: appPath)
+    }
+}
+
+private struct ClyroOrb: View {
+    let score: Int
+
+    var body: some View {
+        ZStack {
+            Circle()
+                .fill(
+                    RadialGradient(
+                        colors: [Color.white.opacity(0.85), ClyroTheme.mint, ClyroTheme.blue.opacity(0.55)],
+                        center: .topLeading,
+                        startRadius: 1,
+                        endRadius: 34
+                    )
+                )
+            Circle()
+                .stroke(.white.opacity(0.28), lineWidth: 1)
+            Image(systemName: score > 80 ? "checkmark" : "exclamationmark")
+                .font(.system(size: 15, weight: .bold))
+                .foregroundStyle(.black.opacity(0.65))
+        }
+        .shadow(color: ClyroTheme.mint.opacity(0.22), radius: 10)
     }
 }
