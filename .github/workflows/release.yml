@@ -66,6 +66,19 @@ jobs:
           ln -s /Applications dmg/Applications
           hdiutil create -volname "Clyro" -srcfolder dmg -ov -format UDZO "Clyro-${{ steps.version.outputs.version }}.dmg"
 
+      - name: Versionshinweise
+        run: |
+          NOTES="docs/releases/${{ steps.version.outputs.version }}.md"
+          if [[ ! -f "$NOTES" ]]; then
+            NOTES="release-notes.md"
+            printf '%s\n' "Clyro ${{ steps.version.outputs.version }} für macOS 14 oder neuer (Apple Silicon und Intel)." > "$NOTES"
+          fi
+          {
+            cat "$NOTES"
+            printf '\n---\n'
+            printf '%s\n' "Die App ist nicht von Apple notarisiert. Beim ersten Start im Programme-Ordner per Rechtsklick auf Clyro → **Öffnen** bestätigen."
+          } > release-body.md
+
       - name: Als Artefakt ablegen
         uses: actions/upload-artifact@v4
         with:
@@ -80,9 +93,5 @@ jobs:
           target_commitish: ${{ github.sha }}
           name: Clyro ${{ steps.version.outputs.version }}
           files: Clyro-*.dmg
-          generate_release_notes: true
-          body: |
-            Clyro als DMG für macOS 14 oder neuer (Apple Silicon und Intel).
-
-            Die App ist nicht von Apple notarisiert. Beim ersten Start deshalb im Programme-Ordner
-            **Rechtsklick auf Clyro → Öffnen** wählen und bestätigen. Danach startet sie normal.
+          body_path: release-body.md
+          overwrite_files: true
