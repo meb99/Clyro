@@ -18,6 +18,7 @@ struct ClyroPillButtonStyle: ButtonStyle {
 struct CleanupView: View {
     @EnvironmentObject private var cleaner: CleanupScanner
     @State private var showConfirmation = false
+    @State private var showHistory = false
 
     private let accent = ClyroTheme.palette(for: .cleanup).accent
 
@@ -36,6 +37,19 @@ struct CleanupView: View {
             }
         }
         .padding(22)
+        .sheet(isPresented: $showHistory) {
+            VStack(spacing: 0) {
+                HStack {
+                    Spacer()
+                    Button("Fertig") { showHistory = false }
+                        .keyboardShortcut(.defaultAction)
+                }
+                .padding([.top, .horizontal], 16)
+                HistoryView()
+                    .environmentObject(cleaner)
+            }
+            .frame(width: 820, height: 560)
+        }
         .alert("Ausgewählte Dateien bereinigen?", isPresented: $showConfirmation) {
             Button("Abbrechen", role: .cancel) {}
             Button(cleaner.selectedPermanentBytes > 0 ? "Bereinigen" : "In den Papierkorb", role: .destructive) {
@@ -67,6 +81,13 @@ struct CleanupView: View {
             Button("Mac scannen") { cleaner.scan() }
                 .buttonStyle(ClyroPillButtonStyle())
                 .padding(.top, 10)
+            if !cleaner.history.isEmpty {
+                Button("Verlauf ansehen") { showHistory = true }
+                    .buttonStyle(.plain)
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(accent)
+                    .padding(.top, 2)
+            }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
@@ -205,30 +226,9 @@ struct CleanupView: View {
             .frame(maxWidth: 560)
             .frame(height: 22)
 
-            cleanLogBox
+            CleanLogBox(entries: cleaner.cleanLog, accent: accent)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
-
-    /// Kleines Protokoll: die letzten Schritte laufen von unten ein, ältere verblassen nach oben.
-    private var cleanLogBox: some View {
-        let entries = Array(cleaner.cleanLog.suffix(7))
-        return VStack(alignment: .leading, spacing: 7) {
-            ForEach(Array(entries.enumerated()), id: \.element.id) { index, entry in
-                CleanLogRow(entry: entry, accent: accent)
-                    .opacity(0.25 + 0.75 * Double(index + 1) / Double(max(1, entries.count)))
-            }
-            Spacer(minLength: 0)
-        }
-        .frame(width: 560, height: 176, alignment: .bottomLeading)
-        .frame(maxWidth: 560, alignment: .leading)
-        .padding(16)
-        .background(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .fill(ClyroTheme.card)
-                .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(ClyroTheme.border))
-        )
-        .animation(.easeOut(duration: 0.15), value: cleaner.cleanLog.count)
     }
 
     private func bloomStage(_ celebration: CleanupCelebration) -> some View {
@@ -399,7 +399,7 @@ private struct CleanupItemRow: View {
     }
 }
 
-private struct CleanLogRow: View {
+struct CleanLogRow: View {
     let entry: CleanLogEntry
     let accent: Color
 
@@ -420,7 +420,12 @@ private struct CleanLogRow: View {
                     .lineLimit(1)
                     .truncationMode(.middle)
                 Spacer(minLength: 8)
-                if let bytes = entry.bytes {
+                if let trailing = entry.trailing {
+                    Text(trailing)
+                        .font(.system(size: 13, weight: .medium, design: .monospaced))
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                } else if let bytes = entry.bytes {
                     Text(ClyroFormat.byteCount(bytes))
                         .font(.system(size: 13, weight: .medium, design: .monospaced))
                         .foregroundStyle(.secondary)
@@ -428,5 +433,30 @@ private struct CleanLogRow: View {
             }
             if entry.isHeader { Spacer(minLength: 0) }
         }
+    }
+}
+
+/// Kleines Protokoll: die letzten Schritte laufen von unten ein, ältere verblassen nach oben.
+struct CleanLogBox: View {
+    let entries: [CleanLogEntry]
+    let accent: Color
+
+    var body: some View {
+        let visible = Array(entries.suffix(7))
+        return VStack(alignment: .leading, spacing: 7) {
+            ForEach(Array(visible.enumerated()), id: \.element.id) { index, entry in
+                CleanLogRow(entry: entry, accent: accent)
+                    .opacity(0.25 + 0.75 * Double(index + 1) / Double(max(1, visible.count)))
+            }
+            Spacer(minLength: 0)
+        }
+        .frame(width: 560, height: 176, alignment: .topLeading)
+        .padding(16)
+        .background(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(ClyroTheme.card)
+                .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(ClyroTheme.border))
+        )
+        .animation(.easeOut(duration: 0.15), value: entries.count)
     }
 }

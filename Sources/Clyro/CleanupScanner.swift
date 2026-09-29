@@ -19,6 +19,7 @@ struct CleanLogEntry: Identifiable {
     let text: String
     let bytes: Int64?
     let isHeader: Bool
+    var trailing: String?
 }
 
 struct CleanEvent: Sendable {
@@ -342,6 +343,7 @@ private enum CleanupProbe {
                 progress: progress
             ))
         }
+        categories.append(projectArtifacts(progress: progress))
         categories.append(make(
             .appRemnants,
             urls: orphanedURLs(home: home, whitelist: whitelist),
@@ -362,6 +364,24 @@ private enum CleanupProbe {
     }
 
     // MARK: - Kategorien
+
+    /// Build-Ordner alter Projekte (node_modules, target, .build …). Ordner unter 7 Tagen Alter sind nicht vorausgewählt.
+    private static func projectArtifacts(progress: ScanProgressBox) -> CleanupCategory {
+        var items: [CleanupItem] = []
+        for artifact in ProjectPurgeProbe.scan() {
+            progress.report(bytes: artifact.sizeBytes, path: artifact.url.path)
+            let settled = artifact.ageDays >= 7
+            items.append(CleanupItem(
+                url: artifact.url,
+                bytes: artifact.sizeBytes,
+                isSelected: settled,
+                isRecommended: settled,
+                ownerName: "\(artifact.projectName) · \(artifact.kind.title)"
+            ))
+        }
+        items.sort { $0.bytes > $1.bytes }
+        return CleanupCategory(kind: .projectArtifacts, items: items)
+    }
 
     private static func make(
         _ kind: CleanupKind,

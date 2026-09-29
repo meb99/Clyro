@@ -34,7 +34,7 @@ Clyro deckt jetzt den kompletten Funktionsumfang klassischer Mac-Pflegewerkzeuge
 - eigene Prozessübersicht mit Suche, Rollenfiltern sowie CPU- und RAM-Sortierung
 - Speicherfinder für große Dateien in Downloads, Schreibtisch, Dokumente und Filme
 - sichere Schnellaktionen für Downloads, Aktivitätsanzeige, Speicher und Programme
-- schlanke Navigation mit fünf Hauptbereichen (Übersicht, Bereinigen, Optimieren, Apps, Speicher) und Reitern für verwandte Seiten
+- schlanke Navigation mit genau fünf Seiten ohne Unterreiter: Bereinigen · Apps · Optimieren · Analyse · Status
 - vollständig sichtbare Statusübersicht ohne Scrollen mit kompaktem Bento-Raster
 - platzsparende Prozessliste mit App-Icons, Rollen, RAM und CPU
 - eigene Farbstimmung und animierter Hintergrund für jeden Bereich
