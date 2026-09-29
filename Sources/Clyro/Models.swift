@@ -321,7 +321,7 @@ enum CleanupKind: String, CaseIterable, Codable, Identifiable {
         switch self {
         case .caches: "Zwischengespeicherte App-Daten, älter als 14 Tage"
         case .logs: "Protokoll- und Absturzdateien, älter als 14 Tage"
-        case .installers: "DMG-, PKG- und ZIP-Dateien, älter als 30 Tage"
+        case .installers: "DMG-, PKG-, ISO-, XIP- und ZIP-Dateien in Downloads und auf dem Schreibtisch, älter als 30 Tage"
         case .developerData: "Alte Derived-Data-Ordner von Xcode"
         case .packageCaches: "Downloads von npm, pip und Gradle, älter als 14 Tage"
         case .projectArtifacts: "Wiederherstellbare Build-Ordner wie node_modules oder .build"
