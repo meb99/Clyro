@@ -301,14 +301,6 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		A10000000000000000000602 /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				A1000000000000000000011A /* CleanupSafetyTests.swift in Sources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
