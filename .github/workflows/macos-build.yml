@@ -32,3 +32,14 @@ jobs:
             -destination 'platform=macOS' \
             CODE_SIGNING_ALLOWED=NO \
             build
+
+      - name: Run tests
+        run: |
+          set -o pipefail
+          xcodebuild \
+            -project Clyro.xcodeproj \
+            -scheme Clyro \
+            -configuration Debug \
+            -destination 'platform=macOS' \
+            CODE_SIGNING_ALLOWED=NO \
+            test

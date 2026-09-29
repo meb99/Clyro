@@ -135,7 +135,7 @@ enum ProjectPurgeProbe {
         }
     }
 
-    private static func isSafeArtifact(_ url: URL, name: String, siblings: Set<String>) -> Bool {
+    static func isSafeArtifact(_ url: URL, name: String, siblings: Set<String>) -> Bool {
         switch name {
         case "bin", "obj":
             // Nur .NET-Build-Ausgaben, nie beliebige bin-Ordner.

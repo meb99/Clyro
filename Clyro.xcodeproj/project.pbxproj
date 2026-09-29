@@ -32,7 +32,18 @@
 		A10000000000000000000119 /* ForestViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000229 /* ForestViews.swift */; };
 		A1000000000000000000010A /* ClyroIcon.svg in Resources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000020A /* ClyroIcon.svg */; };
 		A1000000000000000000010B /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A1000000000000000000020D /* IOKit.framework */; };
+		A1000000000000000000011A /* CleanupSafetyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000022A /* CleanupSafetyTests.swift */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		A10000000000000000000B01 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A10000000000000000000801 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A10000000000000000000501;
+			remoteInfo = Clyro;
+		};
+/* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
 		A10000000000000000000201 /* ClyroApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClyroApp.swift; sourceTree = "<group>"; };
@@ -62,6 +73,8 @@
 		A1000000000000000000020B /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A1000000000000000000020C /* Clyro.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Clyro.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A1000000000000000000020D /* IOKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = IOKit.framework; path = System/Library/Frameworks/IOKit.framework; sourceTree = SDKROOT; };
+		A1000000000000000000022A /* CleanupSafetyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CleanupSafetyTests.swift; sourceTree = "<group>"; };
+		A1000000000000000000020E /* ClyroTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ClyroTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -73,6 +86,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		A10000000000000000000302 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -81,6 +101,7 @@
 			children = (
 				A10000000000000000000402 /* Sources */,
 				A10000000000000000000403 /* Assets */,
+				A10000000000000000000406 /* ClyroTests */,
 				A1000000000000000000020B /* Info.plist */,
 				A10000000000000000000405 /* Frameworks */,
 				A10000000000000000000404 /* Products */,
@@ -130,6 +151,7 @@
 			isa = PBXGroup;
 			children = (
 				A1000000000000000000020C /* Clyro.app */,
+				A1000000000000000000020E /* ClyroTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -140,6 +162,14 @@
 				A1000000000000000000020D /* IOKit.framework */,
 			);
 			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		A10000000000000000000406 /* ClyroTests */ = {
+			isa = PBXGroup;
+			children = (
+				A1000000000000000000022A /* CleanupSafetyTests.swift */,
+			);
+			path = Tests/ClyroTests;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -162,6 +192,23 @@
 			productReference = A1000000000000000000020C /* Clyro.app */;
 			productType = "com.apple.product-type.application";
 		};
+		A10000000000000000000502 /* ClyroTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A10000000000000000000903 /* Build configuration list for PBXNativeTarget "ClyroTests" */;
+			buildPhases = (
+				A10000000000000000000602 /* Sources */,
+				A10000000000000000000302 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				A10000000000000000000C01 /* PBXTargetDependency */,
+			);
+			name = ClyroTests;
+			productName = ClyroTests;
+			productReference = A1000000000000000000020E /* ClyroTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -174,6 +221,10 @@
 				TargetAttributes = {
 					A10000000000000000000501 = {
 						CreatedOnToolsVersion = 16.0;
+					};
+					A10000000000000000000502 = {
+						CreatedOnToolsVersion = 16.0;
+						TestTargetID = A10000000000000000000501;
 					};
 				};
 			};
@@ -191,6 +242,7 @@
 			projectRoot = "";
 			targets = (
 				A10000000000000000000501 /* Clyro */,
+				A10000000000000000000502 /* ClyroTests */,
 			);
 		};
 /* End PBXProject section */
@@ -237,7 +289,23 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		A10000000000000000000602 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A1000000000000000000011A /* CleanupSafetyTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		A10000000000000000000C01 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A10000000000000000000501 /* Clyro */;
+			targetProxy = A10000000000000000000B01 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		A10000000000000000000A01 /* Debug */ = {
@@ -388,6 +456,36 @@
 			};
 			name = Release;
 		};
+		A10000000000000000000A05 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				PRODUCT_BUNDLE_IDENTIFIER = dev.meb99.ClyroTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Clyro.app/Contents/MacOS/Clyro";
+			};
+			name = Debug;
+		};
+		A10000000000000000000A06 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				PRODUCT_BUNDLE_IDENTIFIER = dev.meb99.ClyroTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Clyro.app/Contents/MacOS/Clyro";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -405,6 +503,15 @@
 			buildConfigurations = (
 				A10000000000000000000A03 /* Debug */,
 				A10000000000000000000A04 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A10000000000000000000903 /* Build configuration list for PBXNativeTarget "ClyroTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A10000000000000000000A05 /* Debug */,
+				A10000000000000000000A06 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
