@@ -20,6 +20,7 @@ struct CleanLogEntry: Identifiable {
     let bytes: Int64?
     let isHeader: Bool
     var trailing: String?
+    var checked = false
 }
 
 struct CleanEvent: Sendable {

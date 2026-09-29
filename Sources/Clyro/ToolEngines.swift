@@ -29,13 +29,16 @@ enum ClyroLog {
 
 struct OptimizeTask: Identifiable, Hashable {
     let id: String
+    let group: String
     let title: String
     let detail: String
     let icon: String
     let executable: String
     let arguments: [String]
-    /// Startet sichtbare Systemteile neu (Dock, Finder) und ist deshalb standardmäßig abgewählt.
+    /// Startet sichtbare Systemteile neu (Dock, Finder, Menüleiste …).
     let isDisruptive: Bool
+    /// Beendet sich mit Fehlercode, wenn der Dienst gerade nicht läuft (z. B. `killall`); das ist dann kein Fehler.
+    var tolerant = false
 
     var commandLine: String {
         ([URL(fileURLWithPath: executable).lastPathComponent] + arguments).joined(separator: " ")
@@ -43,52 +46,90 @@ struct OptimizeTask: Identifiable, Hashable {
 }
 
 enum OptimizeCatalog {
+    private static func restart(_ id: String, _ title: String, _ detail: String, icon: String, process: String) -> OptimizeTask {
+        OptimizeTask(
+            id: id,
+            group: "Systemdienste",
+            title: title,
+            detail: detail,
+            icon: icon,
+            executable: "/usr/bin/killall",
+            arguments: [process],
+            isDisruptive: true,
+            tolerant: true
+        )
+    }
+
     static let tasks: [OptimizeTask] = [
         OptimizeTask(
-            id: "quicklook",
+            id: "quicklook-cache",
+            group: "Caches",
             title: "Quick-Look-Vorschauen erneuern",
-            detail: "Leert den Vorschau-Cache, damit veraltete oder kaputte Miniaturen neu entstehen.",
+            detail: "Leert den Vorschau-Cache, damit veraltete Miniaturen neu entstehen.",
             icon: "eye.fill",
             executable: "/usr/bin/qlmanage",
             arguments: ["-r", "cache"],
             isDisruptive: false
         ),
         OptimizeTask(
+            id: "quicklook-server",
+            group: "Caches",
+            title: "Quick-Look-Dienst zurücksetzen",
+            detail: "Startet den Vorschau-Dienst neu.",
+            icon: "eye.circle.fill",
+            executable: "/usr/bin/qlmanage",
+            arguments: ["-r"],
+            isDisruptive: false
+        ),
+        OptimizeTask(
             id: "dns",
+            group: "Caches",
             title: "DNS-Cache leeren",
-            detail: "Hilft, wenn Webseiten oder Server nach einem Umzug noch alte Adressen nutzen.",
+            detail: "Hilft, wenn Server nach einem Umzug noch alte Adressen nutzen.",
             icon: "network",
             executable: "/usr/bin/dscacheutil",
             arguments: ["-flushcache"],
             isDisruptive: false
         ),
         OptimizeTask(
-            id: "spotlight",
+            id: "prefs",
+            group: "Caches",
+            title: "Einstellungs-Cache neu laden",
+            detail: "Lädt den Cache der App-Einstellungen neu.",
+            icon: "slider.horizontal.3",
+            executable: "/usr/bin/killall",
+            arguments: ["cfprefsd"],
+            isDisruptive: false,
+            tolerant: true
+        ),
+        OptimizeTask(
+            id: "spotlight-status",
+            group: "Prüfungen",
             title: "Spotlight-Index prüfen",
-            detail: "Liest nur den Status der Suche aus und ändert nichts.",
+            detail: "Liest nur den Status der Suche aus.",
             icon: "magnifyingglass",
             executable: "/usr/bin/mdutil",
             arguments: ["-s", "/"],
             isDisruptive: false
         ),
         OptimizeTask(
-            id: "dock",
-            title: "Dock neu starten",
-            detail: "Behebt hängende Dock-Symbole, Mission Control und Animationsfehler.",
-            icon: "dock.rectangle",
-            executable: "/usr/bin/killall",
-            arguments: ["Dock"],
-            isDisruptive: true
+            id: "memory",
+            group: "Prüfungen",
+            title: "Speicherdruck prüfen",
+            detail: "Liest nur den aktuellen Arbeitsspeicher-Druck aus.",
+            icon: "memorychip",
+            executable: "/usr/bin/memory_pressure",
+            arguments: [],
+            isDisruptive: false,
+            tolerant: true
         ),
-        OptimizeTask(
-            id: "finder",
-            title: "Finder neu starten",
-            detail: "Lädt Fenster und Schreibtisch neu. Offene Finder-Fenster schließen kurz.",
-            icon: "folder.fill",
-            executable: "/usr/bin/killall",
-            arguments: ["Finder"],
-            isDisruptive: true
-        )
+        restart("dock", "Dock neu starten", "Behebt hängende Symbole, Mission Control und Animationsfehler.", icon: "dock.rectangle", process: "Dock"),
+        restart("finder", "Finder neu starten", "Lädt Fenster und Schreibtisch neu.", icon: "folder.fill", process: "Finder"),
+        restart("menubar", "Menüleiste neu starten", "Lädt die Symbole der Menüleiste neu.", icon: "menubar.rectangle", process: "SystemUIServer"),
+        restart("notifications", "Mitteilungszentrale neu starten", "Behebt hängende Benachrichtigungen.", icon: "bell.fill", process: "NotificationCenter"),
+        restart("controlcenter", "Kontrollzentrum neu starten", "Lädt WLAN, Bluetooth und Lautstärke neu.", icon: "switch.2", process: "ControlCenter"),
+        restart("pasteboard", "Zwischenablage neu starten", "Behebt eine hängende Zwischenablage.", icon: "doc.on.clipboard.fill", process: "pboard"),
+        restart("input", "Eingabemenü neu starten", "Lädt die Tastaturumschaltung neu.", icon: "keyboard.fill", process: "TextInputMenuAgent")
     ]
 }
 
@@ -127,6 +168,9 @@ enum OptimizeRunner {
         let firstLine = text.split(separator: "\n").first.map(String.init) ?? ""
         if process.terminationStatus == 0 {
             return OptimizeOutcome(succeeded: true, message: firstLine.isEmpty ? "Erledigt" : firstLine)
+        }
+        if task.tolerant {
+            return OptimizeOutcome(succeeded: true, message: "war nicht aktiv")
         }
         return OptimizeOutcome(succeeded: false, message: firstLine.isEmpty ? "Fehlgeschlagen" : firstLine)
     }

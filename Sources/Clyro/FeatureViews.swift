@@ -1243,6 +1243,7 @@ struct SettingsView: View {
     @AppStorage("includeDeveloperData") private var includeDeveloperData = true
     @AppStorage(CleanupWhitelist.defaultsKey) private var whitelist = ""
     @AppStorage("purgePaths") private var purgePaths = ""
+    @AppStorage("optimizeDryRun") private var optimizeDryRun = false
 
     var body: some View {
         Form {
@@ -1280,6 +1281,12 @@ struct SettingsView: View {
                     }
                 }
                 Text("Jede verschobene Datei wird lokal in ~/Library/Logs/Clyro festgehalten.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            Section("Optimieren") {
+                Toggle("Nur als Vorschau ausführen", isOn: $optimizeDryRun)
+                Text("Zeigt beim Optimieren nur, was passieren würde, ohne etwas zu verändern.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }

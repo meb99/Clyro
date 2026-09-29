@@ -411,7 +411,7 @@ struct CleanLogRow: View {
                     .font(.system(size: 13, weight: .semibold, design: .monospaced))
                     .foregroundStyle(accent)
             } else {
-                Image(systemName: "sparkle")
+                Image(systemName: entry.checked ? "checkmark" : "sparkle")
                     .font(.system(size: 10, weight: .bold))
                     .foregroundStyle(accent.opacity(0.85))
                     .frame(width: 14)
