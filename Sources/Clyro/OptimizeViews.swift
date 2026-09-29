@@ -106,6 +106,7 @@ struct OptimizeView: View {
                 try? await Task.sleep(nanoseconds: 260_000_000)
             }
             await ScanTiming.hold(since: started)
+            if !preview { ClyroStats.add(optimized: counts[.applied] ?? 0) }
             stage = .done
         }
     }

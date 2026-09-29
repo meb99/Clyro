@@ -57,7 +57,7 @@ struct DashboardView: View {
         return StatusCard(title: "ZUSTAND", icon: "sun.max.fill", accent: ClyroTheme.mint, badges: [
             snapshot.chipName,
             ClyroFormat.memory(snapshot.memoryTotalBytes).replacingOccurrences(of: ".0", with: ""),
-            "macOS \(shortOSVersion)"
+            shortOSVersion.split(separator: ".").first.map { "macOS \($0)" } ?? "macOS"
         ]) {
             HStack(alignment: .center, spacing: 8) {
                 VStack(alignment: .leading, spacing: 10) {
@@ -66,6 +66,8 @@ struct DashboardView: View {
                             .font(.system(size: 34, weight: .bold, design: .rounded))
                         Text(snapshot.healthText)
                             .font(.system(size: 14, weight: .semibold))
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.75)
                     }
                     Text(health.issues.isEmpty ? "Alle Prüfungen bestanden" : health.issues.joined(separator: " · "))
                         .font(.system(size: 12, weight: .medium))
@@ -77,9 +79,10 @@ struct DashboardView: View {
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
                 }
+                .layoutPriority(1)
                 Spacer(minLength: 0)
                 ClyroOrb(score: health.score)
-                    .frame(width: 64, height: 64)
+                    .frame(width: 52, height: 52)
             }
         }
     }
@@ -312,11 +315,7 @@ struct DashboardView: View {
     }
 
     private var uptimeText: String {
-        let bootDate = Date().addingTimeInterval(-snapshot.uptime)
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "de_DE")
-        formatter.setLocalizedDateFormatFromTemplate("d MMM")
-        return "Laufzeit \(ClyroFormat.uptime(snapshot.uptime)) · seit \(formatter.string(from: bootDate))"
+        "Laufzeit \(ClyroFormat.uptime(snapshot.uptime))"
     }
 
     private var cpuDetail: String {

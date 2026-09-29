@@ -6,7 +6,7 @@ struct ClyroApp: App {
     @StateObject private var cleaner = CleanupScanner()
 
     var body: some Scene {
-        WindowGroup {
+        WindowGroup(id: "main") {
             RootView()
                 .environmentObject(monitor)
                 .environmentObject(cleaner)
@@ -15,6 +15,13 @@ struct ClyroApp: App {
         }
         .defaultSize(width: 1180, height: 790)
         .windowStyle(.hiddenTitleBar)
+
+        MenuBarExtra("Clyro", systemImage: "leaf.fill") {
+            MenuBarStatusView()
+                .environmentObject(monitor)
+                .environmentObject(cleaner)
+        }
+        .menuBarExtraStyle(.window)
 
         Settings {
             SettingsView()
