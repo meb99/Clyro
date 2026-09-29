@@ -89,7 +89,7 @@ enum ProjectPurgeProbe {
             .split(whereSeparator: \.isNewline)
             .map { ($0.trimmingCharacters(in: .whitespaces) as NSString).expandingTildeInPath }
             .filter { !$0.isEmpty }
-        // Wie bei Mole: Sind eigene Ordner eingetragen, werden nur diese durchsucht.
+        // Sind eigene Ordner eingetragen, werden nur diese durchsucht.
         let roots = custom.isEmpty
             ? defaultRoots.map { home.appendingPathComponent($0, isDirectory: true) }
             : custom.map { URL(fileURLWithPath: $0, isDirectory: true) }
@@ -193,7 +193,7 @@ struct UninstallResult {
 }
 
 enum AppRemnantProbe {
-    /// Apple-Apps, die sich wie bei Mole deinstallieren lassen (Xcode, iWork, iMovie, GarageBand, Final Cut …).
+    /// Apple-Apps, die sich deinstallieren lassen (Xcode, iWork, iMovie, GarageBand, Final Cut …).
     private static let uninstallableApple = [
         "com.apple.dt.*", "com.apple.finalcut*", "com.apple.motion*", "com.apple.compressor*", "com.apple.logic*",
         "com.apple.garageband*", "com.apple.imovie*", "com.apple.iwork.*", "com.apple.mainstage*", "com.apple.server.*",
@@ -215,13 +215,13 @@ enum AppRemnantProbe {
     ]
 
     static func protectionReason(_ app: InstalledApplication) -> String? {
-        if app.url.path.hasPrefix("/System/") { return "Gehört zu macOS" }
+        if app.url.path.hasPrefix("/System/") { return String(localized: "Gehört zu macOS") }
         let identifier = app.bundleIdentifier.lowercased()
         if officialUninstallerPrefixes.contains(where: { identifier.hasPrefix($0) }) {
-            return "Bitte mit dem Deinstallationsprogramm des Herstellers entfernen"
+            return String(localized: "Bitte mit dem Deinstallationsprogramm des Herstellers entfernen")
         }
         if identifier.hasPrefix("com.apple."), !uninstallableApple.contains(where: { fnmatch($0, identifier, 0) == 0 }) {
-            return "Gehört zu macOS"
+            return String(localized: "Gehört zu macOS")
         }
         return nil
     }

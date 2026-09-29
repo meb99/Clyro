@@ -223,11 +223,11 @@ struct UpdatesView: View {
         Group {
             if !hasChecked || isChecking {
                 ClyroStartStage(
-                    title: "Nach Updates suchen",
-                    message: "Clyro fragt den App Store und die Update-Server deiner Apps nach neuen Versionen. Es wird nichts installiert.",
-                    buttonTitle: "Nach Updates suchen",
-                    busyTitle: "Suche nach Updates",
-                    busyMessage: progressTotal > 0 ? "\(progressDone) / \(progressTotal) Apps geprüft …" : "Apps werden gesammelt …",
+                    title: String(localized: "Nach Updates suchen"),
+                    message: String(localized: "Clyro fragt den App Store und die Update-Server deiner Apps nach neuen Versionen. Es wird nichts installiert."),
+                    buttonTitle: String(localized: "Nach Updates suchen"),
+                    busyTitle: String(localized: "Suche nach Updates"),
+                    busyMessage: progressTotal > 0 ? String(localized: "\(progressDone) / \(progressTotal) Apps geprüft …") : String(localized: "Apps werden gesammelt …"),
                     accent: accent,
                     isBusy: isChecking,
                     action: { check() }
@@ -330,15 +330,15 @@ private struct UpdateRow: View {
 
     private var sourceLabel: String {
         switch update.source {
-        case .appStore: "App Store"
-        case .sparkle: "Hersteller"
+        case .appStore: String(localized: "App Store")
+        case .sparkle: String(localized: "Hersteller")
         }
     }
 
     private var buttonTitle: String {
         switch update.source {
-        case .appStore: "Im App Store"
-        case .sparkle: "App öffnen"
+        case .appStore: String(localized: "Im App Store")
+        case .sparkle: String(localized: "App öffnen")
         }
     }
 

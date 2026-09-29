@@ -71,7 +71,7 @@ final class CleanupScanner: ObservableObject {
         case failed(String)
     }
 
-    /// Wie Mole: Bereinigen löscht endgültig. In den Einstellungen lässt sich stattdessen der Papierkorb wählen.
+    /// Bereinigen löscht standardmäßig endgültig. In den Einstellungen lässt sich stattdessen der Papierkorb wählen.
     static let useTrashKey = "cleanupUseTrash"
 
     @Published var categories: [CleanupCategory] = []
@@ -286,10 +286,10 @@ final class CleanupScanner: ObservableObject {
                 autoCleanRunning = false
                 ClyroNotifier.post(
                     id: "autoclean",
-                    title: "Clyro hat aufgeräumt",
+                    title: String(localized: "Clyro hat aufgeräumt"),
                     body: result.moved > 0
-                        ? "\(ClyroFormat.byteCount(result.bytes)) freigegeben – automatisch, nur empfohlene Einträge."
-                        : "Es gab nichts aufzuräumen."
+                        ? String(localized: "\(ClyroFormat.byteCount(result.bytes)) freigegeben – automatisch, nur empfohlene Einträge.")
+                        : String(localized: "Es gab nichts aufzuräumen.")
                 )
             }
             // Nach dem Aufräumen beginnt wieder der Startbildschirm; Ergebnisse gibt es erst nach einem neuen Scan.
@@ -307,7 +307,7 @@ final class CleanupScanner: ObservableObject {
         cleanLog.append(CleanLogEntry(text: event.name, bytes: event.bytes, isHeader: false))
         while nextMilestone < Self.milestones.count && event.freed >= Self.milestones[nextMilestone] {
             cleanLog.append(CleanLogEntry(
-                text: "\(ClyroFormat.byteCount(Self.milestones[nextMilestone])) überschritten",
+                text: String(localized: "\(ClyroFormat.byteCount(Self.milestones[nextMilestone])) überschritten"),
                 bytes: nil,
                 isHeader: true
             ))
@@ -597,7 +597,7 @@ enum CleanupRules {
         ])
     ]
 
-    /// App-Caches außerhalb von ~/Library/Caches, die Mole gezielt leert.
+    /// App-Caches außerhalb von ~/Library/Caches, die gezielt geleert werden.
     static let appSupport: [CleanupRule] = [
         CleanupRule(kind: .caches, label: "Discord", paths: ["Library/Application Support/discord/Cache/*",
                                                              "Library/Application Support/discord/Code Cache/*"],
@@ -830,7 +830,7 @@ private struct CleanupProbe {
             isSelected: rule.recommended && !locked,
             isLocked: locked,
             isRecommended: rule.recommended,
-            ownerName: rule.label
+            ownerName: L10n.dynamic(rule.label)
         )
         item.ownerBundle = runningOwner
         return item
@@ -847,7 +847,7 @@ private struct CleanupProbe {
         guard !targets.isEmpty else { return nil }
         let bytes = measure(targets)
         guard bytes > 0 else { return nil }
-        return CleanupItem(url: root, targets: targets, bytes: bytes, isSelected: true, ownerName: "App-Protokolle")
+        return CleanupItem(url: root, targets: targets, bytes: bytes, isSelected: true, ownerName: String(localized: "App-Protokolle"))
     }
 
     private func incompleteDownloadsItem(whitelist: [String]) -> CleanupItem? {
@@ -861,7 +861,7 @@ private struct CleanupProbe {
         guard !targets.isEmpty else { return nil }
         let bytes = measure(targets)
         guard bytes > 0 else { return nil }
-        return CleanupItem(url: root, targets: targets, bytes: bytes, isSelected: true, ownerName: "Unvollständige Downloads")
+        return CleanupItem(url: root, targets: targets, bytes: bytes, isSelected: true, ownerName: String(localized: "Unvollständige Downloads"))
     }
 
     /// Jeder Ordner in ~/Library/Caches wird ein eigener Eintrag. Gelöscht wird sein Inhalt.
@@ -944,6 +944,7 @@ private struct CleanupProbe {
         return grouped.compactMap { identifier, urls in
             let bytes = measure(urls)
             guard bytes > 0 else { return nil }
+            let places = urls.map { $0.deletingLastPathComponent().lastPathComponent }.joined(separator: ", ")
             return CleanupItem(
                 url: urls[0],
                 targets: urls,
@@ -951,7 +952,7 @@ private struct CleanupProbe {
                 isSelected: false,
                 isRecommended: false,
                 ownerName: identifier,
-                detail: "\(urls.count) Ort(e) · \(urls.map { $0.deletingLastPathComponent().lastPathComponent }.joined(separator: ", "))"
+                detail: String(localized: "\(urls.count) Orte · \(places)")
             )
         }
     }
@@ -960,8 +961,9 @@ private struct CleanupProbe {
 
     private func installerItems(whitelist: [String]) -> [CleanupItem] {
         let roots: [(String, String)] = [
-            ("Downloads", "Downloads"), ("Desktop", "Schreibtisch"), ("Documents", "Dokumente"), ("Public", "Öffentlich"),
-            ("Library/Downloads", "Library"), ("/Users/Shared", "Geteilt"), ("Library/Caches/Homebrew", "Homebrew"),
+            ("Downloads", String(localized: "Downloads")), ("Desktop", String(localized: "Schreibtisch")),
+            ("Documents", String(localized: "Dokumente")), ("Public", String(localized: "Öffentlich")),
+            ("Library/Downloads", "Library"), ("/Users/Shared", String(localized: "Geteilt")), ("Library/Caches/Homebrew", "Homebrew"),
             ("Library/Mobile Documents/com~apple~CloudDocs/Downloads", "iCloud"),
             ("Library/Containers/com.apple.mail/Data/Library/Mail Downloads", "Mail"),
             ("Library/Application Support/Telegram Desktop", "Telegram"), ("Downloads/Telegram Desktop", "Telegram")
@@ -999,7 +1001,7 @@ private struct CleanupProbe {
                 isSelected: settled,
                 isRecommended: settled,
                 ownerName: "\(artifact.projectName) · \(artifact.kind.title)",
-                detail: "\(artifact.locationName) · \(artifact.ageDays) Tage"
+                detail: String(localized: "\(artifact.locationName) · \(artifact.ageDays) Tage")
             )
         }
     }

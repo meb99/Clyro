@@ -35,8 +35,8 @@ struct OptimizeView: View {
 
     private var startStage: some View {
         ClyroStartStage(
-            title: "Frühling für deinen Mac –\nein paar Handgriffe, und alles blüht auf.",
-            buttonTitle: "Optimieren",
+            title: String(localized: "Routinewartung für macOS\nin einem Durchgang."),
+            buttonTitle: String(localized: "Optimieren"),
             accent: accent,
             action: { run() }
         ) {
@@ -58,7 +58,7 @@ struct OptimizeView: View {
                 .font(.system(size: 34, weight: .bold))
             HStack(spacing: 10) {
                 Circle().fill(accent).frame(width: 9, height: 9)
-                Text("\(runCurrent.isEmpty ? "Wird vorbereitet" : runCurrent) · \(runDone) / \(tasks.count)")
+                Text("\(runCurrent.isEmpty ? String(localized: "Wird vorbereitet") : runCurrent) · \(runDone) / \(tasks.count)")
                     .font(.system(size: 15, weight: .medium))
                     .foregroundStyle(.white.opacity(0.62))
                     .lineLimit(1)
@@ -115,11 +115,11 @@ struct OptimizeView: View {
 
     private var summaryLine: String {
         var parts: [String] = []
-        if let value = counts[.unchanged], value > 0 { parts.append("\(value) unverändert") }
-        if let value = counts[.skipped], value > 0 { parts.append("\(value) übersprungen") }
-        if let value = counts[.unavailable], value > 0 { parts.append("\(value) nicht verfügbar") }
-        if let value = counts[.failed], value > 0 { parts.append("\(value) fehlgeschlagen") }
-        return parts.isEmpty ? "Alles läuft wieder rund." : parts.joined(separator: " · ")
+        if let value = counts[.unchanged], value > 0 { parts.append(String(localized: "\(value) unverändert")) }
+        if let value = counts[.skipped], value > 0 { parts.append(String(localized: "\(value) übersprungen")) }
+        if let value = counts[.unavailable], value > 0 { parts.append(String(localized: "\(value) nicht verfügbar")) }
+        if let value = counts[.failed], value > 0 { parts.append(String(localized: "\(value) fehlgeschlagen")) }
+        return parts.isEmpty ? String(localized: "Alle Aufgaben abgeschlossen.") : parts.joined(separator: " · ")
     }
 
     private var doneStage: some View {
@@ -127,7 +127,7 @@ struct OptimizeView: View {
         return VStack(spacing: 10) {
             ClyroGardenScene(phase: .bloom, growth: 0.66, accent: accent, startGrowth: 0.34)
                 .frame(width: 340, height: 290)
-            Text(previewRun ? "Vorschau abgeschlossen" : "\(applied) Optimierungen angewendet")
+            Text(previewRun ? String(localized: "Vorschau abgeschlossen") : String(localized: "\(applied) Optimierungen angewendet"))
                 .font(.system(size: 30, weight: .bold, design: .rounded))
             Text(summaryLine)
                 .font(.system(size: 14, weight: .medium))

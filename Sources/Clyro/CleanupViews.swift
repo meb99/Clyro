@@ -53,9 +53,9 @@ struct CleanupView: View {
 
     private var startStage: some View {
         ClyroStartStage(
-            title: "Der Winter räumt auf –\nund macht Platz für Neues.",
-            buttonTitle: "Mac scannen",
-            busyTitle: "Wird durchsucht · \(ClyroFormat.byteCount(cleaner.progressBytes))",
+            title: String(localized: "Findet Caches, Protokolle und Überbleibsel,\ndie sich sicher entfernen lassen."),
+            buttonTitle: String(localized: "Mac scannen"),
+            busyTitle: String(localized: "Wird durchsucht · \(ClyroFormat.byteCount(cleaner.progressBytes))"),
             busyMessage: displayPath(cleaner.progressPath),
             accent: accent,
             isBusy: cleaner.state == .scanning,
@@ -121,7 +121,7 @@ struct CleanupView: View {
         .font(.system(size: 14, weight: .medium))
     }
 
-    private func circleButton(_ symbol: String, help: String, action: @escaping () -> Void) -> some View {
+    private func circleButton(_ symbol: String, help: LocalizedStringKey, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Image(systemName: symbol)
                 .font(.system(size: 14, weight: .semibold))
@@ -148,7 +148,9 @@ struct CleanupView: View {
             Button {
                 cleaner.cleanSelected()
             } label: {
-                Text("\(cleaner.usesTrash ? "In den Papierkorb" : "Endgültig löschen") · \(ClyroFormat.byteCount(cleaner.selectedBytes))")
+                Text(cleaner.usesTrash
+                     ? String(localized: "In den Papierkorb · \(ClyroFormat.byteCount(cleaner.selectedBytes))")
+                     : String(localized: "Endgültig löschen · \(ClyroFormat.byteCount(cleaner.selectedBytes))"))
             }
             .buttonStyle(ClyroPillButtonStyle())
             .disabled(cleaner.selectedItems == 0)
@@ -157,7 +159,7 @@ struct CleanupView: View {
         .padding(.top, 4)
     }
 
-    private func linkButton(_ title: String, action: @escaping () -> Void) -> some View {
+    private func linkButton(_ title: LocalizedStringKey, action: @escaping () -> Void) -> some View {
         Button(title, action: action)
             .buttonStyle(.plain)
             .foregroundStyle(accent)
@@ -174,7 +176,7 @@ struct CleanupView: View {
                 .monospacedDigit()
             HStack(spacing: 10) {
                 Circle().fill(accent).frame(width: 9, height: 9)
-                Text("\(cleaner.cleanCurrent.isEmpty ? "Wird vorbereitet" : cleaner.cleanCurrent) · \(cleaner.cleanDone) / \(cleaner.cleanTotal)")
+                Text("\(cleaner.cleanCurrent.isEmpty ? String(localized: "Wird vorbereitet") : cleaner.cleanCurrent) · \(cleaner.cleanDone) / \(cleaner.cleanTotal)")
                     .font(.system(size: 15, weight: .medium))
                     .foregroundStyle(.white.opacity(0.62))
                     .lineLimit(1)
@@ -195,7 +197,7 @@ struct CleanupView: View {
                 .frame(width: 340, height: 290)
             Text("\(ClyroFormat.byteCount(celebration.bytes)) freigegeben")
                 .font(.system(size: 30, weight: .bold, design: .rounded))
-            Text("Frisch verschneit und aufgeräumt – dein Mac hat wieder Platz.")
+            Text("Die Bereinigung ist abgeschlossen.")
                 .font(.system(size: 14, weight: .medium))
                 .foregroundStyle(.secondary)
             Button("Weiter") { cleaner.dismissCelebration() }

@@ -14,21 +14,21 @@ enum AppSection: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .overview: "Übersicht"
-        case .cleanup: "Bereinigen"
-        case .optimize: "Optimieren"
-        case .storage: "Speicher"
-        case .explorer: "Ordner"
-        case .applications: "Apps"
-        case .startup: "Autostart"
-        case .history: "Verlauf"
+        case .overview: String(localized: "Übersicht")
+        case .cleanup: String(localized: "Bereinigen")
+        case .optimize: String(localized: "Optimieren")
+        case .storage: String(localized: "Speicher")
+        case .explorer: String(localized: "Ordner")
+        case .applications: String(localized: "Apps")
+        case .startup: String(localized: "Autostart")
+        case .history: String(localized: "Verlauf")
         }
     }
 
     var tabTitle: String {
         switch self {
-        case .overview: "Status"
-        case .optimize: "Wartung"
+        case .overview: String(localized: "Status")
+        case .optimize: String(localized: "Wartung")
         default: title
         }
     }
@@ -59,11 +59,11 @@ enum NavGroup: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .clean: "Bereinigen"
-        case .apps: "Apps"
-        case .optimize: "Optimieren"
-        case .analyze: "Analyse"
-        case .status: "Status"
+        case .clean: String(localized: "Bereinigen")
+        case .apps: String(localized: "Apps")
+        case .optimize: String(localized: "Optimieren")
+        case .analyze: String(localized: "Analyse")
+        case .status: String(localized: "Status")
         }
     }
 
@@ -174,15 +174,15 @@ struct SystemSnapshot: Hashable {
 
     var thermalText: String {
         switch thermalState {
-        case .nominal: "Kühl und ruhig"
-        case .fair: "Leicht erwärmt"
-        case .serious: "Heiß – Leistung gedrosselt"
-        case .critical: "Kritisch heiß"
-        @unknown default: "Unbekannt"
+        case .nominal: String(localized: "Kühl und ruhig")
+        case .fair: String(localized: "Leicht erwärmt")
+        case .serious: String(localized: "Heiß – Leistung gedrosselt")
+        case .critical: String(localized: "Kritisch heiß")
+        @unknown default: String(localized: "Unbekannt")
         }
     }
 
-    /// Gesundheitswert nach denselben Schwellen wie Mole: CPU, Arbeitsspeicher, Festplatte, SMART, Temperatur, I/O, Akku, Laufzeit.
+    /// Gesundheitswert aus gewichteten Schwellen für CPU, Arbeitsspeicher, Festplatte, SMART, Temperatur, I/O, Akku, Laufzeit.
     var health: (score: Int, issues: [String]) {
         var score = 100.0
         var issues: [String] = []
@@ -194,34 +194,34 @@ struct SystemSnapshot: Hashable {
         }
 
         score -= penalty(cpuPercent, normal: 50, high: 85, weight: 30)
-        if cpuPercent > 85 { issues.append("Hohe CPU-Last") }
+        if cpuPercent > 85 { issues.append(String(localized: "Hohe CPU-Last")) }
 
         score -= penalty(memoryPercent, normal: 70, high: 88, weight: 25)
-        if memoryPercent > 88 { issues.append("Wenig Arbeitsspeicher") }
+        if memoryPercent > 88 { issues.append(String(localized: "Wenig Arbeitsspeicher")) }
         switch memoryPressureLevel {
         case 2:
             score -= 5
-            issues.append("Speicherdruck")
+            issues.append(String(localized: "Speicherdruck"))
         case 4:
             score -= 15
-            issues.append("Kritischer Speicherdruck")
+            issues.append(String(localized: "Kritischer Speicherdruck"))
         default:
             break
         }
 
         if diskTotalBytes > 0 {
             score -= penalty(diskPercent, normal: 80, high: 93, weight: 20)
-            if diskPercent > 93 { issues.append("Festplatte fast voll") }
+            if diskPercent > 93 { issues.append(String(localized: "Festplatte fast voll")) }
         }
         if smartStatus == .failing {
             score = min(score, 44)
-            issues.append("SMART meldet Fehler")
+            issues.append(String(localized: "SMART meldet Fehler"))
         }
 
         if let temperature = temperatureCelsius, temperature > 65 {
             if temperature > 85 {
                 score -= 15
-                issues.append("Überhitzung")
+                issues.append(String(localized: "Überhitzung"))
             } else {
                 score -= 15 * (temperature - 65) / 20
             }
@@ -231,7 +231,7 @@ struct SystemSnapshot: Hashable {
         if ioMegabytes > 50 {
             if ioMegabytes > 150 {
                 score -= 10
-                issues.append("Hohe Festplattenlast")
+                issues.append(String(localized: "Hohe Festplattenlast"))
             } else {
                 score -= 10 * (ioMegabytes - 50) / 100
             }
@@ -242,7 +242,7 @@ struct SystemSnapshot: Hashable {
             let capacity = battery.healthPercent ?? 100
             if cycles > 900 || capacity < 60 {
                 score -= 5
-                issues.append("Akku bald tauschen")
+                issues.append(String(localized: "Akku bald tauschen"))
             } else if cycles > 800 || capacity < 80 {
                 score -= 2
             }
@@ -250,7 +250,7 @@ struct SystemSnapshot: Hashable {
 
         if uptime > 14 * 86_400 {
             score -= 3
-            issues.append("Neustart empfohlen")
+            issues.append(String(localized: "Neustart empfohlen"))
         } else if uptime > 7 * 86_400 {
             score -= 1
         }
@@ -262,10 +262,10 @@ struct SystemSnapshot: Hashable {
 
     var healthText: String {
         switch healthScore {
-        case 85...: "Ausgezeichnet"
-        case 65...: "Gut"
-        case 45...: "Mittel"
-        default: "Aufmerksamkeit nötig"
+        case 85...: String(localized: "Ausgezeichnet")
+        case 65...: String(localized: "Gut")
+        case 45...: String(localized: "Mittel")
+        default: String(localized: "Aufmerksamkeit nötig")
         }
     }
 
@@ -301,37 +301,37 @@ enum CleanupKind: String, CaseIterable, Codable, Identifiable {
 
     var title: String {
         switch self {
-        case .caches: "App-Caches"
-        case .systemCaches: "System-Caches"
-        case .other: "Sonstiges"
-        case .developerData: "Entwicklerwerkzeuge"
-        case .aiTools: "KI-Werkzeuge"
-        case .browserCaches: "Browser"
-        case .appRemnants: "Reste deinstallierter Apps"
-        case .installers: "Installationsdateien"
-        case .projectArtifacts: "Projekt-Artefakte"
-        case .trash: "Papierkorb"
-        case .adminSystem: "Systembereiche (Admin)"
-        case .logs: "Protokolle"
-        case .packageCaches: "Paket-Caches"
+        case .caches: String(localized: "App-Caches")
+        case .systemCaches: String(localized: "System-Caches")
+        case .other: String(localized: "Sonstiges")
+        case .developerData: String(localized: "Entwicklerwerkzeuge")
+        case .aiTools: String(localized: "KI-Werkzeuge")
+        case .browserCaches: String(localized: "Browser")
+        case .appRemnants: String(localized: "Reste deinstallierter Apps")
+        case .installers: String(localized: "Installationsdateien")
+        case .projectArtifacts: String(localized: "Projekt-Artefakte")
+        case .trash: String(localized: "Papierkorb")
+        case .adminSystem: String(localized: "Systembereiche (Admin)")
+        case .logs: String(localized: "Protokolle")
+        case .packageCaches: String(localized: "Paket-Caches")
         }
     }
 
     var detail: String {
         switch self {
-        case .caches: "Temporäre App-Dateien. Werden beim nächsten Start neu erstellt."
-        case .systemCaches: "Von macOS verwaltete Caches. Werden automatisch neu erstellt."
-        case .other: "Protokolle, Diagnoseberichte und verschiedene einmalige Caches."
-        case .developerData: "Xcode / SwiftPM / node Caches. Der erste Build dauert etwas länger."
-        case .aiTools: "Temporäre KI-App-Caches. Gespräche, Projekte und lokale Modelle bleiben erhalten."
-        case .browserCaches: "Browser-Caches. Cookies und Sitzungen bleiben erhalten."
-        case .appRemnants: "Daten von Apps, die nicht mehr auf diesem Mac installiert sind."
-        case .installers: "DMG-, PKG-, ISO-, XIP- und Installer-ZIP-Dateien."
-        case .projectArtifacts: "Wiederherstellbare Build-Ordner wie node_modules, target oder .build."
-        case .trash: "Leert den Papierkorb endgültig."
-        case .adminSystem: "Systemweite Caches, Protokolle und Diagnosedaten älter als 7 Tage. macOS fragt einmal nach deinem Passwort."
-        case .logs: "Protokoll- und Absturzdateien"
-        case .packageCaches: "Downloads von Paketmanagern"
+        case .caches: String(localized: "Temporäre App-Dateien. Werden beim nächsten Start neu erstellt.")
+        case .systemCaches: String(localized: "Von macOS verwaltete Caches. Werden automatisch neu erstellt.")
+        case .other: String(localized: "Protokolle, Diagnoseberichte und verschiedene einmalige Caches.")
+        case .developerData: String(localized: "Xcode / SwiftPM / node Caches. Der erste Build dauert etwas länger.")
+        case .aiTools: String(localized: "Temporäre KI-App-Caches. Gespräche, Projekte und lokale Modelle bleiben erhalten.")
+        case .browserCaches: String(localized: "Browser-Caches. Cookies und Sitzungen bleiben erhalten.")
+        case .appRemnants: String(localized: "Daten von Apps, die nicht mehr auf diesem Mac installiert sind.")
+        case .installers: String(localized: "DMG-, PKG-, ISO-, XIP- und Installer-ZIP-Dateien.")
+        case .projectArtifacts: String(localized: "Wiederherstellbare Build-Ordner wie node_modules, target oder .build.")
+        case .trash: String(localized: "Leert den Papierkorb endgültig.")
+        case .adminSystem: String(localized: "Systemweite Caches, Protokolle und Diagnosedaten älter als 7 Tage. macOS fragt einmal nach deinem Passwort.")
+        case .logs: String(localized: "Protokoll- und Absturzdateien")
+        case .packageCaches: String(localized: "Downloads von Paketmanagern")
         }
     }
 
@@ -470,13 +470,13 @@ enum LargeFileKind: String, CaseIterable, Hashable {
 
     var title: String {
         switch self {
-        case .video: "Video"
-        case .archive: "Archiv"
-        case .installer: "Installer"
-        case .image: "Bild"
-        case .audio: "Audio"
-        case .document: "Dokument"
-        case .other: "Sonstiges"
+        case .video: String(localized: "Video")
+        case .archive: String(localized: "Archiv")
+        case .installer: String(localized: "Installer")
+        case .image: String(localized: "Bild")
+        case .audio: String(localized: "Audio")
+        case .document: String(localized: "Dokument")
+        case .other: String(localized: "Sonstiges")
         }
     }
 

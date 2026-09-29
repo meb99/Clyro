@@ -102,26 +102,26 @@ enum OptimizeCatalog {
     }
 
     static let tasks: [OptimizeTask] = [
-        OptimizeTask(id: "dns", group: "Netzwerk & Suche", title: "DNS-Cache leeren",
-                     detail: "Löst veraltete Adressen, wenn Webseiten oder Server umgezogen sind.") { dry in
-            if dry { return OptimizeReport(result: .applied, message: "Vorschau") }
+        OptimizeTask(id: "dns", group: String(localized: "Netzwerk & Suche"), title: String(localized: "DNS-Cache leeren"),
+                     detail: String(localized: "Löst veraltete Adressen, wenn Webseiten oder Server umgezogen sind.")) { dry in
+            if dry { return OptimizeReport(result: .applied, message: String(localized: "Vorschau")) }
             let result = Shell.run("/usr/bin/dscacheutil", ["-flushcache"])
             return result.ok
-                ? OptimizeReport(result: .applied, message: "DNS-Cache geleert")
-                : OptimizeReport(result: .failed, message: "DNS-Cache ließ sich nicht leeren")
+                ? OptimizeReport(result: .applied, message: String(localized: "DNS-Cache geleert"))
+                : OptimizeReport(result: .failed, message: String(localized: "DNS-Cache ließ sich nicht leeren"))
         },
-        OptimizeTask(id: "spotlight-status", group: "Netzwerk & Suche", title: "Spotlight-Index prüfen",
-                     detail: "Prüft, ob die Suche aktiv ist. Verändert nichts.") { _ in
+        OptimizeTask(id: "spotlight-status", group: String(localized: "Netzwerk & Suche"), title: String(localized: "Spotlight-Index prüfen"),
+                     detail: String(localized: "Prüft, ob die Suche aktiv ist. Verändert nichts.")) { _ in
             let result = Shell.run("/usr/bin/mdutil", ["-s", "/"], timeout: 10)
-            guard result.ok else { return OptimizeReport(result: .unavailable, message: "Status nicht lesbar") }
+            guard result.ok else { return OptimizeReport(result: .unavailable, message: String(localized: "Status nicht lesbar")) }
             if result.output.localizedCaseInsensitiveContains("disabled") {
-                return OptimizeReport(result: .unchanged, message: "Spotlight ist deaktiviert")
+                return OptimizeReport(result: .unchanged, message: String(localized: "Spotlight ist deaktiviert"))
             }
-            return OptimizeReport(result: .unchanged, message: "Spotlight-Index geprüft")
+            return OptimizeReport(result: .unchanged, message: String(localized: "Spotlight-Index geprüft"))
         },
-        OptimizeTask(id: "finder-cache", group: "Finder", title: "Vorschau- und Symbol-Cache auffrischen",
-                     detail: "Erneuert Quick-Look-Miniaturen und den Symbol-Cache.") { dry in
-            if dry { return OptimizeReport(result: .applied, message: "Vorschau") }
+        OptimizeTask(id: "finder-cache", group: String(localized: "Finder"), title: String(localized: "Vorschau- und Symbol-Cache auffrischen"),
+                     detail: String(localized: "Erneuert Quick-Look-Miniaturen und den Symbol-Cache.")) { dry in
+            if dry { return OptimizeReport(result: .applied, message: String(localized: "Vorschau")) }
             var failures = 0
             if !Shell.run("/usr/bin/qlmanage", ["-r", "cache"]).ok { failures += 1 }
             if !Shell.run("/usr/bin/qlmanage", ["-r"]).ok { failures += 1 }
@@ -132,34 +132,34 @@ enum OptimizeCatalog {
                 if (try? FileManager.default.removeItem(at: url)) == nil { failures += 1 }
             }
             return failures == 0
-                ? OptimizeReport(result: .applied, message: "Miniaturen und Symbole erneuert")
-                : OptimizeReport(result: .failed, message: "\(failures) Schritt(e) fehlgeschlagen")
+                ? OptimizeReport(result: .applied, message: String(localized: "Miniaturen und Symbole erneuert"))
+                : OptimizeReport(result: .failed, message: String(localized: "\(failures) Schritt(e) fehlgeschlagen"))
         },
-        OptimizeTask(id: "dsstore", group: "Finder", title: ".DS_Store auf Netz- und USB-Laufwerken verhindern",
-                     detail: "Finder legt auf fremden Laufwerken keine .DS_Store-Dateien mehr an.") { dry in
+        OptimizeTask(id: "dsstore", group: String(localized: "Finder"), title: String(localized: ".DS_Store auf Netz- und USB-Laufwerken verhindern"),
+                     detail: String(localized: "Finder legt auf fremden Laufwerken keine .DS_Store-Dateien mehr an.")) { dry in
             let keys = ["DSDontWriteNetworkStores", "DSDontWriteUSBStores"]
             let missing = keys.filter { !Defaults.isTrue("com.apple.desktopservices", $0) }
-            if missing.isEmpty { return OptimizeReport(result: .unchanged, message: "Bereits aktiv") }
-            if dry { return OptimizeReport(result: .applied, message: "Vorschau") }
+            if missing.isEmpty { return OptimizeReport(result: .unchanged, message: String(localized: "Bereits aktiv")) }
+            if dry { return OptimizeReport(result: .applied, message: String(localized: "Vorschau")) }
             let failed = missing.filter { !Shell.run("/usr/bin/defaults", ["write", "com.apple.desktopservices", $0, "-bool", "true"]).ok }
             return failed.isEmpty
-                ? OptimizeReport(result: .applied, message: "Für Netz- und USB-Laufwerke aktiviert")
-                : OptimizeReport(result: .failed, message: "Einstellung ließ sich nicht setzen")
+                ? OptimizeReport(result: .applied, message: String(localized: "Für Netz- und USB-Laufwerke aktiviert"))
+                : OptimizeReport(result: .failed, message: String(localized: "Einstellung ließ sich nicht setzen"))
         },
-        OptimizeTask(id: "saved-states", group: "Apps", title: "Alte App-Zustände entfernen",
-                     detail: "Löscht gespeicherte Fensterzustände, die älter als 30 Tage sind.") { dry in
+        OptimizeTask(id: "saved-states", group: String(localized: "Apps"), title: String(localized: "Alte App-Zustände entfernen"),
+                     detail: String(localized: "Löscht gespeicherte Fensterzustände, die älter als 30 Tage sind.")) { dry in
             let root = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library/Saved Application State")
             let threshold = Date().addingTimeInterval(-30 * 86_400)
             let old = FileScan.children(of: root).filter {
                 $0.pathExtension == "savedState" && (FileScan.modified($0) ?? .distantFuture) < threshold
             }
-            if old.isEmpty { return OptimizeReport(result: .unchanged, message: "Keine alten Zustände") }
-            if dry { return OptimizeReport(result: .applied, message: "Vorschau: \(old.count) Zustände") }
+            if old.isEmpty { return OptimizeReport(result: .unchanged, message: String(localized: "Keine alten Zustände")) }
+            if dry { return OptimizeReport(result: .applied, message: String(localized: "Vorschau: \(old.count) Zustände")) }
             let removed = old.filter { (try? FileManager.default.removeItem(at: $0)) != nil }.count
-            return OptimizeReport(result: removed > 0 ? .applied : .failed, message: "\(removed) alte Zustände entfernt")
+            return OptimizeReport(result: removed > 0 ? .applied : .failed, message: String(localized: "\(removed) alte Zustände entfernt"))
         },
-        OptimizeTask(id: "broken-prefs", group: "Apps", title: "Defekte Einstellungen reparieren",
-                     detail: "Entfernt beschädigte Einstellungsdateien. Die App legt sie neu an.") { dry in
+        OptimizeTask(id: "broken-prefs", group: String(localized: "Apps"), title: String(localized: "Defekte Einstellungen reparieren"),
+                     detail: String(localized: "Entfernt beschädigte Einstellungsdateien. Die App legt sie neu an.")) { dry in
             let prefs = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library/Preferences")
             let candidates = FileScan.children(of: prefs).filter { $0.pathExtension == "plist" && !Defaults.isProtectedPreference($0, protectLoginWindow: true) }
                 + FileScan.children(of: prefs.appendingPathComponent("ByHost")).filter { $0.pathExtension == "plist" && !Defaults.isProtectedPreference($0, protectLoginWindow: false) }
@@ -169,18 +169,18 @@ enum OptimizeCatalog {
                 guard !CleanupWhitelist.matches(url), !Plist.isValid(url) else { continue }
                 broken.append(url)
             }
-            if broken.isEmpty { return OptimizeReport(result: .unchanged, message: "Alle Einstellungsdateien gültig") }
-            if dry { return OptimizeReport(result: .applied, message: "Vorschau: \(broken.count) defekt") }
+            if broken.isEmpty { return OptimizeReport(result: .unchanged, message: String(localized: "Alle Einstellungsdateien gültig")) }
+            if dry { return OptimizeReport(result: .applied, message: String(localized: "Vorschau: \(broken.count) defekt")) }
             let removed = broken.filter { (try? FileManager.default.removeItem(at: $0)) != nil }.count
-            return OptimizeReport(result: .applied, message: "\(removed) defekte Dateien repariert")
+            return OptimizeReport(result: .applied, message: String(localized: "\(removed) defekte Dateien repariert"))
         },
-        OptimizeTask(id: "databases", group: "Apps", title: "Datenbanken optimieren",
-                     detail: "Verdichtet die Datenbanken von Mail, Safari und Nachrichten.") { dry in
+        OptimizeTask(id: "databases", group: String(localized: "Apps"), title: String(localized: "Datenbanken optimieren"),
+                     detail: String(localized: "Verdichtet die Datenbanken von Mail, Safari und Nachrichten.")) { dry in
             let blocking = [("com.apple.mail", "Mail"), ("com.apple.Safari", "Safari"), ("com.apple.MobileSMS", "Nachrichten")]
                 .filter { !NSRunningApplication.runningApplications(withBundleIdentifier: $0.0).isEmpty }
                 .map(\.1)
             if !blocking.isEmpty {
-                return OptimizeReport(result: .skipped, message: "Erst schließen: \(blocking.joined(separator: ", "))")
+                return OptimizeReport(result: .skipped, message: String(localized: "Erst schließen: \(blocking.joined(separator: ", "))"))
             }
             let home = FileManager.default.homeDirectoryForCurrentUser
             var databases = ["Library/Messages/chat.db", "Library/Safari/History.db", "Library/Safari/TopSites.db"]
@@ -190,7 +190,7 @@ enum OptimizeCatalog {
                 databases.append(version.appendingPathComponent("MailData/Envelope Index"))
             }
             databases = databases.filter { FileManager.default.isReadableFile(atPath: $0.path) }
-            if databases.isEmpty { return OptimizeReport(result: .unavailable, message: "Keine Datenbanken zugänglich") }
+            if databases.isEmpty { return OptimizeReport(result: .unavailable, message: String(localized: "Keine Datenbanken zugänglich")) }
 
             var compacted = 0
             var optimal = 0
@@ -204,37 +204,37 @@ enum OptimizeCatalog {
                 guard check.ok, check.output == "ok" else { continue }
                 if Shell.run("/usr/bin/sqlite3", [database.path, "VACUUM;"], timeout: 60).ok { compacted += 1 }
             }
-            if compacted > 0 { return OptimizeReport(result: .applied, message: "\(compacted) Datenbanken verdichtet") }
-            return OptimizeReport(result: .unchanged, message: optimal > 0 ? "Bereits optimal" : "Nichts zu verdichten")
+            if compacted > 0 { return OptimizeReport(result: .applied, message: String(localized: "\(compacted) Datenbanken verdichtet")) }
+            return OptimizeReport(result: .unchanged, message: optimal > 0 ? String(localized: "Bereits optimal") : String(localized: "Nichts zu verdichten"))
         },
-        OptimizeTask(id: "legacy", group: "Apps", title: "Alte Tuning-Einstellungen entfernen",
-                     detail: "Entfernt versteckte App-Nap- und Image-Prüf-Schalter alter Tuning-Tools.") { dry in
+        OptimizeTask(id: "legacy", group: String(localized: "Apps"), title: String(localized: "Alte Tuning-Einstellungen entfernen"),
+                     detail: String(localized: "Entfernt versteckte App-Nap- und Image-Prüf-Schalter alter Tuning-Tools.")) { dry in
             var found: [(String, String)] = []
             if Defaults.isTrue("-g", "NSAppSleepDisabled") { found.append(("-g", "NSAppSleepDisabled")) }
             for key in ["skip-verify", "skip-verify-locked", "skip-verify-remote"] where Defaults.isTrue("com.apple.frameworks.diskimages", key) {
                 found.append(("com.apple.frameworks.diskimages", key))
             }
-            if found.isEmpty { return OptimizeReport(result: .unchanged, message: "Keine alten Schalter gefunden") }
-            if dry { return OptimizeReport(result: .applied, message: "Vorschau: \(found.count) Schalter") }
+            if found.isEmpty { return OptimizeReport(result: .unchanged, message: String(localized: "Keine alten Schalter gefunden")) }
+            if dry { return OptimizeReport(result: .applied, message: String(localized: "Vorschau: \(found.count) Schalter")) }
             let removed = found.filter { Shell.run("/usr/bin/defaults", ["delete", $0.0, $0.1]).ok }.count
-            return OptimizeReport(result: removed > 0 ? .applied : .failed, message: "\(removed) Schalter entfernt")
+            return OptimizeReport(result: removed > 0 ? .applied : .failed, message: String(localized: "\(removed) Schalter entfernt"))
         },
-        OptimizeTask(id: "shared-lists", group: "Apps", title: "Seitenleisten- und Verlaufslisten reparieren",
-                     detail: "Entfernt beschädigte Favoriten- und Zuletzt-benutzt-Listen des Finders.") { dry in
+        OptimizeTask(id: "shared-lists", group: String(localized: "Apps"), title: String(localized: "Seitenleisten- und Verlaufslisten reparieren"),
+                     detail: String(localized: "Entfernt beschädigte Favoriten- und Zuletzt-benutzt-Listen des Finders.")) { dry in
             let root = FileManager.default.homeDirectoryForCurrentUser
                 .appendingPathComponent("Library/Application Support/com.apple.sharedfilelist")
             guard FileManager.default.fileExists(atPath: root.path) else {
-                return OptimizeReport(result: .unavailable, message: "Keine Listen gefunden")
+                return OptimizeReport(result: .unavailable, message: String(localized: "Keine Listen gefunden"))
             }
             let broken = FileScan.recursive(root) { ["sfl2", "sfl3"].contains($0.pathExtension) }
                 .filter { !$0.path.contains("ApplicationRecentDocuments") && !Plist.isValid($0) }
-            if broken.isEmpty { return OptimizeReport(result: .unchanged, message: "Alle Listen in Ordnung") }
-            if dry { return OptimizeReport(result: .applied, message: "Vorschau: \(broken.count) defekt") }
+            if broken.isEmpty { return OptimizeReport(result: .unchanged, message: String(localized: "Alle Listen in Ordnung")) }
+            if dry { return OptimizeReport(result: .applied, message: String(localized: "Vorschau: \(broken.count) defekt")) }
             let removed = broken.filter { (try? FileManager.default.removeItem(at: $0)) != nil }.count
-            return OptimizeReport(result: .applied, message: "\(removed) Listen repariert")
+            return OptimizeReport(result: .applied, message: String(localized: "\(removed) Listen repariert"))
         },
-        OptimizeTask(id: "launch-agents", group: "Apps", title: "Startobjekte prüfen",
-                     detail: "Findet Launch Agents, deren Programm nicht mehr existiert. Verändert nichts.") { _ in
+        OptimizeTask(id: "launch-agents", group: String(localized: "Apps"), title: String(localized: "Startobjekte prüfen"),
+                     detail: String(localized: "Findet Launch Agents, deren Programm nicht mehr existiert. Verändert nichts.")) { _ in
             let root = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library/LaunchAgents")
             let broken = FileScan.children(of: root).filter { url in
                 guard url.pathExtension == "plist",
@@ -245,84 +245,84 @@ enum OptimizeCatalog {
                 return !FileManager.default.fileExists(atPath: program)
             }
             return broken.isEmpty
-                ? OptimizeReport(result: .unchanged, message: "Alle Startobjekte in Ordnung")
-                : OptimizeReport(result: .unchanged, message: "\(broken.count) verweisen auf fehlende Programme")
+                ? OptimizeReport(result: .unchanged, message: String(localized: "Alle Startobjekte in Ordnung"))
+                : OptimizeReport(result: .unchanged, message: String(localized: "\(broken.count) verweisen auf fehlende Programme"))
         },
-        OptimizeTask(id: "quarantine", group: "Datenschutz", title: "Quarantäne-Verlauf leeren",
-                     detail: "Löscht die Liste, welche Downloads Gatekeeper sich gemerkt hat.") { dry in
+        OptimizeTask(id: "quarantine", group: String(localized: "Datenschutz"), title: String(localized: "Quarantäne-Verlauf leeren"),
+                     detail: String(localized: "Löscht die Liste, welche Downloads Gatekeeper sich gemerkt hat.")) { dry in
             let database = FileManager.default.homeDirectoryForCurrentUser
                 .appendingPathComponent("Library/Preferences/com.apple.LaunchServices.QuarantineEventsV2")
             guard FileManager.default.fileExists(atPath: database.path) else {
-                return OptimizeReport(result: .unchanged, message: "Verlauf bereits leer")
+                return OptimizeReport(result: .unchanged, message: String(localized: "Verlauf bereits leer"))
             }
             let count = Shell.run("/usr/bin/sqlite3", [database.path, "SELECT COUNT(*) FROM LSQuarantineEvent;"], timeout: 10)
             guard count.ok, let rows = Int(count.output) else {
-                return OptimizeReport(result: .unavailable, message: "Verlauf nicht lesbar")
+                return OptimizeReport(result: .unavailable, message: String(localized: "Verlauf nicht lesbar"))
             }
-            if rows == 0 { return OptimizeReport(result: .unchanged, message: "Verlauf bereits leer") }
-            if dry { return OptimizeReport(result: .applied, message: "Vorschau: \(rows) Einträge") }
+            if rows == 0 { return OptimizeReport(result: .unchanged, message: String(localized: "Verlauf bereits leer")) }
+            if dry { return OptimizeReport(result: .applied, message: String(localized: "Vorschau: \(rows) Einträge")) }
             let cleared = Shell.run("/usr/bin/sqlite3", [database.path, "DELETE FROM LSQuarantineEvent; VACUUM;"], timeout: 30)
             return cleared.ok
-                ? OptimizeReport(result: .applied, message: "\(rows) Einträge gelöscht")
-                : OptimizeReport(result: .failed, message: "Verlauf ließ sich nicht leeren")
+                ? OptimizeReport(result: .applied, message: String(localized: "\(rows) Einträge gelöscht"))
+                : OptimizeReport(result: .failed, message: String(localized: "Verlauf ließ sich nicht leeren"))
         },
-        OptimizeTask(id: "notifications", group: "Datenschutz", title: "Mitteilungsdatenbank verkleinern",
-                     detail: "Entfernt zugestellte Mitteilungen, die älter als 30 Tage sind.") { dry in
+        OptimizeTask(id: "notifications", group: String(localized: "Datenschutz"), title: String(localized: "Mitteilungsdatenbank verkleinern"),
+                     detail: String(localized: "Entfernt zugestellte Mitteilungen, die älter als 30 Tage sind.")) { dry in
             guard let database = MaintenancePaths.notificationDatabase() else {
-                return OptimizeReport(result: .unavailable, message: "Datenbank nicht zugänglich")
+                return OptimizeReport(result: .unavailable, message: String(localized: "Datenbank nicht zugänglich"))
             }
             let size = FileProbe.sizeOfItem(at: database)
             if size < 50 * 1_048_576 {
-                return OptimizeReport(result: .unchanged, message: "Datenbank ist schlank (\(ClyroFormat.byteCount(size)))")
+                return OptimizeReport(result: .unchanged, message: String(localized: "Datenbank ist schlank (\(ClyroFormat.byteCount(size)))"))
             }
-            if dry { return OptimizeReport(result: .applied, message: "Vorschau") }
+            if dry { return OptimizeReport(result: .applied, message: String(localized: "Vorschau")) }
             let cleaned = Shell.run("/usr/bin/sqlite3", [database.path,
                 "DELETE FROM record WHERE delivered_date < strftime('%s','now','-30 days'); VACUUM;"], timeout: 60)
-            guard cleaned.ok else { return OptimizeReport(result: .failed, message: "Datenbank ist gesperrt") }
+            guard cleaned.ok else { return OptimizeReport(result: .failed, message: String(localized: "Datenbank ist gesperrt")) }
             _ = Shell.run("/usr/bin/killall", ["NotificationCenter"])
-            return OptimizeReport(result: .applied, message: "Verkleinert (war \(ClyroFormat.byteCount(size)))")
+            return OptimizeReport(result: .applied, message: String(localized: "Verkleinert (war \(ClyroFormat.byteCount(size)))"))
         },
-        OptimizeTask(id: "usage-data", group: "Datenschutz", title: "Alte Nutzungsdaten entfernen",
-                     detail: "Löscht Nutzungsverläufe, die älter als 90 Tage sind.") { dry in
+        OptimizeTask(id: "usage-data", group: String(localized: "Datenschutz"), title: String(localized: "Alte Nutzungsdaten entfernen"),
+                     detail: String(localized: "Löscht Nutzungsverläufe, die älter als 90 Tage sind.")) { dry in
             let database = FileManager.default.homeDirectoryForCurrentUser
                 .appendingPathComponent("Library/Application Support/Knowledge/knowledgeC.db")
             guard FileManager.default.isReadableFile(atPath: database.path) else {
-                return OptimizeReport(result: .unavailable, message: "Datenbank nicht zugänglich")
+                return OptimizeReport(result: .unavailable, message: String(localized: "Datenbank nicht zugänglich"))
             }
             let size = FileProbe.sizeOfItem(at: database)
             if size < 100 * 1_048_576 {
-                return OptimizeReport(result: .unchanged, message: "Datenbank ist schlank (\(ClyroFormat.byteCount(size)))")
+                return OptimizeReport(result: .unchanged, message: String(localized: "Datenbank ist schlank (\(ClyroFormat.byteCount(size)))"))
             }
-            if dry { return OptimizeReport(result: .applied, message: "Vorschau") }
+            if dry { return OptimizeReport(result: .applied, message: String(localized: "Vorschau")) }
             let cleaned = Shell.run("/usr/bin/sqlite3", [database.path,
                 "DELETE FROM ZOBJECT WHERE ZCREATIONDATE < (strftime('%s','now','-90 days') - strftime('%s','2001-01-01')); VACUUM;"], timeout: 60)
             return cleaned.ok
-                ? OptimizeReport(result: .applied, message: "Verkleinert (war \(ClyroFormat.byteCount(size)))")
-                : OptimizeReport(result: .failed, message: "Datenbank ist gesperrt")
+                ? OptimizeReport(result: .applied, message: String(localized: "Verkleinert (war \(ClyroFormat.byteCount(size)))"))
+                : OptimizeReport(result: .failed, message: String(localized: "Datenbank ist gesperrt"))
         },
-        restart("input", "Eingabeumschaltung neu starten", process: "TextInputMenuAgent"),
-        restart("spotlight", "Spotlight neu starten", process: "Spotlight"),
-        restart("notification-center", "Mitteilungszentrale neu starten", process: "NotificationCenter"),
-        restart("pasteboard", "Universelle Zwischenablage neu starten", process: "pboard"),
-        restart("control-center", "Kontrollzentrum neu starten", process: "ControlCenter"),
-        restart("menubar", "Menüleiste neu starten", process: "SystemUIServer"),
-        restart("dock", "Dock neu starten", process: "Dock")
+        restart("input", String(localized: "Eingabeumschaltung neu starten"), process: "TextInputMenuAgent"),
+        restart("spotlight", String(localized: "Spotlight neu starten"), process: "Spotlight"),
+        restart("notification-center", String(localized: "Mitteilungszentrale neu starten"), process: "NotificationCenter"),
+        restart("pasteboard", String(localized: "Universelle Zwischenablage neu starten"), process: "pboard"),
+        restart("control-center", String(localized: "Kontrollzentrum neu starten"), process: "ControlCenter"),
+        restart("menubar", String(localized: "Menüleiste neu starten"), process: "SystemUIServer"),
+        restart("dock", String(localized: "Dock neu starten"), process: "Dock")
     ]
 
     private static func restart(_ id: String, _ title: String, process: String) -> OptimizeTask {
-        OptimizeTask(id: id, group: "Fehlerbehebungen", title: title,
-                     detail: "Startet \(process) neu, falls es hängt.") { dry in
-            if dry { return OptimizeReport(result: .applied, message: "Vorschau") }
+        OptimizeTask(id: id, group: String(localized: "Fehlerbehebungen"), title: title,
+                     detail: String(localized: "Startet \(process) neu, falls es hängt.")) { dry in
+            if dry { return OptimizeReport(result: .applied, message: String(localized: "Vorschau")) }
             let result = Shell.run("/usr/bin/killall", [process], timeout: 10)
             return result.ok
-                ? OptimizeReport(result: .applied, message: "Neu gestartet")
-                : OptimizeReport(result: .unchanged, message: "War nicht aktiv")
+                ? OptimizeReport(result: .applied, message: String(localized: "Neu gestartet"))
+                : OptimizeReport(result: .unchanged, message: String(localized: "War nicht aktiv"))
         }
     }
 
     static func run(_ task: OptimizeTask, dryRun: Bool) -> OptimizeReport {
         if excluded.contains(task.id) {
-            return OptimizeReport(result: .skipped, message: "Ausgeschlossen")
+            return OptimizeReport(result: .skipped, message: String(localized: "Ausgeschlossen"))
         }
         let report = task.work(dryRun)
         if !dryRun && report.result == .applied {

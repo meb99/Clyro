@@ -276,12 +276,12 @@ struct ExplorerView: View {
     private var accent: Color { palette.accent }
 
     private var title: String {
-        if scanner.isRoot { return "Gesamte Festplatte" }
+        if scanner.isRoot { return String(localized: "Gesamte Festplatte") }
         let home = FileManager.default.homeDirectoryForCurrentUser.path
         return scanner.location.path.replacingOccurrences(of: home, with: "~")
     }
 
-    private func modeButton(_ title: String, showsLargeFiles value: Bool) -> some View {
+    private func modeButton(_ title: LocalizedStringKey, showsLargeFiles value: Bool) -> some View {
         Button {
             withAnimation(.easeOut(duration: 0.15)) { showsLargeFiles = value }
         } label: {
@@ -305,10 +305,10 @@ struct ExplorerView: View {
         Group {
             if !started {
                 ClyroStartStage(
-                    title: "Der Herbst zeigt, was abfällt –\nfinde heraus, was Platz belegt.",
-                    buttonTitle: "Analysieren",
-                    busyTitle: "Clyro misst deine Ordner",
-                    busyMessage: "Die größten Einträge werden zuerst berechnet …",
+                    title: String(localized: "Zeigt, welche Ordner und Dateien\nden Speicher belegen."),
+                    buttonTitle: String(localized: "Analysieren"),
+                    busyTitle: String(localized: "Ordner werden gemessen"),
+                    busyMessage: String(localized: "Die größten Einträge werden zuerst berechnet …"),
                     accent: accent,
                     isBusy: isStarting,
                     action: { begin() }
@@ -386,7 +386,7 @@ struct ExplorerView: View {
               let total = values.volumeTotalCapacity,
               let free = values.volumeAvailableCapacityForImportantUsage else { return "" }
         let used = Int64(total) - free
-        return "Belegt \(ClyroFormat.byteCount(used)) / \(ClyroFormat.byteCount(Int64(total)))"
+        return String(localized: "Belegt \(ClyroFormat.byteCount(used)) / \(ClyroFormat.byteCount(Int64(total)))")
     }
 
     private var usedFraction: Double {
@@ -516,7 +516,7 @@ struct ExplorerView: View {
                         } else {
                             Text("Nichts zu sehen")
                                 .font(.system(size: 20, weight: .semibold))
-                            Text("Dieser Ordner ist leer oder macOS erlaubt Clyro keinen Einblick.")
+                            Text("Der Ordner ist leer oder macOS verweigert den Zugriff.")
                                 .font(.system(size: 12, weight: .medium))
                                 .foregroundStyle(.secondary)
                         }

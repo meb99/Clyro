@@ -72,7 +72,7 @@ final class CleanupRuleSafetyTests: XCTestCase {
             for raw in rule.paths {
                 let path = raw.hasSuffix("/*") ? String(raw.dropLast(2)) : raw
                 let relative = path.hasPrefix("~/") ? String(path.dropFirst(2)) : path
-                // Ausnahme wie bei Mole: reine Cache-Unterordner, z. B. Nachrichten-Vorschauen oder Movies/CacheClip.
+                // Ausnahme: reine Cache-Unterordner, z. B. Nachrichten-Vorschauen oder Movies/CacheClip.
                 let isCacheFolder = relative.split(separator: "/").contains { $0.lowercased().contains("cache") }
                 for place in forbidden {
                     let hitsPlace = relative == place || relative.hasPrefix(place + "/")
@@ -241,7 +241,7 @@ final class HealthScoreTests: XCTestCase {
         snapshot.diskUsedBytes = 200_000_000_000
         XCTAssertEqual(snapshot.health.score, 100)
         XCTAssertTrue(snapshot.health.issues.isEmpty)
-        XCTAssertEqual(snapshot.healthText, "Ausgezeichnet")
+        XCTAssertEqual(snapshot.healthText, String(localized: "Ausgezeichnet"))
     }
 
     func testFailingSmartCapsScore() {
@@ -249,7 +249,7 @@ final class HealthScoreTests: XCTestCase {
         snapshot.uptime = 3600
         snapshot.smartStatus = .failing
         XCTAssertLessThanOrEqual(snapshot.health.score, 44)
-        XCTAssertTrue(snapshot.health.issues.contains("SMART meldet Fehler"))
+        XCTAssertTrue(snapshot.health.issues.contains(String(localized: "SMART meldet Fehler")))
     }
 
     func testFullDiskAndHotCPUAreReported() {
@@ -259,8 +259,8 @@ final class HealthScoreTests: XCTestCase {
         snapshot.diskTotalBytes = 100
         snapshot.diskUsedBytes = 97
         let health = snapshot.health
-        XCTAssertTrue(health.issues.contains("Hohe CPU-Last"))
-        XCTAssertTrue(health.issues.contains("Festplatte fast voll"))
+        XCTAssertTrue(health.issues.contains(String(localized: "Hohe CPU-Last")))
+        XCTAssertTrue(health.issues.contains(String(localized: "Festplatte fast voll")))
         XCTAssertLessThan(health.score, 85)
     }
 }
