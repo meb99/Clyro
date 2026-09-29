@@ -9,6 +9,7 @@ final class SystemMonitor: ObservableObject {
     @Published private(set) var cpuHistory: [Double] = Array(repeating: 0, count: 24)
     @Published private(set) var memoryHistory: [Double] = Array(repeating: 0, count: 24)
     @Published private(set) var downloadHistory: [Double] = Array(repeating: 0, count: 24)
+    @Published private(set) var temperatureHistory: [Double] = Array(repeating: 0, count: 24)
     @Published private(set) var isRefreshing = false
     @Published private(set) var hasLoaded = false
 
@@ -88,6 +89,7 @@ final class SystemMonitor: ObservableObject {
             append(next.cpuPercent, to: &cpuHistory)
             append(next.memoryPercent, to: &memoryHistory)
             append(next.downloadBytesPerSecond, to: &downloadHistory)
+            if let temperature = next.temperatureCelsius { append(temperature, to: &temperatureHistory) }
             hasLoaded = true
             isRefreshing = false
         }
@@ -132,6 +134,8 @@ private enum SystemProbe {
         result.diskTotalBytes = disk.total
         result.networkCounters = networkCounters()
         result.battery = batteryStatus()
+        result.temperatureCelsius = ThermalSensors.shared.averageCPUTemperature()
+        result.thermalState = ProcessInfo.processInfo.thermalState
         result.processes = runningProcesses()
         result.chipName = sysctlString("machdep.cpu.brand_string")
             .replacingOccurrences(of: "Apple ", with: "")

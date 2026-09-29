@@ -12,9 +12,16 @@ Clyro ist ein nativer, lokaler macOS-Systemmonitor und vorsichtiger Cleaner. Das
 ![Swift](https://img.shields.io/badge/Swift-5-F05138?logo=swift&logoColor=white)
 ![License](https://img.shields.io/badge/License-MIT-55D5B4)
 
-## Was Version 1.0 bereits kann
+## Neu: Werkzeugkasten
 
-- Live-Dashboard für CPU, RAM, Speicher, Netzwerk, Akku und Laufzeit
+Clyro deckt jetzt den kompletten Funktionsumfang klassischer Mac-Pflegewerkzeuge ab (Status, Clean, Uninstall, Optimize, Analyze, Purge, Installer) – mit eigenem Look und Clyro-Artefakten:
+
+- **Optimieren:** sichere Wartungsschritte (Quick-Look-Cache, DNS-Cache, Spotlight-Status, Dock/Finder neu starten) mit **Vorschau-Modus** (Trockenlauf, standardmäßig an)
+- **Projekte:** findet `node_modules`, Rust `target`, Swift `.build`, `Pods` und `dist`/`build` in deinen Projektordnern; nur Projektordner mit passender Projektdatei, ältere Ordner vorausgewählt, alles in den Papierkorb
+- **Gründlich deinstallieren:** Apps-Liste mit Papierkorb-Button, findet Rückstände in `~/Library` (Einstellungen, Caches, Container, Launch Agents …), Auswahl je Rückstand, macOS-eigene und laufende Apps sind geschützt
+- Projekt- und Deinstallations-Aktionen erscheinen im Verlauf
+
+- Live-Dashboard für CPU, RAM, Speicher, Netzwerk, Akku, Temperatur (SMC-Sensoren mit Fallback auf den macOS-Wärmezustand) und Laufzeit
 - animierte Verlaufsdiagramme
 - verständlicher Mac-Gesundheitswert
 - Liste der Prozesse mit höchster CPU-Auslastung
@@ -33,7 +40,8 @@ Clyro ist ein nativer, lokaler macOS-Systemmonitor und vorsichtiger Cleaner. Das
 - lokaler Bereinigungsverlauf als visuelle Zeitleiste
 - neu aufgebaute Bereinigungsansicht mit sicherer Auswahl und Ergebnisübersicht
 - ruhigeres, systemnahes Kartendesign mit gezielt eingesetzten Rollen-Emojis
-- Scan nach alten App-Caches, Protokollen, Installationsdateien und Xcode-Daten
+- Scan nach alten App-Caches, Protokollen, Installationsdateien, Xcode-Daten und Paket-Caches (npm, pip, Gradle)
+- Whitelist in den Einstellungen: geschützte Einträge werden nie zum Bereinigen vorgeschlagen
 - Auswahl und Bestätigung vor jeder Bereinigung
 - Dateien werden in den Papierkorb verschoben statt endgültig gelöscht
 - Übersicht installierter Apps und ihrer Bundle-Größe
