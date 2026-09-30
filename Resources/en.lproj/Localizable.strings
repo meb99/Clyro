@@ -549,3 +549,8 @@
 "Bitte im Festplattendienstprogramm Erste Hilfe ausführen." = "Please run First Aid in Disk Utility.";
 "Wöchentliche Wartung erledigt" = "Weekly maintenance done";
 "%lld Aufgaben ausgeführt, der Rest war bereits in Ordnung." = "%lld tasks carried out, everything else was already fine.";
+
+/* Hinweise beim Optimieren */
+"Diese Aufgabe dauert etwas länger …" = "This task takes a little longer …";
+"Mitteilungs- und Nutzungsdatenbanken sind von macOS geschützt. Mit Festplattenvollzugriff kann Clyro sie beim nächsten Mal verkleinern." = "Notification and usage databases are protected by macOS. With Full Disk Access, Clyro can shrink them next time.";
+"Festplattenvollzugriff öffnen" = "Open Full Disk Access";

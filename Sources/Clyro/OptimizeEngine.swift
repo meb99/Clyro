@@ -91,6 +91,12 @@ struct OptimizeTask: Identifiable {
 enum OptimizeCatalog {
     static let excludedKey = "optimizeExcludedTasks"
 
+    /// Meldung für Datenbanken, die macOS ohne Festplattenvollzugriff sperrt.
+    static let noAccessMessage = String(localized: "Datenbank nicht zugänglich")
+
+    /// Aufgaben, die spürbar länger dauern; die Oberfläche weist währenddessen darauf hin.
+    static let slowIDs: Set<String> = ["disk-verify", "launch-services", "databases", "tm-snapshots"]
+
     static var excluded: Set<String> {
         Set((UserDefaults.standard.string(forKey: excludedKey) ?? "").split(separator: ",").map(String.init))
     }
@@ -269,7 +275,7 @@ enum OptimizeCatalog {
         OptimizeTask(id: "notifications", group: String(localized: "Datenschutz"), title: String(localized: "Mitteilungsdatenbank verkleinern"),
                      detail: String(localized: "Entfernt zugestellte Mitteilungen, die älter als 30 Tage sind.")) { dry in
             guard let database = MaintenancePaths.notificationDatabase() else {
-                return OptimizeReport(result: .unavailable, message: String(localized: "Datenbank nicht zugänglich"))
+                return OptimizeReport(result: .unavailable, message: OptimizeCatalog.noAccessMessage)
             }
             let size = FileProbe.sizeOfItem(at: database)
             if size < 50 * 1_048_576 {
@@ -287,7 +293,7 @@ enum OptimizeCatalog {
             let database = FileManager.default.homeDirectoryForCurrentUser
                 .appendingPathComponent("Library/Application Support/Knowledge/knowledgeC.db")
             guard FileManager.default.isReadableFile(atPath: database.path) else {
-                return OptimizeReport(result: .unavailable, message: String(localized: "Datenbank nicht zugänglich"))
+                return OptimizeReport(result: .unavailable, message: OptimizeCatalog.noAccessMessage)
             }
             let size = FileProbe.sizeOfItem(at: database)
             if size < 100 * 1_048_576 {
