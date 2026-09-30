@@ -297,7 +297,7 @@
 "Willkommen bei Clyro" = "Welcome to Clyro";
 "Bereinigen findet Caches, Protokolle, Reste deinstallierter Apps und Installationsdateien." = "Clean Up finds caches, logs, leftovers of removed apps and installers.";
 "Apps entfernt Programme vollständig, zeigt verfügbare Updates und alle Startobjekte." = "Apps removes applications completely and shows available updates and login items.";
-"Optimieren führt 21 Wartungsaufgaben in einem Durchgang aus." = "Optimize runs 21 maintenance tasks in one pass.";
+"Optimieren führt 24 Wartungsaufgaben in einem Durchgang aus." = "Optimize runs 24 maintenance tasks in one pass.";
 "Analyse zeigt, welche Ordner und Dateien den meisten Platz belegen." = "Analyze shows which folders and files take up the most space.";
 "Status zeigt Auslastung, Temperatur, Akku und Prozesse in Echtzeit." = "Status shows load, temperature, battery and processes in real time.";
 "So arbeitet Clyro" = "How Clyro Works";
@@ -518,3 +518,34 @@
 "Landet eine App im Papierkorb, legt Clyro auch ihre Einstellungen, Caches und Container dorthin. Geschützte Apps von Apple und Sicherheitssoftware bleiben unberührt." = "When an app goes to the Trash, Clyro moves its settings, caches and containers there too. Protected Apple apps and security software are left alone.";
 "Reste von %@ entfernt" = "Leftovers of %@ removed";
 "%@ an Einstellungen und Caches liegen jetzt im Papierkorb." = "%@ of settings and caches moved to the Trash.";
+
+/* Zusätzliche Wartungsaufgaben */
+"Lokale Time-Machine-Snapshots ausdünnen" = "Thin local Time Machine snapshots";
+"Gibt Speicher frei, den ältere lokale Snapshots belegen. Backups auf externen Laufwerken bleiben unberührt." = "Frees space used by older local snapshots. Backups on external drives are not touched.";
+"Time Machine nicht verfügbar" = "Time Machine not available";
+"Keine lokalen Snapshots" = "No local snapshots";
+"Vorschau: %lld Snapshots" = "Preview: %lld snapshots";
+"Snapshots ließen sich nicht ausdünnen" = "Snapshots could not be thinned";
+"%lld Snapshots entfernt · %@ frei" = "%lld snapshots removed · %@ freed";
+"Snapshots werden noch gebraucht" = "Snapshots are still needed";
+"Startvolume prüfen" = "Verify startup volume";
+"Prüft das Dateisystem wie die Erste Hilfe im Festplattendienstprogramm, nur lesend. Verändert nichts." = "Checks the file system like First Aid in Disk Utility, read-only. Changes nothing.";
+"Keine Fehler gefunden" = "No errors found";
+"Braucht Administratorrechte – Festplattendienstprogramm → Erste Hilfe nutzen" = "Needs administrator rights – use Disk Utility → First Aid";
+"Geprüft" = "Verified";
+"Fehler gefunden – bitte im Festplattendienstprogramm Erste Hilfe ausführen" = "Errors found – please run First Aid in Disk Utility";
+"„Öffnen mit“-Liste reparieren" = "Repair the Open With list";
+"Baut die Launch-Services-Datenbank neu auf. Behebt doppelte oder veraltete Einträge und falsche App-Zuordnungen." = "Rebuilds the Launch Services database. Fixes duplicate or outdated entries and wrong app associations.";
+"Werkzeug nicht gefunden" = "Tool not found";
+"Neu aufgebaut" = "Rebuilt";
+"Neuaufbau fehlgeschlagen" = "Rebuild failed";
+"Schriften-Cache leeren" = "Clear font cache";
+"Hilft bei falsch dargestellten oder fehlenden Schriften. Vollständig wirksam nach einem Neustart." = "Helps with garbled or missing fonts. Takes full effect after a restart.";
+"Schriften-Cache ließ sich nicht leeren" = "The font cache could not be cleared";
+"Geleert – nach dem nächsten Neustart vollständig wirksam" = "Cleared – takes full effect after the next restart";
+"Wöchentlich automatisch warten" = "Run maintenance automatically every week";
+"Einmal pro Woche laufen die sicheren Aufgaben im Hintergrund: Caches, Datenbanken, Snapshots und die Prüfung des Startvolumes. Dock und Menüleiste werden dabei nicht neu gestartet." = "Once a week the safe tasks run in the background: caches, databases, snapshots and the startup volume check. The Dock and menu bar are not restarted.";
+"Das Startvolume meldet Fehler" = "The startup volume reports errors";
+"Bitte im Festplattendienstprogramm Erste Hilfe ausführen." = "Please run First Aid in Disk Utility.";
+"Wöchentliche Wartung erledigt" = "Weekly maintenance done";
+"%lld Aufgaben ausgeführt, der Rest war bereits in Ordnung." = "%lld tasks carried out, everything else was already fine.";
