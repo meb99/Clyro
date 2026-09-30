@@ -243,7 +243,15 @@ enum AppRemnantProbe {
         let identifier = app.bundleIdentifier
 
         // Gibt es eine zweite Kopie derselben App, bleiben die gemeinsamen Daten erhalten.
-        if !identifier.isEmpty, NSWorkspace.shared.urlsForApplications(withBundleIdentifier: identifier).count > 1 { return [] }
+        // Kopien im Papierkorb oder längst gelöschte Einträge der Launch Services zählen nicht.
+        if !identifier.isEmpty {
+            let ownPath = app.url.standardizedFileURL.path
+            let others = NSWorkspace.shared.urlsForApplications(withBundleIdentifier: identifier).filter { url in
+                let path = url.standardizedFileURL.path
+                return path != ownPath && !path.contains("/.Trash/") && fm.fileExists(atPath: path)
+            }
+            if !others.isEmpty { return [] }
+        }
 
         var candidates: [URL] = []
         func add(_ relative: String) { candidates.append(library.appendingPathComponent(relative)) }
@@ -311,6 +319,22 @@ enum AppRemnantProbe {
             results.append(AppRemnant(url: url, sizeBytes: FileProbe.sizeOfItem(at: url)))
         }
         return results.sorted { $0.sizeBytes > $1.sizeBytes }
+    }
+
+    /// Legt nur die Rückstände in den Papierkorb, etwa wenn die App selbst schon gelöscht wurde.
+    static func trash(_ remnants: [AppRemnant]) -> UninstallResult {
+        var result = UninstallResult()
+        for remnant in remnants {
+            do {
+                try FileManager.default.trashItem(at: remnant.url, resultingItemURL: nil)
+                ClyroLog.append("Reste entfernt: \(remnant.url.path)")
+                result.movedItems += 1
+                result.bytes += max(0, remnant.sizeBytes)
+            } catch {
+                result.failures.append(remnant.url.lastPathComponent)
+            }
+        }
+        return result
     }
 
     static func uninstall(_ app: InstalledApplication, remnants: [AppRemnant]) -> UninstallResult {

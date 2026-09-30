@@ -13,6 +13,7 @@ struct SettingsView: View {
     @AppStorage(ReminderService.staleKey) private var remindStale = false
     @AppStorage(ReminderService.staleDaysKey) private var staleDays = 14
     @AppStorage(ReminderService.autoCleanKey) private var autoClean = false
+    @AppStorage(AppRemovalWatcher.enabledKey) private var removeLeftovers = true
     @State private var launchAtLogin = LaunchAtLogin.isEnabled
     @State private var touchID = TouchIDSudo.isEnabled
     @State private var touchIDBusy = false
@@ -89,6 +90,11 @@ struct SettingsView: View {
                 Toggle("Entwicklerwerkzeuge prüfen", isOn: $includeDeveloperData)
                 Toggle("In den Papierkorb statt endgültig löschen", isOn: $useTrash)
                 Text("Caches und Protokolle werden standardmäßig endgültig gelöscht, damit der Speicher sofort frei wird. Deinstallieren und Analyse verschieben immer in den Papierkorb.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Toggle("Reste gelöschter Apps automatisch entfernen", isOn: $removeLeftovers)
+                    .onChange(of: removeLeftovers) { _, on in if on { ClyroNotifier.requestAuthorization() } }
+                Text("Landet eine App im Papierkorb, legt Clyro auch ihre Einstellungen, Caches und Container dorthin. Geschützte Apps von Apple und Sicherheitssoftware bleiben unberührt.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }

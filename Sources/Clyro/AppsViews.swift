@@ -143,7 +143,7 @@ struct ApplicationsView: View {
 
             Spacer()
 
-            if mode == .uninstall && hasLoaded && !isLoading {
+            if mode == .uninstall && hasLoaded {
                 ForEach(SortKey.allCases, id: \.self) { key in
                     Button {
                         if sortKey == key { reversed.toggle() } else { sortKey = key; reversed = false }
@@ -194,16 +194,9 @@ struct ApplicationsView: View {
     @ViewBuilder
     private var uninstallContent: some View {
         if !hasLoaded {
-            ClyroStartStage(
-                title: String(localized: "Programme vollständig entfernen,\nUpdates und Startobjekte im Blick."),
-                buttonTitle: String(localized: "Apps laden"),
-                busyTitle: String(localized: "Apps werden gemessen"),
-                busyMessage: String(localized: "Größen, Versionen und letzte Nutzung werden ermittelt …"),
-                accent: accent,
-                isBusy: true,
-                action: { Task { await load() } }
-            )
-            .padding(22)
+            ProgressView()
+                .controlSize(.small)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else {
             VStack(alignment: .leading, spacing: 0) {
                 HStack(spacing: 10) {
@@ -259,18 +252,35 @@ struct ApplicationsView: View {
         if selection.contains(app.url) { selection.remove(app.url) } else { selection.insert(app.url) }
     }
 
+    /// Zeigt die Apps sofort an und misst die Größen danach im Hintergrund, Zeile für Zeile.
     private func load() async {
         guard !isLoading else { return }
         isLoading = true
-        let started = Date()
-        let found = await Task.detached(priority: .utility) {
-            ApplicationProbe.scan()
+        let found = await Task.detached(priority: .userInitiated) {
+            ApplicationProbe.list()
         }.value
-        // Nur eine kurze Mindestdauer, damit die Liste nicht flackert; die Apps sollen schnell da sein.
-        await ScanTiming.hold(since: started, minimum: 0.6)
         applications = found
         selection = selection.filter { url in found.contains { $0.url == url } }
         hasLoaded = true
+
+        // Höchstens vier Messungen gleichzeitig, damit die Platte nicht ausgelastet wird.
+        let urls = found.map(\.url)
+        await withTaskGroup(of: (URL, Int64).self) { group in
+            var pending = urls.makeIterator()
+            for _ in 0..<4 {
+                guard let url = pending.next() else { break }
+                group.addTask(priority: .utility) { (url, ApplicationProbe.measure(url)) }
+            }
+            while let (url, size) = await group.next() {
+                if let index = applications.firstIndex(where: { $0.url == url }) {
+                    applications[index].sizeBytes = size
+                    applications[index].isMeasured = true
+                }
+                if let next = pending.next() {
+                    group.addTask(priority: .utility) { (next, ApplicationProbe.measure(next)) }
+                }
+            }
+        }
         isLoading = false
     }
 }
@@ -331,7 +341,7 @@ private struct AppRow: View {
                 Text(app.version)
                 separator
             }
-            Text(ClyroFormat.byteCount(app.sizeBytes))
+            Text(app.isMeasured ? ClyroFormat.byteCount(app.sizeBytes) : "…")
             if app.isIntelOnly {
                 separator
                 Text("Intel").foregroundStyle(ClyroTheme.orange)
@@ -377,7 +387,8 @@ enum ApplicationActivity {
 // MARK: - Auslesen
 
 enum ApplicationProbe {
-    static func scan() -> [InstalledApplication] {
+    /// Schnelle Liste ohne Größen, damit der Tab sofort gefüllt ist. Größen liefert `measure(_:)` nachträglich.
+    static func list() -> [InstalledApplication] {
         let roots = [
             URL(fileURLWithPath: "/Applications", isDirectory: true),
             FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Applications", isDirectory: true)
@@ -402,7 +413,8 @@ enum ApplicationProbe {
                     name: name,
                     version: version,
                     bundleIdentifier: identifier,
-                    sizeBytes: FileProbe.sizeOfItem(at: url)
+                    sizeBytes: 0,
+                    isMeasured: false
                 )
                 app.lastUsed = metadataDate("kMDItemLastUsedDate", for: url)
                 app.addedDate = metadataDate("kMDItemDateAdded", for: url)
@@ -413,6 +425,10 @@ enum ApplicationProbe {
             }
         }
         return results
+    }
+
+    static func measure(_ url: URL) -> Int64 {
+        FileProbe.sizeOfItem(at: url)
     }
 
     private static func metadataDate(_ attribute: String, for url: URL) -> Date? {
@@ -484,7 +500,14 @@ struct BulkUninstallSheet: View {
         .task {
             let selected = apps
             let loaded = await Task.detached(priority: .utility) {
-                selected.map { UninstallPlan(app: $0, remnants: AppRemnantProbe.remnants(for: $0)) }
+                selected.map { app in
+                    var app = app
+                    if !app.isMeasured {
+                        app.sizeBytes = ApplicationProbe.measure(app.url)
+                        app.isMeasured = true
+                    }
+                    return UninstallPlan(app: app, remnants: AppRemnantProbe.remnants(for: app))
+                }
             }.value
             plans = loaded
             isLoading = false

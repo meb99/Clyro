@@ -512,3 +512,9 @@
 "Neue Version %@" = "New version %@";
 "Klicken, um Version %@ zu installieren" = "Click to install version %@";
 "Version %@ · Klicken, um nach Updates zu suchen" = "Version %@ · Click to check for updates";
+
+/* Reste gelöschter Apps */
+"Reste gelöschter Apps automatisch entfernen" = "Remove leftovers of deleted apps automatically";
+"Landet eine App im Papierkorb, legt Clyro auch ihre Einstellungen, Caches und Container dorthin. Geschützte Apps von Apple und Sicherheitssoftware bleiben unberührt." = "When an app goes to the Trash, Clyro moves its settings, caches and containers there too. Protected Apple apps and security software are left alone.";
+"Reste von %@ entfernt" = "Leftovers of %@ removed";
+"%@ an Einstellungen und Caches liegen jetzt im Papierkorb." = "%@ of settings and caches moved to the Trash.";

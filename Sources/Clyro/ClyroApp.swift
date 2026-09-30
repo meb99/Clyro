@@ -12,7 +12,10 @@ struct ClyroApp: App {
                 .environmentObject(cleaner)
                 .preferredColorScheme(.dark)
                 .frame(minWidth: 980, minHeight: 680)
-                .task { ReminderService.shared.start(monitor: monitor, cleaner: cleaner) }
+                .task {
+                    ReminderService.shared.start(monitor: monitor, cleaner: cleaner)
+                    AppRemovalWatcher.shared.start(cleaner: cleaner)
+                }
         }
         .defaultSize(width: 1180, height: 790)
         .windowStyle(.hiddenTitleBar)
