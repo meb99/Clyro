@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 struct RootView: View {
@@ -77,6 +78,9 @@ struct RootView: View {
             UpdateSheet(release: release)
         }
         .task { updater.checkOnLaunch() }
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+            updater.checkWhenActivated()
+        }
     }
 
     private var group: NavGroup {

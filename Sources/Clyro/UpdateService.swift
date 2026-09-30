@@ -22,6 +22,8 @@ final class UpdateService: ObservableObject {
     static let autoCheckKey = "updatesAutoCheck"
     private static let lastCheckKey = "updatesLastCheck"
     private static let skippedKey = "updatesSkippedVersion"
+    private static let promptedVersionKey = "updatesPromptedVersion"
+    private static let promptedDateKey = "updatesPromptedDate"
     private nonisolated static let latestReleaseURL = URL(string: "https://api.github.com/repos/meb99/Clyro/releases/latest")!
 
     enum State: Equatable {
@@ -47,17 +49,37 @@ final class UpdateService: ObservableObject {
         return path.hasPrefix("/Applications/") || path.hasPrefix(userApplications + "/")
     }
 
-    /// Automatische Prüfung höchstens einmal am Tag.
+    /// Automatische Prüfung bei jedem Start, damit ein neues Update sofort in der Kopfleiste auftaucht.
     func checkOnLaunch() {
+        checkIfDue(minimumInterval: 0)
+    }
+
+    /// Wenn Clyro wieder in den Vordergrund kommt: höchstens alle sechs Stunden erneut prüfen.
+    func checkWhenActivated() {
+        checkIfDue(minimumInterval: 6 * 3600)
+    }
+
+    private func checkIfDue(minimumInterval: TimeInterval) {
         let defaults = UserDefaults.standard
         let enabled = defaults.object(forKey: Self.autoCheckKey) as? Bool ?? true
         guard enabled else { return }
-        if let last = defaults.object(forKey: Self.lastCheckKey) as? Date, Date().timeIntervalSince(last) < 86_400 { return }
+        if let last = defaults.object(forKey: Self.lastCheckKey) as? Date,
+           Date().timeIntervalSince(last) < minimumInterval { return }
         Task { await check(userInitiated: false) }
+    }
+
+    /// Der Update-Dialog öffnet sich von selbst höchstens einmal am Tag pro Version; die Kopfleiste zeigt das Update immer.
+    private func shouldPrompt(for release: ClyroRelease) -> Bool {
+        let defaults = UserDefaults.standard
+        if defaults.string(forKey: Self.skippedKey) == release.version { return false }
+        guard defaults.string(forKey: Self.promptedVersionKey) == release.version,
+              let last = defaults.object(forKey: Self.promptedDateKey) as? Date else { return true }
+        return Date().timeIntervalSince(last) >= 86_400
     }
 
     func check(userInitiated: Bool) async {
         guard state != .checking, state != .installing else { return }
+        let previous = state
         state = .checking
         do {
             let release = try await Self.fetchLatest()
@@ -67,11 +89,17 @@ final class UpdateService: ObservableObject {
                 return
             }
             state = .available(release)
-            let skipped = UserDefaults.standard.string(forKey: Self.skippedKey)
-            if userInitiated || skipped != release.version {
+            if userInitiated || shouldPrompt(for: release) {
+                UserDefaults.standard.set(release.version, forKey: Self.promptedVersionKey)
+                UserDefaults.standard.set(Date(), forKey: Self.promptedDateKey)
                 presentedRelease = release
             }
         } catch {
+            // Eine fehlgeschlagene stille Prüfung soll ein bereits gefundenes Update nicht wieder verstecken.
+            if !userInitiated, case .available = previous {
+                state = previous
+                return
+            }
             state = .failed(String(localized: "Die Update-Prüfung ist fehlgeschlagen."))
         }
     }
@@ -280,7 +308,7 @@ struct VersionBadge: View {
         case .checking: String(localized: "Suche läuft …")
         case .installing: String(localized: "Wird installiert …")
         case .upToDate: String(localized: "v\(updater.currentVersion) · aktuell")
-        case .available(let release): String(localized: "Update \(release.version)")
+        case .available(let release): String(localized: "Neue Version \(release.version)")
         case .idle, .failed: "v\(updater.currentVersion)"
         }
     }
@@ -303,9 +331,8 @@ struct VersionBadge: View {
         } label: {
             HStack(spacing: 5) {
                 if available != nil {
-                    Circle()
-                        .fill(ClyroTheme.palette(for: .applications).accent)
-                        .frame(width: 6, height: 6)
+                    Image(systemName: "arrow.down.circle.fill")
+                        .font(.system(size: 11, weight: .bold))
                 } else if isBusy {
                     ProgressView()
                         .controlSize(.mini)
@@ -314,10 +341,10 @@ struct VersionBadge: View {
             }
             .font(.system(size: 11, weight: .semibold))
             .monospacedDigit()
-            .foregroundStyle(available != nil ? Color.white.opacity(0.92) : Color.white.opacity(0.5))
+            .foregroundStyle(available != nil ? Color.black.opacity(0.84) : Color.white.opacity(0.5))
             .padding(.horizontal, 10)
             .frame(height: 24)
-            .background(Capsule().fill(.white.opacity(available != nil ? 0.16 : 0.08)))
+            .background(Capsule().fill(available != nil ? AnyShapeStyle(ClyroTheme.palette(for: .applications).accent) : AnyShapeStyle(Color.white.opacity(0.08))))
             .contentShape(Capsule())
         }
         .buttonStyle(.plain)

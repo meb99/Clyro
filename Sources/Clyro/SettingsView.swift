@@ -148,7 +148,7 @@ struct SettingsView: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
-                Text("Clyro fragt einmal am Tag bei GitHub nach einer neuen Version. Updates werden nur nach Bestätigung installiert.")
+                Text("Clyro fragt bei jedem Start und danach höchstens alle sechs Stunden bei GitHub nach einer neuen Version. Updates werden nur nach Bestätigung installiert.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }

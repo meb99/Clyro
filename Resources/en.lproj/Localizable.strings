@@ -500,7 +500,7 @@
 "Zum Download" = "Go to Download";
 "Automatisch nach Updates suchen" = "Check for updates automatically";
 "Jetzt suchen" = "Check Now";
-"Clyro fragt einmal am Tag bei GitHub nach einer neuen Version. Updates werden nur nach Bestätigung installiert." = "Clyro checks GitHub for a new version once a day. Updates are only installed after you confirm.";
+"Clyro fragt bei jedem Start und danach höchstens alle sechs Stunden bei GitHub nach einer neuen Version. Updates werden nur nach Bestätigung installiert." = "Clyro checks GitHub for a new version at every launch and at most every six hours after that. Updates are only installed after you confirm.";
 "Suche läuft …" = "Checking …";
 "Clyro ist aktuell." = "Clyro is up to date.";
 "Version %@ verfügbar" = "Version %@ available";
@@ -509,6 +509,6 @@
 "Nach Updates suchen …" = "Check for Updates…";
 "Version %@ ist die neueste Version." = "Version %@ is the latest version.";
 "v%@ · aktuell" = "v%@ · up to date";
-"Update %@" = "Update %@";
+"Neue Version %@" = "New version %@";
 "Klicken, um Version %@ zu installieren" = "Click to install version %@";
 "Version %@ · Klicken, um nach Updates zu suchen" = "Version %@ · Click to check for updates";
