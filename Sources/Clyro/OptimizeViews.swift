@@ -147,7 +147,7 @@ struct OptimizeView: View {
                 .foregroundStyle(.secondary)
             if needsFullDiskAccess {
                 VStack(spacing: 6) {
-                    Text("Mitteilungs- und Nutzungsdatenbanken sind von macOS geschützt. Mit Festplattenvollzugriff kann Clyro sie beim nächsten Mal verkleinern.")
+                    Text("Einige Datenbanken sind von macOS geschützt. Mit Festplattenvollzugriff kann Clyro sie beim nächsten Mal verkleinern. Danach Clyro einmal neu starten.")
                         .font(.system(size: 12, weight: .medium))
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)

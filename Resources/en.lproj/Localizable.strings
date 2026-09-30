@@ -346,7 +346,6 @@
 "Datenbanken optimieren" = "Optimize databases";
 "Verdichtet die Datenbanken von Mail, Safari und Nachrichten." = "Compacts the Mail, Safari and Messages databases.";
 "Erst schließen: %@" = "Quit first: %@";
-"Keine Datenbanken zugänglich" = "No databases accessible";
 "%lld Datenbanken verdichtet" = "%lld databases compacted";
 "Bereits optimal" = "Already optimal";
 "Nichts zu verdichten" = "Nothing to compact";
@@ -552,5 +551,7 @@
 
 /* Hinweise beim Optimieren */
 "Diese Aufgabe dauert etwas länger …" = "This task takes a little longer …";
-"Mitteilungs- und Nutzungsdatenbanken sind von macOS geschützt. Mit Festplattenvollzugriff kann Clyro sie beim nächsten Mal verkleinern." = "Notification and usage databases are protected by macOS. With Full Disk Access, Clyro can shrink them next time.";
+"Einige Datenbanken sind von macOS geschützt. Mit Festplattenvollzugriff kann Clyro sie beim nächsten Mal verkleinern. Danach Clyro einmal neu starten." = "Some databases are protected by macOS. With Full Disk Access, Clyro can shrink them next time. Restart Clyro once afterwards.";
 "Festplattenvollzugriff öffnen" = "Open Full Disk Access";
+"Auf diesem Mac nicht vorhanden" = "Not present on this Mac";
+"Keine Datenbanken vorhanden" = "No databases present";

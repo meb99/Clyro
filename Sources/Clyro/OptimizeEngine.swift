@@ -94,6 +94,9 @@ enum OptimizeCatalog {
     /// Meldung für Datenbanken, die macOS ohne Festplattenvollzugriff sperrt.
     static let noAccessMessage = String(localized: "Datenbank nicht zugänglich")
 
+    /// Meldung für Datenbanken, die es auf dieser macOS-Version nicht (mehr) gibt.
+    static let notPresentMessage = String(localized: "Auf diesem Mac nicht vorhanden")
+
     /// Aufgaben, die spürbar länger dauern; die Oberfläche weist währenddessen darauf hin.
     static let slowIDs: Set<String> = ["disk-verify", "launch-services", "databases", "tm-snapshots"]
 
@@ -195,8 +198,14 @@ enum OptimizeCatalog {
             for version in FileScan.children(of: mail) where version.lastPathComponent.hasPrefix("V") {
                 databases.append(version.appendingPathComponent("MailData/Envelope Index"))
             }
-            databases = databases.filter { FileManager.default.isReadableFile(atPath: $0.path) }
-            if databases.isEmpty { return OptimizeReport(result: .unavailable, message: String(localized: "Keine Datenbanken zugänglich")) }
+            let states = databases.map { ($0, FileAccess.state(of: $0)) }
+            databases = states.filter { $0.1 == .readable }.map(\.0)
+            if databases.isEmpty {
+                // Wer Mail, Safari und Nachrichten nie genutzt hat, hat auch nichts zu verdichten.
+                return states.contains { $0.1 == .locked }
+                    ? OptimizeReport(result: .unavailable, message: OptimizeCatalog.noAccessMessage)
+                    : OptimizeReport(result: .unchanged, message: String(localized: "Keine Datenbanken vorhanden"))
+            }
 
             var compacted = 0
             var optimal = 0
@@ -274,8 +283,11 @@ enum OptimizeCatalog {
         },
         OptimizeTask(id: "notifications", group: String(localized: "Datenschutz"), title: String(localized: "Mitteilungsdatenbank verkleinern"),
                      detail: String(localized: "Entfernt zugestellte Mitteilungen, die älter als 30 Tage sind.")) { dry in
-            guard let database = MaintenancePaths.notificationDatabase() else {
-                return OptimizeReport(result: .unavailable, message: OptimizeCatalog.noAccessMessage)
+            let found = FileAccess.firstReadable(MaintenancePaths.notificationCandidates())
+            guard let database = found.url else {
+                return found.locked
+                    ? OptimizeReport(result: .unavailable, message: OptimizeCatalog.noAccessMessage)
+                    : OptimizeReport(result: .unchanged, message: OptimizeCatalog.notPresentMessage)
             }
             let size = FileProbe.sizeOfItem(at: database)
             if size < 50 * 1_048_576 {
@@ -292,8 +304,10 @@ enum OptimizeCatalog {
                      detail: String(localized: "Löscht Nutzungsverläufe, die älter als 90 Tage sind.")) { dry in
             let database = FileManager.default.homeDirectoryForCurrentUser
                 .appendingPathComponent("Library/Application Support/Knowledge/knowledgeC.db")
-            guard FileManager.default.isReadableFile(atPath: database.path) else {
-                return OptimizeReport(result: .unavailable, message: OptimizeCatalog.noAccessMessage)
+            switch FileAccess.state(of: database) {
+            case .missing: return OptimizeReport(result: .unchanged, message: OptimizeCatalog.notPresentMessage)
+            case .locked: return OptimizeReport(result: .unavailable, message: OptimizeCatalog.noAccessMessage)
+            case .readable: break
             }
             let size = FileProbe.sizeOfItem(at: database)
             if size < 100 * 1_048_576 {
@@ -466,17 +480,46 @@ enum FileScan {
     }
 }
 
-enum MaintenancePaths {
-    static func notificationDatabase() -> URL? {
-        let group = FileManager.default.homeDirectoryForCurrentUser
-            .appendingPathComponent("Library/Group Containers/group.com.apple.usernoted/db2/db")
-        if FileManager.default.isReadableFile(atPath: group.path) { return group }
+/// Unterscheidet Dateien, die es auf dieser macOS-Version nicht gibt, von solchen, die macOS ohne
+/// Festplattenvollzugriff sperrt. Nur ein echter Öffnungsversuch zeigt die Sperre zuverlässig.
+enum FileAccess {
+    enum State {
+        case missing
+        case locked
+        case readable
+    }
 
+    static func state(of url: URL) -> State {
+        guard FileManager.default.fileExists(atPath: url.path) else { return .missing }
+        guard let handle = try? FileHandle(forReadingFrom: url) else { return .locked }
+        try? handle.close()
+        return .readable
+    }
+
+    /// Die erste lesbare Datei, sonst ob mindestens eine gesperrt ist.
+    static func firstReadable(_ candidates: [URL]) -> (url: URL?, locked: Bool) {
+        var locked = false
+        for url in candidates {
+            switch state(of: url) {
+            case .readable: return (url, false)
+            case .locked: locked = true
+            case .missing: continue
+            }
+        }
+        return (nil, locked)
+    }
+}
+
+enum MaintenancePaths {
+    static func notificationCandidates() -> [URL] {
+        var candidates = [
+            FileManager.default.homeDirectoryForCurrentUser
+                .appendingPathComponent("Library/Group Containers/group.com.apple.usernoted/db2/db")
+        ]
         let darwin = Shell.run("/usr/bin/getconf", ["DARWIN_USER_DIR"], timeout: 5)
         if darwin.ok {
-            let legacy = URL(fileURLWithPath: darwin.output).appendingPathComponent("com.apple.notificationcenter/db2/db")
-            if FileManager.default.isReadableFile(atPath: legacy.path) { return legacy }
+            candidates.append(URL(fileURLWithPath: darwin.output).appendingPathComponent("com.apple.notificationcenter/db2/db"))
         }
-        return nil
+        return candidates
     }
 }
