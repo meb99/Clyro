@@ -62,9 +62,16 @@ struct RootView: View {
         // Wer Bereinigen verlässt, beginnt beim Zurückkehren wieder mit dem Startbild und scannt neu.
         // Ein laufender Scan oder eine laufende Bereinigung wird dabei nicht abgebrochen.
         .onChange(of: selection) { previous, _ in
-            guard previous == .cleanup else { return }
-            cleaner.dismissCelebration()
-            cleaner.close()
+            switch previous {
+            case .cleanup:
+                cleaner.dismissCelebration()
+                cleaner.close()
+            case .optimize:
+                // Ein laufender Durchgang läuft weiter; nur ein bereits angesehenes Ergebnis wird zurückgesetzt.
+                OptimizeRunner.shared.reset()
+            default:
+                break
+            }
         }
         .sheet(isPresented: Binding(get: { !onboardingDone }, set: { _ in })) {
             OnboardingView()

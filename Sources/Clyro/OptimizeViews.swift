@@ -3,21 +3,18 @@ import SwiftUI
 
 /// Optimieren: Startseite, dann läuft die Wartung direkt mit Zähler und Protokoll, am Ende das Ergebnis.
 struct OptimizeView: View {
-    private enum Stage {
-        case start
-        case running
-        case done
-    }
-
     @AppStorage("optimizeDryRun") private var dryRun = false
-    @State private var stage: Stage = .start
-    @State private var log: [CleanLogEntry] = []
-    @State private var runDone = 0
-    @State private var runCurrent = ""
-    @State private var runCurrentID = ""
-    @State private var needsFullDiskAccess = false
-    @State private var counts: [OptimizeResult: Int] = [:]
-    @State private var previewRun = false
+    // Der Durchgang gehört nicht zur Ansicht: Er läuft beim Tabwechsel weiter und ist beim Zurückkehren noch sichtbar.
+    @ObservedObject private var runner = OptimizeRunner.shared
+
+    private var stage: OptimizeRunner.Stage { runner.stage }
+    private var log: [CleanLogEntry] { runner.log }
+    private var runDone: Int { runner.runDone }
+    private var runCurrent: String { runner.runCurrent }
+    private var runCurrentID: String { runner.runCurrentID }
+    private var needsFullDiskAccess: Bool { runner.needsFullDiskAccess }
+    private var counts: [OptimizeResult: Int] { runner.counts }
+    private var previewRun: Bool { runner.previewRun }
 
     private let palette = ClyroTheme.palette(for: .optimize)
     private var accent: Color { palette.accent }
@@ -82,46 +79,7 @@ struct OptimizeView: View {
     }
 
     private func run() {
-        let chosen = tasks
-        let preview = dryRun
-        previewRun = preview
-        stage = .running
-        log = []
-        runDone = 0
-        runCurrent = ""
-        runCurrentID = ""
-        needsFullDiskAccess = false
-        counts = [:]
-        let started = Date()
-
-        Task {
-            var lastGroup = ""
-            for task in chosen {
-                runCurrent = task.title
-                runCurrentID = task.id
-                if task.group != lastGroup {
-                    log.append(CleanLogEntry(text: task.group, bytes: nil, isHeader: true))
-                    lastGroup = task.group
-                }
-                let report = await Task.detached(priority: .utility) {
-                    OptimizeCatalog.run(task, dryRun: preview)
-                }.value
-                runDone += 1
-                counts[report.result, default: 0] += 1
-                if report.message == OptimizeCatalog.noAccessMessage { needsFullDiskAccess = true }
-                log.append(CleanLogEntry(
-                    text: task.title,
-                    bytes: nil,
-                    isHeader: false,
-                    trailing: report.result == .applied ? nil : report.message,
-                    checked: report.result == .applied || report.result == .unchanged
-                ))
-                try? await Task.sleep(nanoseconds: 260_000_000)
-            }
-            await ScanTiming.hold(since: started)
-            if !preview { ClyroStats.add(optimized: counts[.applied] ?? 0) }
-            stage = .done
-        }
+        runner.run(dryRun: dryRun)
     }
 
     // MARK: - Ergebnis
@@ -163,10 +121,79 @@ struct OptimizeView: View {
                 }
                 .padding(.top, 6)
             }
-            Button("Fertig") { stage = .start }
+            Button("Fertig") { runner.reset() }
                 .buttonStyle(ClyroPillButtonStyle())
                 .padding(.top, 10)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+}
+
+/// Hält einen Optimieren-Durchgang unabhängig von der Ansicht am Leben.
+@MainActor
+final class OptimizeRunner: ObservableObject {
+    static let shared = OptimizeRunner()
+
+    enum Stage {
+        case start
+        case running
+        case done
+    }
+
+    @Published private(set) var stage: Stage = .start
+    @Published private(set) var log: [CleanLogEntry] = []
+    @Published private(set) var runDone = 0
+    @Published private(set) var runCurrent = ""
+    @Published private(set) var runCurrentID = ""
+    @Published private(set) var needsFullDiskAccess = false
+    @Published private(set) var counts: [OptimizeResult: Int] = [:]
+    @Published private(set) var previewRun = false
+
+    func run(dryRun preview: Bool) {
+        guard stage != .running else { return }
+        let chosen = OptimizeCatalog.tasks
+        previewRun = preview
+        stage = .running
+        log = []
+        runDone = 0
+        runCurrent = ""
+        runCurrentID = ""
+        needsFullDiskAccess = false
+        counts = [:]
+        let started = Date()
+
+        Task {
+            var lastGroup = ""
+            for task in chosen {
+                runCurrent = task.title
+                runCurrentID = task.id
+                if task.group != lastGroup {
+                    log.append(CleanLogEntry(text: task.group, bytes: nil, isHeader: true))
+                    lastGroup = task.group
+                }
+                let report = await Task.detached(priority: .utility) {
+                    OptimizeCatalog.run(task, dryRun: preview)
+                }.value
+                runDone += 1
+                counts[report.result, default: 0] += 1
+                if report.message == OptimizeCatalog.noAccessMessage { needsFullDiskAccess = true }
+                log.append(CleanLogEntry(
+                    text: task.title,
+                    bytes: nil,
+                    isHeader: false,
+                    trailing: report.result == .applied ? nil : report.message,
+                    checked: report.result == .applied || report.result == .unchanged
+                ))
+                try? await Task.sleep(nanoseconds: 260_000_000)
+            }
+            await ScanTiming.hold(since: started)
+            if !preview { ClyroStats.add(optimized: counts[.applied] ?? 0) }
+            stage = .done
+        }
+    }
+
+    func reset() {
+        guard stage == .done else { return }
+        stage = .start
     }
 }

@@ -103,7 +103,11 @@ enum ExplorerProbe {
 
 @MainActor
 final class ExplorerScanner: ObservableObject {
+    /// Eine Instanz für die ganze App, damit Messung und Ergebnis beim Tabwechsel erhalten bleiben.
+    static let shared = ExplorerScanner()
+
     @Published private(set) var location: URL
+    @Published var hasStarted = false
     @Published private(set) var entries: [ExplorerEntry] = []
     @Published private(set) var isScanning = false
     @Published private(set) var isRoot = true
@@ -266,9 +270,8 @@ enum Treemap {
 // MARK: - Ansicht
 
 struct ExplorerView: View {
-    @StateObject private var scanner = ExplorerScanner()
+    @ObservedObject private var scanner = ExplorerScanner.shared
     @State private var pendingTrash: ExplorerEntry?
-    @State private var started = false
     @State private var isStarting = false
     @State private var showsLargeFiles = false
 
@@ -303,7 +306,7 @@ struct ExplorerView: View {
 
     var body: some View {
         Group {
-            if !started {
+            if !scanner.hasStarted {
                 ClyroStartStage(
                     title: String(localized: "Zeigt, welche Ordner und Dateien\nden Speicher belegen."),
                     buttonTitle: String(localized: "Analysieren"),
@@ -373,7 +376,7 @@ struct ExplorerView: View {
         scanner.openRoot()
         Task {
             await ScanTiming.hold(since: Date(), minimum: 2.0)
-            started = true
+            scanner.hasStarted = true
             isStarting = false
         }
     }
