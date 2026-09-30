@@ -283,3 +283,136 @@ final class ReminderService {
         return Date().timeIntervalSince(last) > interval
     }
 }
+
+/// Entfernt die Reste von Apps, die im Finder in den Papierkorb gelegt wurden.
+///
+/// Clyro merkt sich die installierten Apps und beobachtet die Programme-Ordner. Verschwindet eine App dauerhaft,
+/// wandern ihre Einstellungen, Caches und Container ebenfalls in den Papierkorb und lassen sich von dort zurückholen.
+/// Apps, die gelöscht wurden, während Clyro nicht lief, werden beim nächsten Start erkannt.
+@MainActor
+final class AppRemovalWatcher {
+    static let shared = AppRemovalWatcher()
+    static let enabledKey = "removeLeftoversAutomatically"
+    private static let snapshotKey = "installedAppsSnapshot"
+
+    private struct Entry: Codable, Hashable {
+        let path: String
+        let bundleIdentifier: String
+        let name: String
+        let version: String
+    }
+
+    private var sources: [DispatchSourceFileSystemObject] = []
+    private var pending: Task<Void, Never>?
+    private weak var cleaner: CleanupScanner?
+
+    private nonisolated static var roots: [URL] {
+        [
+            URL(fileURLWithPath: "/Applications", isDirectory: true),
+            FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Applications", isDirectory: true)
+        ]
+    }
+
+    private var isEnabled: Bool {
+        UserDefaults.standard.object(forKey: Self.enabledKey) as? Bool ?? true
+    }
+
+    func start(cleaner: CleanupScanner) {
+        self.cleaner = cleaner
+        guard sources.isEmpty else { return }
+        if isEnabled { ClyroNotifier.requestAuthorization() }
+        for root in Self.roots {
+            let descriptor = open(root.path, O_EVTONLY)
+            guard descriptor >= 0 else { continue }
+            let source = DispatchSource.makeFileSystemObjectSource(
+                fileDescriptor: descriptor,
+                eventMask: [.write, .rename, .delete],
+                queue: .main
+            )
+            source.setEventHandler { [weak self] in
+                Task { @MainActor in self?.scheduleCheck(after: 10) }
+            }
+            source.setCancelHandler { close(descriptor) }
+            source.resume()
+            sources.append(source)
+        }
+        scheduleCheck(after: 5)
+    }
+
+    /// Wartet kurz, damit Updates (alte App raus, neue rein) nicht als Löschen gelten.
+    private func scheduleCheck(after seconds: Double) {
+        pending?.cancel()
+        pending = Task { [weak self] in
+            try? await Task.sleep(nanoseconds: UInt64(seconds * 1_000_000_000))
+            guard !Task.isCancelled else { return }
+            await self?.check()
+        }
+    }
+
+    private func check() async {
+        let current = await Task.detached(priority: .utility) { Self.installedEntries() }.value
+        let previous = loadSnapshot()
+        saveSnapshot(current)
+        // Beim allerersten Start gibt es nichts zu vergleichen.
+        guard isEnabled, let previous else { return }
+
+        let paths = Set(current.map(\.path))
+        let identifiers = Set(current.map(\.bundleIdentifier))
+        let removed = previous.filter { !paths.contains($0.path) && !identifiers.contains($0.bundleIdentifier) }
+        for entry in removed {
+            await removeLeftovers(of: entry)
+        }
+    }
+
+    private func removeLeftovers(of entry: Entry) async {
+        // Ohne Bundle-ID ließen sich Reste nur über den Namen raten – das ist zu unsicher.
+        guard !entry.bundleIdentifier.isEmpty, entry.bundleIdentifier != Bundle.main.bundleIdentifier else { return }
+        let app = InstalledApplication(
+            url: URL(fileURLWithPath: entry.path),
+            name: entry.name,
+            version: entry.version,
+            bundleIdentifier: entry.bundleIdentifier,
+            sizeBytes: 0
+        )
+        guard !AppRemnantProbe.isProtected(app) else { return }
+
+        let result = await Task.detached(priority: .utility) {
+            AppRemnantProbe.trash(AppRemnantProbe.remnants(for: app))
+        }.value
+        guard result.movedItems > 0 else { return }
+
+        cleaner?.record(bytes: result.bytes, itemCount: result.movedItems, kinds: [.appRemnants])
+        ClyroNotifier.post(
+            id: "leftovers",
+            title: String(localized: "Reste von \(entry.name) entfernt"),
+            body: String(localized: "\(ClyroFormat.byteCount(result.bytes)) an Einstellungen und Caches liegen jetzt im Papierkorb.")
+        )
+    }
+
+    private nonisolated static func installedEntries() -> [Entry] {
+        var entries: [Entry] = []
+        for root in roots {
+            let urls = (try? FileManager.default.contentsOfDirectory(at: root, includingPropertiesForKeys: nil)) ?? []
+            for url in urls where url.pathExtension.lowercased() == "app" {
+                guard let bundle = Bundle(url: url), let identifier = bundle.bundleIdentifier else { continue }
+                let info = bundle.infoDictionary
+                let name = (info?["CFBundleDisplayName"] as? String)
+                    ?? (info?["CFBundleName"] as? String)
+                    ?? url.deletingPathExtension().lastPathComponent
+                let version = (info?["CFBundleShortVersionString"] as? String) ?? "–"
+                entries.append(Entry(path: url.path, bundleIdentifier: identifier, name: name, version: version))
+            }
+        }
+        return entries
+    }
+
+    private func loadSnapshot() -> [Entry]? {
+        guard let data = UserDefaults.standard.data(forKey: Self.snapshotKey) else { return nil }
+        return try? JSONDecoder().decode([Entry].self, from: data)
+    }
+
+    private func saveSnapshot(_ entries: [Entry]) {
+        guard let data = try? JSONEncoder().encode(entries) else { return }
+        UserDefaults.standard.set(data, forKey: Self.snapshotKey)
+    }
+}

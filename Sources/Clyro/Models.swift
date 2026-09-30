@@ -429,7 +429,9 @@ struct InstalledApplication: Identifiable, Hashable {
     let name: String
     let version: String
     let bundleIdentifier: String
-    let sizeBytes: Int64
+    /// Wird nach dem Anzeigen der Liste im Hintergrund gemessen; bis dahin `isMeasured == false`.
+    var sizeBytes: Int64
+    var isMeasured = true
     var lastUsed: Date?
     var addedDate: Date?
     var isIntelOnly = false
