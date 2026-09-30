@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 /// Optimieren: Startseite, dann läuft die Wartung direkt mit Zähler und Protokoll, am Ende das Ergebnis.
@@ -13,6 +14,8 @@ struct OptimizeView: View {
     @State private var log: [CleanLogEntry] = []
     @State private var runDone = 0
     @State private var runCurrent = ""
+    @State private var runCurrentID = ""
+    @State private var needsFullDiskAccess = false
     @State private var counts: [OptimizeResult: Int] = [:]
     @State private var previewRun = false
 
@@ -67,6 +70,12 @@ struct OptimizeView: View {
             .frame(maxWidth: 560)
             .frame(height: 22)
 
+            Text("Diese Aufgabe dauert etwas länger …")
+                .font(.system(size: 12, weight: .medium))
+                .foregroundStyle(.secondary)
+                .opacity(OptimizeCatalog.slowIDs.contains(runCurrentID) ? 1 : 0)
+                .animation(.easeInOut(duration: 0.2), value: runCurrentID)
+
             CleanLogBox(entries: log, accent: accent)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -80,6 +89,8 @@ struct OptimizeView: View {
         log = []
         runDone = 0
         runCurrent = ""
+        runCurrentID = ""
+        needsFullDiskAccess = false
         counts = [:]
         let started = Date()
 
@@ -87,6 +98,7 @@ struct OptimizeView: View {
             var lastGroup = ""
             for task in chosen {
                 runCurrent = task.title
+                runCurrentID = task.id
                 if task.group != lastGroup {
                     log.append(CleanLogEntry(text: task.group, bytes: nil, isHeader: true))
                     lastGroup = task.group
@@ -96,6 +108,7 @@ struct OptimizeView: View {
                 }.value
                 runDone += 1
                 counts[report.result, default: 0] += 1
+                if report.message == OptimizeCatalog.noAccessMessage { needsFullDiskAccess = true }
                 log.append(CleanLogEntry(
                     text: task.title,
                     bytes: nil,
@@ -132,6 +145,24 @@ struct OptimizeView: View {
             Text(summaryLine)
                 .font(.system(size: 14, weight: .medium))
                 .foregroundStyle(.secondary)
+            if needsFullDiskAccess {
+                VStack(spacing: 6) {
+                    Text("Mitteilungs- und Nutzungsdatenbanken sind von macOS geschützt. Mit Festplattenvollzugriff kann Clyro sie beim nächsten Mal verkleinern.")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                        .frame(maxWidth: 460)
+                    Button("Festplattenvollzugriff öffnen") {
+                        if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_AllFiles") {
+                            NSWorkspace.shared.open(url)
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(accent)
+                }
+                .padding(.top, 6)
+            }
             Button("Fertig") { stage = .start }
                 .buttonStyle(ClyroPillButtonStyle())
                 .padding(.top, 10)
