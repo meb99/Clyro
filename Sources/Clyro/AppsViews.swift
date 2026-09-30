@@ -73,13 +73,10 @@ struct ApplicationsView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            // Die Unterseiten erscheinen erst, nachdem die Apps geladen wurden.
-            if hasLoaded {
-                toolbar
-                    .padding(.horizontal, 22)
-                    .padding(.top, 14)
-                    .padding(.bottom, 6)
-            }
+            toolbar
+                .padding(.horizontal, 22)
+                .padding(.top, 14)
+                .padding(.bottom, 6)
 
             switch mode {
             case .uninstall: uninstallContent
@@ -87,7 +84,11 @@ struct ApplicationsView: View {
             case .startup: StartupItemsView()
             }
         }
-        // Beim Verlassen des Tabs zurück zum Startbild; die Apps werden beim nächsten Besuch neu geladen.
+        // Die Liste lädt sofort beim Öffnen des Tabs, ohne eigenen Scan-Knopf.
+        .task {
+            if !hasLoaded { await load() }
+        }
+        // Beim Verlassen des Tabs wird die Liste verworfen und beim nächsten Besuch frisch geladen.
         .onDisappear {
             guard !showUninstall else { return }
             applications = []
@@ -122,11 +123,18 @@ struct ApplicationsView: View {
                 Button {
                     Task { await load() }
                 } label: {
-                    Image(systemName: "arrow.clockwise")
-                        .font(.system(size: 14, weight: .semibold))
-                        .frame(width: 30, height: 30)
+                    Group {
+                        if isLoading {
+                            ProgressView().controlSize(.small)
+                        } else {
+                            Image(systemName: "arrow.clockwise")
+                                .font(.system(size: 14, weight: .semibold))
+                        }
+                    }
+                    .frame(width: 30, height: 30)
                 }
                 .buttonStyle(.plain)
+                .disabled(isLoading)
                 .foregroundStyle(.white.opacity(0.6))
                 .help("Neu laden")
                 .accessibilityLabel("Neu laden")
@@ -185,14 +193,14 @@ struct ApplicationsView: View {
 
     @ViewBuilder
     private var uninstallContent: some View {
-        if !hasLoaded || isLoading {
+        if !hasLoaded {
             ClyroStartStage(
                 title: String(localized: "Programme vollständig entfernen,\nUpdates und Startobjekte im Blick."),
                 buttonTitle: String(localized: "Apps laden"),
                 busyTitle: String(localized: "Apps werden gemessen"),
                 busyMessage: String(localized: "Größen, Versionen und letzte Nutzung werden ermittelt …"),
                 accent: accent,
-                isBusy: isLoading,
+                isBusy: true,
                 action: { Task { await load() } }
             )
             .padding(22)
@@ -258,7 +266,8 @@ struct ApplicationsView: View {
         let found = await Task.detached(priority: .utility) {
             ApplicationProbe.scan()
         }.value
-        await ScanTiming.hold(since: started)
+        // Nur eine kurze Mindestdauer, damit die Liste nicht flackert; die Apps sollen schnell da sein.
+        await ScanTiming.hold(since: started, minimum: 0.6)
         applications = found
         selection = selection.filter { url in found.contains { $0.url == url } }
         hasLoaded = true
