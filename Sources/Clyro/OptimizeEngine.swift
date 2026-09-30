@@ -300,6 +300,62 @@ enum OptimizeCatalog {
                 ? OptimizeReport(result: .applied, message: String(localized: "Verkleinert (war \(ClyroFormat.byteCount(size)))"))
                 : OptimizeReport(result: .failed, message: String(localized: "Datenbank ist gesperrt"))
         },
+        OptimizeTask(id: "tm-snapshots", group: String(localized: "Speicher"), title: String(localized: "Lokale Time-Machine-Snapshots ausdünnen"),
+                     detail: String(localized: "Gibt Speicher frei, den ältere lokale Snapshots belegen. Backups auf externen Laufwerken bleiben unberührt.")) { dry in
+            let before = TimeMachineSnapshots.count()
+            guard let before else {
+                return OptimizeReport(result: .unavailable, message: String(localized: "Time Machine nicht verfügbar"))
+            }
+            if before == 0 { return OptimizeReport(result: .unchanged, message: String(localized: "Keine lokalen Snapshots")) }
+            if dry { return OptimizeReport(result: .applied, message: String(localized: "Vorschau: \(before) Snapshots")) }
+            let freeBefore = TimeMachineSnapshots.freeBytes()
+            let thin = Shell.run("/usr/bin/tmutil", ["thinlocalsnapshots", "/", "999999999999", "4"], timeout: 180)
+            guard thin.ok else {
+                return OptimizeReport(result: .failed, message: String(localized: "Snapshots ließen sich nicht ausdünnen"))
+            }
+            let removed = max(0, before - (TimeMachineSnapshots.count() ?? before))
+            let freed = max(0, TimeMachineSnapshots.freeBytes() - freeBefore)
+            return removed > 0
+                ? OptimizeReport(result: .applied, message: String(localized: "\(removed) Snapshots entfernt · \(ClyroFormat.byteCount(freed)) frei"))
+                : OptimizeReport(result: .unchanged, message: String(localized: "Snapshots werden noch gebraucht"))
+        },
+        OptimizeTask(id: "disk-verify", group: String(localized: "Speicher"), title: String(localized: "Startvolume prüfen"),
+                     detail: String(localized: "Prüft das Dateisystem wie die Erste Hilfe im Festplattendienstprogramm, nur lesend. Verändert nichts.")) { dry in
+            if dry { return OptimizeReport(result: .applied, message: String(localized: "Vorschau")) }
+            let result = Shell.run("/usr/sbin/diskutil", ["verifyVolume", "/"], timeout: 900)
+            let output = result.output.lowercased()
+            if result.ok && (output.contains("appears to be ok") || output.contains("seems to be ok")) {
+                return OptimizeReport(result: .unchanged, message: String(localized: "Keine Fehler gefunden"))
+            }
+            if output.contains("permission") || output.contains("root") || output.contains("not privileged") {
+                return OptimizeReport(result: .unavailable, message: String(localized: "Braucht Administratorrechte – Festplattendienstprogramm → Erste Hilfe nutzen"))
+            }
+            return result.ok
+                ? OptimizeReport(result: .unchanged, message: String(localized: "Geprüft"))
+                : OptimizeReport(result: .failed, message: String(localized: "Fehler gefunden – bitte im Festplattendienstprogramm Erste Hilfe ausführen"))
+        },
+        OptimizeTask(id: "launch-services", group: String(localized: "System"), title: String(localized: "„Öffnen mit“-Liste reparieren"),
+                     detail: String(localized: "Baut die Launch-Services-Datenbank neu auf. Behebt doppelte oder veraltete Einträge und falsche App-Zuordnungen.")) { dry in
+            let tool = "/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister"
+            guard FileManager.default.isExecutableFile(atPath: tool) else {
+                return OptimizeReport(result: .unavailable, message: String(localized: "Werkzeug nicht gefunden"))
+            }
+            if dry { return OptimizeReport(result: .applied, message: String(localized: "Vorschau")) }
+            let result = Shell.run(tool, ["-r", "-domain", "local", "-domain", "system", "-domain", "user"], timeout: 300)
+            return result.ok
+                ? OptimizeReport(result: .applied, message: String(localized: "Neu aufgebaut"))
+                : OptimizeReport(result: .failed, message: String(localized: "Neuaufbau fehlgeschlagen"))
+        },
+        OptimizeTask(id: "font-cache", group: String(localized: "System"), title: String(localized: "Schriften-Cache leeren"),
+                     detail: String(localized: "Hilft bei falsch dargestellten oder fehlenden Schriften. Vollständig wirksam nach einem Neustart.")) { dry in
+            if dry { return OptimizeReport(result: .applied, message: String(localized: "Vorschau")) }
+            guard Shell.run("/usr/bin/atsutil", ["databases", "-removeUser"], timeout: 30).ok else {
+                return OptimizeReport(result: .failed, message: String(localized: "Schriften-Cache ließ sich nicht leeren"))
+            }
+            _ = Shell.run("/usr/bin/atsutil", ["server", "-shutdown"], timeout: 10)
+            _ = Shell.run("/usr/bin/atsutil", ["server", "-ping"], timeout: 10)
+            return OptimizeReport(result: .applied, message: String(localized: "Geleert – nach dem nächsten Neustart vollständig wirksam"))
+        },
         restart("input", String(localized: "Eingabeumschaltung neu starten"), process: "TextInputMenuAgent"),
         restart("spotlight", String(localized: "Spotlight neu starten"), process: "Spotlight"),
         restart("notification-center", String(localized: "Mitteilungszentrale neu starten"), process: "NotificationCenter"),
@@ -307,6 +363,13 @@ enum OptimizeCatalog {
         restart("control-center", String(localized: "Kontrollzentrum neu starten"), process: "ControlCenter"),
         restart("menubar", String(localized: "Menüleiste neu starten"), process: "SystemUIServer"),
         restart("dock", String(localized: "Dock neu starten"), process: "Dock")
+    ]
+
+    /// Aufgaben für die wöchentliche automatische Wartung: ohne Neustarts von Dock oder Menüleiste,
+    /// ohne Passwortabfrage und ohne spürbare Unterbrechung.
+    static let automaticIDs: Set<String> = [
+        "dns", "finder-cache", "dsstore", "saved-states", "broken-prefs", "databases", "legacy", "shared-lists",
+        "quarantine", "notifications", "usage-data", "tm-snapshots", "disk-verify"
     ]
 
     private static func restart(_ id: String, _ title: String, process: String) -> OptimizeTask {
@@ -333,6 +396,20 @@ enum OptimizeCatalog {
 }
 
 // MARK: - Kleine Helfer
+
+enum TimeMachineSnapshots {
+    /// Anzahl der lokalen Time-Machine-Snapshots auf dem Startvolume, `nil` wenn tmutil nicht antwortet.
+    static func count() -> Int? {
+        let result = Shell.run("/usr/bin/tmutil", ["listlocalsnapshots", "/"], timeout: 20)
+        guard result.ok else { return nil }
+        return result.output.split(separator: "\n").filter { $0.contains("com.apple.TimeMachine.") }.count
+    }
+
+    static func freeBytes() -> Int64 {
+        let values = try? URL(fileURLWithPath: "/").resourceValues(forKeys: [.volumeAvailableCapacityKey])
+        return Int64(values?.volumeAvailableCapacity ?? 0)
+    }
+}
 
 enum Defaults {
     static func isTrue(_ domain: String, _ key: String) -> Bool {

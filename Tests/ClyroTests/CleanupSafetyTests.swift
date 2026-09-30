@@ -274,3 +274,19 @@ final class VersionTests: XCTestCase {
         XCTAssertFalse(Version.isNewer("", than: "1.0"))
     }
 }
+
+final class MaintenanceScheduleTests: XCTestCase {
+    func testAutomaticTasksExistAndNeverRestartTheInterface() {
+        let ids = Set(OptimizeCatalog.tasks.map(\.id))
+        XCTAssertTrue(OptimizeCatalog.automaticIDs.isSubset(of: ids))
+        for restart in ["dock", "menubar", "control-center", "notification-center", "spotlight", "pasteboard", "input", "font-cache"] {
+            XCTAssertFalse(OptimizeCatalog.automaticIDs.contains(restart), restart)
+        }
+    }
+
+    func testTaskIDsAreUnique() {
+        let ids = OptimizeCatalog.tasks.map(\.id)
+        XCTAssertEqual(ids.count, Set(ids).count)
+        XCTAssertEqual(ids.count, 25)
+    }
+}

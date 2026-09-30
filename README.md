@@ -25,7 +25,7 @@ Scans app, system, browser, AI and developer caches, logs, leftovers of removed 
 Removes applications together with their preferences, containers, launch agents and plug-ins. Shows available updates for App Store and Sparkle apps as well as all login items. System apps and security software that ships its own uninstaller are excluded.
 
 **Optimize**
-21 maintenance tasks in one pass, including the DNS cache, Spotlight, preview and icon caches, corrupted preference files, the Mail, Safari and Messages databases, quarantine history, and restarts of the Dock, menu bar and Control Center. Individual tasks can be turned off in Settings.
+25 maintenance tasks in one pass, including the DNS cache, Spotlight, preview, icon and font caches, local Time Machine snapshots, a read-only check of the startup volume, the Open With list, corrupted preference files, the Mail, Safari and Messages databases, quarantine history, and restarts of the Dock, menu bar and Control Center. Individual tasks can be turned off in Settings, and the safe ones can run automatically once a week.
 
 **Analyze**
 A treemap of your disk with folder navigation and a list of the largest files.

@@ -25,7 +25,7 @@ Durchsucht App-, System-, Browser-, KI- und Entwickler-Caches, Protokolle, Reste
 Entfernt Programme samt Einstellungen, Containern, Launch Agents und Plug-ins. Zeigt verfügbare Updates für App-Store- und Sparkle-Apps sowie alle Startobjekte. Systemprogramme und Sicherheitssoftware mit eigenem Deinstallationsprogramm sind ausgenommen.
 
 **Optimieren**
-21 Wartungsaufgaben in einem Durchgang, unter anderem DNS-Cache, Spotlight, Vorschau- und Symbol-Cache, beschädigte Einstellungsdateien, Datenbanken von Mail, Safari und Nachrichten, Quarantäne-Verlauf sowie Neustarts von Dock, Menüleiste und Kontrollzentrum. Einzelne Aufgaben lassen sich in den Einstellungen abwählen.
+25 Wartungsaufgaben in einem Durchgang, unter anderem DNS-Cache, Spotlight, Vorschau-, Symbol- und Schriften-Cache, lokale Time-Machine-Snapshots, eine lesende Prüfung des Startvolumes, die „Öffnen mit“-Liste, beschädigte Einstellungsdateien, Datenbanken von Mail, Safari und Nachrichten, Quarantäne-Verlauf sowie Neustarts von Dock, Menüleiste und Kontrollzentrum. Einzelne Aufgaben lassen sich in den Einstellungen abwählen, die sicheren auf Wunsch einmal pro Woche automatisch ausführen.
 
 **Analyse**
 Treemap der Festplatte mit Ordnernavigation und einer Liste der größten Dateien.

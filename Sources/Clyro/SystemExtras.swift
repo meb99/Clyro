@@ -217,10 +217,12 @@ final class ReminderService {
     static let staleKey = "reminderStale"
     static let staleDaysKey = "reminderStaleDays"
     static let autoCleanKey = "autoCleanWeekly"
+    static let autoOptimizeKey = "autoOptimizeWeekly"
 
     private static let lastDiskKey = "reminderLastDisk"
     private static let lastStaleKey = "reminderLastStale"
     private static let lastAutoKey = "autoCleanLast"
+    private static let lastOptimizeKey = "autoOptimizeLast"
 
     private weak var monitor: SystemMonitor?
     private weak var cleaner: CleanupScanner?
@@ -276,6 +278,33 @@ final class ReminderService {
                 defaults.set(now, forKey: Self.lastAutoKey)
             }
         }
+
+        if defaults.bool(forKey: Self.autoOptimizeKey), isDue(Self.lastOptimizeKey, every: 7 * 86_400) {
+            defaults.set(now, forKey: Self.lastOptimizeKey)
+            Task { await runWeeklyMaintenance() }
+        }
+    }
+
+    /// Führt die sicheren Wartungsaufgaben im Hintergrund aus und meldet nur das Ergebnis.
+    private func runWeeklyMaintenance() async {
+        let tasks = OptimizeCatalog.tasks.filter { OptimizeCatalog.automaticIDs.contains($0.id) }
+        let reports = await Task.detached(priority: .background) {
+            tasks.map { ($0.id, OptimizeCatalog.run($0, dryRun: false)) }
+        }.value
+
+        let applied = reports.filter { $0.1.result == .applied }.count
+        if let disk = reports.first(where: { $0.0 == "disk-verify" }), disk.1.result == .failed {
+            ClyroNotifier.post(
+                id: "maintenance-disk",
+                title: String(localized: "Das Startvolume meldet Fehler"),
+                body: String(localized: "Bitte im Festplattendienstprogramm Erste Hilfe ausführen.")
+            )
+        }
+        ClyroNotifier.post(
+            id: "maintenance",
+            title: String(localized: "Wöchentliche Wartung erledigt"),
+            body: String(localized: "\(applied) Aufgaben ausgeführt, der Rest war bereits in Ordnung.")
+        )
     }
 
     private func isDue(_ key: String, every interval: TimeInterval) -> Bool {

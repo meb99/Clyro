@@ -13,6 +13,7 @@ struct SettingsView: View {
     @AppStorage(ReminderService.staleKey) private var remindStale = false
     @AppStorage(ReminderService.staleDaysKey) private var staleDays = 14
     @AppStorage(ReminderService.autoCleanKey) private var autoClean = false
+    @AppStorage(ReminderService.autoOptimizeKey) private var autoOptimize = false
     @AppStorage(AppRemovalWatcher.enabledKey) private var removeLeftovers = true
     @State private var launchAtLogin = LaunchAtLogin.isEnabled
     @State private var touchID = TouchIDSudo.isEnabled
@@ -115,6 +116,11 @@ struct SettingsView: View {
                     .foregroundStyle(.secondary)
             }
             Section("Optimieren") {
+                Toggle("Wöchentlich automatisch warten", isOn: $autoOptimize)
+                    .onChange(of: autoOptimize) { _, on in if on { ClyroNotifier.requestAuthorization() } }
+                Text("Einmal pro Woche laufen die sicheren Aufgaben im Hintergrund: Caches, Datenbanken, Snapshots und die Prüfung des Startvolumes. Dock und Menüleiste werden dabei nicht neu gestartet.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
                 Toggle("Nur als Vorschau ausführen", isOn: $optimizeDryRun)
                 ForEach(OptimizeCatalog.tasks) { task in
                     Toggle(task.title, isOn: Binding(
