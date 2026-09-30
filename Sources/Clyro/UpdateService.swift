@@ -239,3 +239,90 @@ struct UpdateSheet: View {
         .frame(width: 520)
     }
 }
+
+// MARK: - Versionsanzeige
+
+extension UpdateService {
+    /// Suche über das App-Menü. Ist Clyro aktuell oder schlägt die Prüfung fehl, gibt ein Hinweisfenster Auskunft;
+    /// ein neues Update öffnet wie gewohnt den Update-Dialog.
+    func checkFromMenu() async {
+        await check(userInitiated: true)
+        let alert = NSAlert()
+        switch state {
+        case .upToDate:
+            alert.messageText = String(localized: "Clyro ist aktuell.")
+            alert.informativeText = String(localized: "Version \(currentVersion) ist die neueste Version.")
+        case .failed(let message):
+            alert.alertStyle = .warning
+            alert.messageText = message
+        default:
+            return
+        }
+        alert.runModal()
+    }
+}
+
+/// Kleine Versionsanzeige in der Kopfleiste. Ein Klick sucht nach Updates; liegt eines bereit, öffnet er den Update-Dialog.
+struct VersionBadge: View {
+    @ObservedObject private var updater = UpdateService.shared
+
+    private var isBusy: Bool {
+        updater.state == .checking || updater.state == .installing
+    }
+
+    private var available: ClyroRelease? {
+        if case .available(let release) = updater.state { return release }
+        return nil
+    }
+
+    private var label: String {
+        switch updater.state {
+        case .checking: String(localized: "Suche läuft …")
+        case .installing: String(localized: "Wird installiert …")
+        case .upToDate: String(localized: "v\(updater.currentVersion) · aktuell")
+        case .available(let release): String(localized: "Update \(release.version)")
+        case .idle, .failed: "v\(updater.currentVersion)"
+        }
+    }
+
+    private var hint: String {
+        switch updater.state {
+        case .available(let release): String(localized: "Klicken, um Version \(release.version) zu installieren")
+        case .failed(let message): message
+        default: String(localized: "Version \(updater.currentVersion) · Klicken, um nach Updates zu suchen")
+        }
+    }
+
+    var body: some View {
+        Button {
+            if let available {
+                updater.presentedRelease = available
+            } else {
+                Task { await updater.check(userInitiated: true) }
+            }
+        } label: {
+            HStack(spacing: 5) {
+                if available != nil {
+                    Circle()
+                        .fill(ClyroTheme.palette(for: .applications).accent)
+                        .frame(width: 6, height: 6)
+                } else if isBusy {
+                    ProgressView()
+                        .controlSize(.mini)
+                }
+                Text(label)
+            }
+            .font(.system(size: 11, weight: .semibold))
+            .monospacedDigit()
+            .foregroundStyle(available != nil ? Color.white.opacity(0.92) : Color.white.opacity(0.5))
+            .padding(.horizontal, 10)
+            .frame(height: 24)
+            .background(Capsule().fill(.white.opacity(available != nil ? 0.16 : 0.08)))
+            .contentShape(Capsule())
+        }
+        .buttonStyle(.plain)
+        .disabled(isBusy)
+        .help(hint)
+        .accessibilityLabel(hint)
+    }
+}

@@ -27,8 +27,11 @@ struct RootView: View {
                 topNavigation
                     .frame(maxWidth: .infinity)
                     .overlay(alignment: .trailing) {
-                        LanguageSwitch(compact: true)
-                            .padding(.trailing, 20)
+                        HStack(spacing: 8) {
+                            VersionBadge()
+                            LanguageSwitch(compact: true)
+                        }
+                        .padding(.trailing, 20)
                     }
                     .padding(.top, 18)
                     .padding(.bottom, 16)
