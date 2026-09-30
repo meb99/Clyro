@@ -1,12 +1,41 @@
 import AppKit
 import SwiftUI
 
+/// Ergebnis der Suche nach großen Dateien; bleibt beim Tabwechsel erhalten.
+@MainActor
+final class LargeFileStore: ObservableObject {
+    static let shared = LargeFileStore()
+
+    @Published var files: [LargeFileItem] = []
+    @Published var isScanning = false
+    @Published var hasScanned = false
+    @Published var threshold: LargeFileThreshold = .hundredMB
+
+    func scan() {
+        guard !isScanning else { return }
+        isScanning = true
+        let minimumSize = threshold.bytes
+        let started = Date()
+        Task {
+            let found = await Task.detached(priority: .utility) {
+                LargeFileProbe.scan(minimumSize: minimumSize)
+            }.value
+            await ScanTiming.hold(since: started)
+            files = found
+            hasScanned = true
+            isScanning = false
+        }
+    }
+}
+
 struct StorageView: View {
-    @State private var files: [LargeFileItem] = []
-    @State private var isScanning = false
-    @State private var hasScanned = false
-    @State private var threshold: LargeFileThreshold = .hundredMB
+    @ObservedObject private var store = LargeFileStore.shared
     @State private var query = ""
+
+    private var files: [LargeFileItem] { store.files }
+    private var isScanning: Bool { store.isScanning }
+    private var hasScanned: Bool { store.hasScanned }
+    private var threshold: LargeFileThreshold { store.threshold }
 
     private let accent = ClyroTheme.palette(for: .storage).accent
     private let secondary = ClyroTheme.palette(for: .storage).secondary
@@ -70,7 +99,7 @@ struct StorageView: View {
             TextField("Dateien suchen", text: $query)
                 .textFieldStyle(.roundedBorder)
                 .frame(width: 210)
-            Picker("Mindestgröße", selection: $threshold) {
+            Picker("Mindestgröße", selection: $store.threshold) {
                 ForEach(LargeFileThreshold.allCases) { option in
                     Text(option.title).tag(option)
                 }
@@ -205,19 +234,7 @@ struct StorageView: View {
     }
 
     private func scan() {
-        guard !isScanning else { return }
-        isScanning = true
-        let minimumSize = threshold.bytes
-        let started = Date()
-        Task {
-            let found = await Task.detached(priority: .utility) {
-                LargeFileProbe.scan(minimumSize: minimumSize)
-            }.value
-            await ScanTiming.hold(since: started)
-            files = found
-            hasScanned = true
-            isScanning = false
-        }
+        store.scan()
     }
 }
 
@@ -304,7 +321,7 @@ private struct StorageMosaicTile: View {
     }
 }
 
-private enum LargeFileThreshold: Int64, CaseIterable, Identifiable {
+enum LargeFileThreshold: Int64, CaseIterable, Identifiable {
     case hundredMB = 100_000_000
     case fiveHundredMB = 500_000_000
     case oneGB = 1_000_000_000
