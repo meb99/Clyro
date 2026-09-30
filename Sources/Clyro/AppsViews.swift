@@ -87,6 +87,14 @@ struct ApplicationsView: View {
             case .startup: StartupItemsView()
             }
         }
+        // Beim Verlassen des Tabs zurück zum Startbild; die Apps werden beim nächsten Besuch neu geladen.
+        .onDisappear {
+            guard !showUninstall else { return }
+            applications = []
+            selection = []
+            hasLoaded = false
+            mode = .uninstall
+        }
         .sheet(isPresented: $showUninstall) {
             BulkUninstallSheet(apps: selectedApps, accent: accent) { removed in
                 let urls = Set(removed.map(\.url))
