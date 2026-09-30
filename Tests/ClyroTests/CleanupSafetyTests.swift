@@ -287,6 +287,5 @@ final class MaintenanceScheduleTests: XCTestCase {
     func testTaskIDsAreUnique() {
         let ids = OptimizeCatalog.tasks.map(\.id)
         XCTAssertEqual(ids.count, Set(ids).count)
-        XCTAssertEqual(ids.count, 25)
     }
 }

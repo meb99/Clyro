@@ -22,7 +22,7 @@ struct OnboardingView: View {
             points: [
                 ("sparkles", String(localized: "Bereinigen findet Caches, Protokolle, Reste deinstallierter Apps und Installationsdateien.")),
                 ("app.dashed", String(localized: "Apps entfernt Programme vollständig, zeigt verfügbare Updates und alle Startobjekte.")),
-                ("dial.medium.fill", String(localized: "Optimieren führt 25 Wartungsaufgaben in einem Durchgang aus.")),
+                ("dial.medium.fill", String(localized: "Optimieren führt 24 Wartungsaufgaben in einem Durchgang aus.")),
                 ("chart.pie.fill", String(localized: "Analyse zeigt, welche Ordner und Dateien den meisten Platz belegen.")),
                 ("square.grid.2x2.fill", String(localized: "Status zeigt Auslastung, Temperatur, Akku und Prozesse in Echtzeit."))
             ]
