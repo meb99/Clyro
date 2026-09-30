@@ -4,6 +4,7 @@ struct RootView: View {
     @State private var selection: AppSection = .cleanup
     @AppStorage(OnboardingView.doneKey) private var onboardingDone = false
     @ObservedObject private var updater = UpdateService.shared
+    @EnvironmentObject private var cleaner: CleanupScanner
 
     private var palette: ClyroPalette {
         ClyroTheme.palette(for: selection)
@@ -54,6 +55,13 @@ struct RootView: View {
             }
         }
         .animation(.easeInOut(duration: 0.32), value: selection)
+        // Wer Bereinigen verlässt, beginnt beim Zurückkehren wieder mit dem Startbild und scannt neu.
+        // Ein laufender Scan oder eine laufende Bereinigung wird dabei nicht abgebrochen.
+        .onChange(of: selection) { previous, _ in
+            guard previous == .cleanup else { return }
+            cleaner.dismissCelebration()
+            cleaner.close()
+        }
         .sheet(isPresented: Binding(get: { !onboardingDone }, set: { _ in })) {
             OnboardingView()
                 .interactiveDismissDisabled()
