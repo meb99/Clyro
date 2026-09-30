@@ -41,7 +41,7 @@ Start bei der Anmeldung, Touch ID für `sudo`, Mitteilungen bei knappem Speicher
 
 ## Installation
 
-Fertige Versionen liegen unter [Releases](https://github.com/meb99/Clyro/releases) als DMG für Apple Silicon und Intel. Clyro in den Programme-Ordner ziehen und beim ersten Start per Rechtsklick → **Öffnen** bestätigen; die App ist nicht von Apple notarisiert.
+Fertige Versionen liegen unter [Releases](https://github.com/meb99/Clyro/releases) als DMG für Apple Silicon und Intel. Clyro in den Programme-Ordner ziehen. Die App ist nicht von Apple notarisiert, deshalb blockiert macOS den ersten Start. Ab macOS 15 Clyro einmal öffnen, dann unter Systemeinstellungen → Datenschutz & Sicherheit auf **Trotzdem öffnen** klicken. Unter macOS 14 per Rechtsklick → **Öffnen** starten.
 
 ## Aus dem Quellcode bauen
 

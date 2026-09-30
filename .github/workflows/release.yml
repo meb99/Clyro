@@ -76,7 +76,7 @@ jobs:
           {
             cat "$NOTES"
             printf '\n---\n'
-            printf '%s\n' "Not notarized by Apple: confirm the first launch via right-click → **Open**. · Nicht von Apple notarisiert: den ersten Start per Rechtsklick → **Öffnen** bestätigen."
+            printf '%s\n' "Not notarized by Apple: on macOS 15 or later, allow the first launch under System Settings → Privacy & Security → **Open Anyway**. · Nicht von Apple notarisiert: ab macOS 15 den ersten Start unter Systemeinstellungen → Datenschutz & Sicherheit → **Trotzdem öffnen** erlauben."
           } > release-body.md
 
       - name: Als Artefakt ablegen

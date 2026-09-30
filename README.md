@@ -41,7 +41,7 @@ Open at login, Touch ID for `sudo`, notifications when storage runs low, optiona
 
 ## Installation
 
-Download the DMG for Apple Silicon and Intel from [Releases](https://github.com/meb99/Clyro/releases). Drag Clyro into the Applications folder and confirm the first launch via right-click → **Open**; the app is not notarized by Apple.
+Download the DMG for Apple Silicon and Intel from [Releases](https://github.com/meb99/Clyro/releases). Drag Clyro into the Applications folder. The app is not notarized by Apple, so macOS blocks the first launch. On macOS 15 or later, open Clyro once, then go to System Settings → Privacy & Security and click **Open Anyway**. On macOS 14, right-click the app and choose **Open**.
 
 ## Building from source
 
