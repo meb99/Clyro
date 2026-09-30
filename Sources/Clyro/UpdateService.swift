@@ -22,7 +22,7 @@ final class UpdateService: ObservableObject {
     static let autoCheckKey = "updatesAutoCheck"
     private static let lastCheckKey = "updatesLastCheck"
     private static let skippedKey = "updatesSkippedVersion"
-    private static let latestReleaseURL = URL(string: "https://api.github.com/repos/meb99/Clyro/releases/latest")!
+    private nonisolated static let latestReleaseURL = URL(string: "https://api.github.com/repos/meb99/Clyro/releases/latest")!
 
     enum State: Equatable {
         case idle
