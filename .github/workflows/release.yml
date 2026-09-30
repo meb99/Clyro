@@ -71,13 +71,13 @@ jobs:
           NOTES="docs/releases/${{ steps.version.outputs.version }}.md"
           if [[ ! -f "$NOTES" ]]; then
             NOTES="release-notes.md"
-            printf '%s\n' "Clyro ${{ steps.version.outputs.version }} for macOS 14 or later (Apple Silicon and Intel). · Für macOS 14 oder neuer." > "$NOTES"
+            {
+              printf '%s\n\n' "Clyro ${{ steps.version.outputs.version }} for macOS 14 or later (Apple Silicon and Intel). · Für macOS 14 oder neuer."
+              printf '%s\n' "Not notarized by Apple: on macOS 15 or later, allow the first launch under System Settings → Privacy & Security → **Open Anyway**. · Nicht von Apple notarisiert: ab macOS 15 den ersten Start unter Systemeinstellungen → Datenschutz & Sicherheit → **Trotzdem öffnen** erlauben."
+            } > "$NOTES"
           fi
-          {
-            cat "$NOTES"
-            printf '\n---\n'
-            printf '%s\n' "Not notarized by Apple: on macOS 15 or later, allow the first launch under System Settings → Privacy & Security → **Open Anyway**. · Nicht von Apple notarisiert: ab macOS 15 den ersten Start unter Systemeinstellungen → Datenschutz & Sicherheit → **Trotzdem öffnen** erlauben."
-          } > release-body.md
+          # Die Hinweise zur Installation stehen in den Release Notes selbst.
+          cp "$NOTES" release-body.md
 
       - name: Als Artefakt ablegen
         uses: actions/upload-artifact@v4

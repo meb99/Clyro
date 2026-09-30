@@ -16,6 +16,13 @@ struct ClyroApp: App {
         }
         .defaultSize(width: 1180, height: 790)
         .windowStyle(.hiddenTitleBar)
+        .commands {
+            CommandGroup(after: .appInfo) {
+                Button("Nach Updates suchen …") {
+                    Task { await UpdateService.shared.checkFromMenu() }
+                }
+            }
+        }
 
         MenuBarExtra("Clyro", systemImage: "leaf.fill") {
             MenuBarStatusView()
